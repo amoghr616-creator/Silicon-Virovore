@@ -1,0 +1,11 @@
+silicon_virovore/
+│
+├── c/
+│   ├── engine2.c
+│   ├── hydropathy.c
+│   └── pipeline.c       <-- This is where your master code lives
+│
+└── data/
+    ├── herv_k.fasta     <-- Target (UniProt P61567)
+    ├── albumin.fasta    <-- Decoy 1 (UniProt P02768)
+    └── ncam1.fasta      <-- Decoy 2 (UniProt P13591)
