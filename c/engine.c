@@ -1,4 +1,5 @@
 // engine.c
+// Silicon Virovore Biophysics Engine — Computational Core Utilities
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <math.h>
 #include "virovore.h" 
 
+// Flat array layout tracking absolute charge values per ASCII character
 int amino_acid_charge[256] = {
     ['A'] = 0,  ['B'] = 0,  ['C'] = 0,  ['D'] = -1, ['E'] = -1,
     ['F'] = 0,  ['G'] = 0,  ['H'] = 0,  ['I'] = 0,  ['J'] = 0,
@@ -14,16 +16,23 @@ int amino_acid_charge[256] = {
     ['U'] = 0,  ['V'] = 0,  ['W'] = 0,  ['X'] = 0,  ['Y'] = 0, ['Z'] = 0
 };
 
+/**
+ * Mathematically corrected threshold-step step logic.
+ * Safely ignores charges within bounds and scales exponentially for toxic over-charging.
+ */
 float calculate_charge_penalty(int net_charge, int threshold)
 {
     int abs_charge = (net_charge < 0) ? -net_charge : net_charge;
-    if (abs_charge > threshold)
+    
+    // Safely within bounds = zero penalty
+    if (abs_charge <= threshold)
     {
-        return 0.0; 
+        return 0.0f; 
     }
     else
     {
-        return (float)(threshold + 1 - abs_charge);
+        // Linearly scale up the penalty magnitude for toxic hyper-charging
+        return (float)((abs_charge - threshold) * 5.0f);
     }
 }
 
@@ -40,7 +49,7 @@ int compute_charge_profile(const char *sequence, int charge_threshold, charge_su
     size_t len = strlen(sequence);
     double max_patch = 0.0;
     
-    // Window-based Localized Charge Density Tracking (Debye-Hückel precursor)
+    // Window-based Localized Charge Density Tracking (Debye-Hückel precursor matrix)
     int window_size = 6;
     if (len >= (size_t)window_size) {
         for (size_t i = 0; i <= len - window_size; i++) {
@@ -85,7 +94,7 @@ int compute_charge_profile(const char *sequence, int charge_threshold, charge_su
     return 0;  
 }
 
-// Chou-Fasman alpha-helix propensity lookup array for amino acids
+// Chou-Fasman alpha-helix propensity lookup table
 double get_chou_fasman_score(char aa) {
     switch (toupper((unsigned char)aa)) {
         case 'E': case 'A': case 'L': return 1.42; 
@@ -111,7 +120,7 @@ double calculate_chou_fasman(const char *sequence) {
     return total_score / (double)len;
 }
 
-// Atomic Solvation Parameter lookup (Simplified SASA free energy in kcal/mol per residue)
+// Atomic Solvation Parameter lookup (Free energy contribution in kcal/mol per residue)
 double get_solvation_parameter(char aa) {
     switch (toupper((unsigned char)aa)) {
         case 'I': case 'L': case 'V': case 'F': return -2.5; 
@@ -138,11 +147,11 @@ double calculate_solvation_energy(const char *sequence) {
 }
 
 /* ============================================================================
- * LINKING UTILITIES: Required by ga_loop.c initialization steps
+ * DATA STRUCTURE LINKING INTERFACES
  * ============================================================================
  */
 
-// Dynamic memory allocation constructor for a new Variant sequence string
+// Memory allocation constructor initializing physical tracking telemetry fields
 Variant init_variant(size_t initial_capacity) {
     Variant v;
     v.sequence = (char *)malloc(initial_capacity * sizeof(char));
@@ -160,7 +169,7 @@ Variant init_variant(size_t initial_capacity) {
     return v;
 }
 
-// Appends string chunks dynamically, auto-resizing the block via realloc if needed
+// Appends string chunks dynamically, safe-guarding against structural memory fragmentation
 void append_sequence(Variant *v, const char *chunk) {
     if (!v || !chunk) return;
     

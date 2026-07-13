@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Silicon Virovore Sandbox - Interactive CSF Ecosystem</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #05020a; 
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        #controls {
+            padding: 15px;
+            background: rgba(21, 24, 33, 0.7);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(30, 34, 48, 0.8);
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid #2d334a;
+        }
+        button {
+            background-color: #ff2a5f;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            box-shadow: 0 0 10px rgba(255, 42, 95, 0.3);
+        }
+        button:hover { 
+            background-color: #ff104b; 
+            box-shadow: 0 0 15px rgba(255, 42, 95, 0.6);
+        }
+        #add-virovore { 
+            background-color: #00d4ff; 
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+        #add-virovore:hover { 
+            background-color: #00b3ff; 
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+        }
+        #sliders-panel {
+            display: flex;
+            gap: 25px;
+            background: rgba(16, 18, 26, 0.8);
+            backdrop-filter: blur(5px);
+            width: 100%;
+            padding: 10px;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+        .slider-item { display: flex; align-items: center; gap: 8px; }
+        input[type=range] { cursor: pointer; accent-color: #00d4ff; }
+        
+        canvas {
+            background: radial-gradient(circle at 50% 50%, #150a21 0%, #05020a 100%);
+            margin-top: 10px;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.05);
+            cursor: pointer;
+        }
+        #stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(15, 12, 25, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            min-width: 240px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .active-sequence {
+            color: #00d4ff;
+            font-family: monospace;
+            font-weight: bold;
+            background: rgba(0, 212, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        #info-modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background: rgba(20, 12, 32, 0.95);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(0, 212, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            z-index: 100;
+        }
+        #modal-title {
+            margin-top: 0;
+            font-size: 20px;
+            letter-spacing: 0.5px;
+        }
+        #modal-body {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #d1c9db;
+            margin-bottom: 20px;
+        }
+        #close-btn {
+            background-color: #3b334a;
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            box-shadow: none;
+            width: 100%;
+        }
+        #close-btn:hover {
+            background-color: #00d4ff;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="controls">
+        <div class="control-group">
+            <strong style="color: #a390ba;">Evolved Sequence:</strong> 
+            <span id="seq-display" class="active-sequence">LILLVLVLIVVILVLLLKLIR</span>
+        </div>
+        <button id="add-virus">👾 Inject HERV-K Pathogen</button>
+        <button id="add-virovore">🛡️ Deploy Synthetic Virovore</button>
+        <button id="reset" style="background-color: #3b334a; box-shadow: none;">Flush System</button>
+    </div>
+
+    <div id="sliders-panel">
+        <div class="slider-item">
+            <span style="color: #00d4ff; font-weight:bold;">🧬 α-Helix Stability:</span>
+            <input type="range" id="slider-helix" min="0.2" max="1.5" step="0.1" value="1.2">
+            <span id="val-helix">1.20</span>
+        </div>
+        <div class="slider-item">
+            <span style="color: #29B5E8; font-weight:bold;">⚡ Electrostatic Pull:</span>
+            <input type="range" id="slider-moment" min="0.0" max="0.5" step="0.05" value="0.2">
+            <span id="val-moment">0.20</span>
+        </div>
+        <div class="slider-item">
+            <span style="color: #ff33bb; font-weight:bold;">🛡️ Decoy Evasion (Safety):</span>
+            <input type="range" id="slider-negative" min="0" max="100" step="5" value="100">
+            <span id="val-negative">100%</span>
+        </div>
+    </div>
+
+    <canvas id="simCanvas"></canvas>
+
+    <div id="stats">
+        <h3 style="margin: 0 0 10px 0; color: #a390ba; font-size:14px; text-transform: uppercase; letter-spacing: 1px;">CSF Telemetry</h3>
+        <div>Viral Load: <span id="v-count" style="color: #ff2a5f; font-weight: bold;">0</span></div>
+        <div>Active Virovores: <span id="vi-count" style="color: #00d4ff; font-weight: bold;">0</span></div>
+        <div>Neutralized Virions: <span id="d-count" style="color: #fca311; font-weight: bold;">0</span></div>
+        <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+            Off-Target Damage: <span id="h-count" style="color: #ff33bb; font-weight: bold;">0</span>
+        </div>
+        <div style="margin-top: 5px; font-size: 14px; font-weight: bold;">
+            Motor Neuron Viability: <span id="success-rate" style="color: #00d4ff;">100%</span>
+        </div>
+        <div id="status-badge" style="color: #00d4ff; font-size: 11px; margin-top: 12px; font-weight: bold; background: rgba(0, 212, 255, 0.1); padding: 6px; border-radius:4px; text-align:center; border: 1px solid rgba(0, 212, 255, 0.3);">
+            SYSTEM: ELITE BINDING CONFIRMED
+        </div>
+    </div>
+
+    <div id="info-modal">
+        <h2 id="modal-title">Component Identified</h2>
+        <div id="modal-body">Description goes here...</div>
+        <button id="close-btn">Resume Simulation</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth - 40;
+        canvas.height = window.innerHeight - 170;
+
+        let viruses = [];
+        let virovores = [];
+        let humanCells = [];
+        let backgroundParticles = [];
+        let burstParticles = []; // Dynamic visual bursts
+        let digestedCount = 0;
+        let offTargetDamage = 0;
+        let isPaused = false;
+
+        const BASE_DEBYE_LENGTH = 250; 
+
+        const descriptions = {
+            neuron: {
+                title: "🧠 Human Motor Neuron (Target Tissue)",
+                body: "<b>Role in ALS:</b> Motor neurons coordinate muscle movement. In ALS patients, endogenous retroviruses hidden in human DNA (HERV-K) are abnormally reactivated, expressing toxic envelope proteins that trigger cell death (lysis).<br><br><b>In Our Project:</b> This cell is what we are trying to protect. Our simulation monitors neuron viability to verify that our engineered nano-vehicles safely shield host structures without causing accidental off-target toxicity."
+            },
+            virus: {
+                title: "👾 HERV-K Retrovirus (Pathogenic Payload)",
+                body: "<b>Role in ALS:</b> The Human Endogenous Retrovirus K (HERV-K) acts as an active neurotoxic instigator. Its surface envelope proteins disrupt neuronal cellular integrity and induce neurodegeneration.<br><br><b>In Our Project:</b> The target virus. Our computational genetic algorithm screens billions of sequence combinations specifically to find an engineered peptide with an immense binding affinity toward this virus's exact surface geography."
+            },
+            virovore: {
+                title: "🛡️ Synthetic Virovore Nano-Vehicle",
+                body: "<b>Role in ALS:</b> Standard treatments cannot proactively search for and clear massive viral loads out of cerebrospinal fluid (CSF). This engineered 300nm liposome mimics natural virovores (organisms that eat viruses).<br><br><b>In Our Project:</b> The solution infrastructure. The exterior is decorated with our evolved sequence (LILLVLVLIVVILVLLLKLIR). It uses long-range electrostatic forces to aggressively hunt, trap, and clear the viral threat."
+            }
+        };
+
+        class BurstParticle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.alpha = 1.0;
+                this.decay = Math.random() * 0.03 + 0.02;
+                this.size = Math.random() * 3 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = '#00d4ff';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class AmbientParticle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.vy = (Math.random() - 0.5) * 0.3;
+                this.type = Math.random() > 0.8 ? 'exosome' : 'protein';
+                this.opacity = Math.random() * 0.3 + 0.1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if(this.x < 0) this.x = canvas.width;
+                if(this.x > canvas.width) this.x = 0;
+                if(this.y < 0) this.y = canvas.height;
+                if(this.y > canvas.height) this.y = 0;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.type === 'exosome' ? `rgba(252, 163, 17, ${this.opacity})` : `rgba(163, 144, 186, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+
+        class HumanCell {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.radius = 45;
+                this.pulse = Math.random() * 10;
+                this.health = 100;
+                this.shieldActive = 0; 
+                this.dendrites = [];
+                for(let i=0; i<6; i++) {
+                    this.dendrites.push({
+                        angle: (i * Math.PI * 2 / 6) + (Math.random()*0.4 - 0.2),
+                        length: 30 + Math.random() * 40,
+                        offset: Math.random() * Math.PI
+                    });
+                }
+            }
+
+            draw() {
+                this.pulse += 0.03;
+                if(this.shieldActive > 0 && !isPaused) this.shieldActive--;
+
+                let isHealthy = this.health > 40;
+                let colorBase = isHealthy ? '255, 51, 187' : '200, 150, 50'; 
+                let currentRGB = this.health > 0 ? colorBase : '70, 30, 50';
+
+                ctx.save();
+                
+                // Visual Feature: Dendrites degrade/shrink as health declines
+                let healthFactor = this.health / 100;
+                this.dendrites.forEach(d => {
+                    let wave = Math.sin(this.pulse + d.offset) * 5;
+                    let currentLength = (d.length + wave) * healthFactor; 
+                    let endX = this.x + Math.cos(d.angle) * (this.radius + currentLength);
+                    let endY = this.y + Math.sin(d.angle) * (this.radius + currentLength);
+                    ctx.lineWidth = 4 * healthFactor; ctx.lineCap = 'round'; ctx.strokeStyle = `rgba(${currentRGB}, ${healthFactor * 0.6})`;
+                    ctx.beginPath(); ctx.moveTo(this.x, this.y);
+                    ctx.quadraticCurveTo(this.x + Math.cos(d.angle + 0.3) * this.radius, this.y + Math.sin(d.angle + 0.3) * this.radius, endX, endY);
+                    ctx.stroke();
+                });
+
+                let pulseRadius = this.radius + Math.sin(this.pulse) * 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseRadius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${currentRGB}, 0.15)`;
+                ctx.strokeStyle = `rgba(${currentRGB}, 0.8)`;
+                ctx.shadowBlur = isHealthy ? 20 : 5;
+                ctx.shadowColor = `rgba(${currentRGB}, 0.5)`;
+                ctx.lineWidth = 3;
+                ctx.fill(); ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                if (this.shieldActive > 0) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, pulseRadius + 12, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(0, 212, 255, ${this.shieldActive / 60})`;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([6, 6]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = this.health > 0 ? `rgba(${currentRGB}, 0.9)` : '#461e32';
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = '10px Tahoma';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.health > 0 ? `MOTOR NEURON (${Math.round(this.health)}%)` : "LYSED NEURON", this.x, this.y + this.radius + 20);
+                ctx.restore();
+            }
+        }
+
+        class Virus {
+            constructor(x, y) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                this.radius = 10; 
+                this.vx = (Math.random() - 0.5) * 2.5;
+                this.vy = (Math.random() - 0.5) * 2.5;
+                this.rotation = Math.random() * Math.PI;
+            }
+
+            update() {
+                let closestCell = null;
+                let minDist = 99999;
+                for (let h of humanCells) {
+                    if (h.health > 0) {
+                        let dx = h.x - this.x; let dy = h.y - this.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < minDist) { minDist = dist; closestCell = h; }
+                    }
+                }
+
+                if (closestCell) {
+                    this.vx += ((closestCell.x - this.x) / minDist) * 0.08;
+                    this.vy += ((closestCell.y - this.y) / minDist) * 0.08;
+                }
+
+                let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > 2.0) { this.vx = (this.vx/speed)*2.0; this.vy = (this.vy/speed)*2.0; }
+
+                this.x += this.vx; this.y += this.vy;
+                this.rotation += 0.05;
+
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) this.vx *= -1;
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.shadowBlur = 15; ctx.shadowColor = '#ff2a5f';
+                
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    let angle = (i * Math.PI) / 3;
+                    ctx.lineTo(Math.cos(angle) * this.radius, Math.sin(angle) * this.radius);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#2a0812'; ctx.fill();
+                ctx.lineWidth = 2.5; ctx.strokeStyle = '#ff2a5f'; 
+                ctx.stroke(); // FIXED: Restored core context call
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ff2a5f';
+                for (let i = 0; i < 6; i++) {
+                    let angle = (i * Math.PI) / 3;
+                    ctx.beginPath(); ctx.arc(Math.cos(angle)*(this.radius+4), Math.sin(angle)*(this.radius+4), 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Virovore {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.radius = 18; 
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.pulse = Math.random() * 10;
+                this.currentTargetVirion = null; // Track targeting vector
+            }
+
+            update() {
+                let helixPropensity = parseFloat(document.getElementById('slider-helix').value);
+                let hydrophobicMoment = parseFloat(document.getElementById('slider-moment').value);
+                let selectionStringency = parseFloat(document.getElementById('slider-negative').value);
+
+                let maxVelocity = 2.5 + (helixPropensity * 3.5);
+                let targetX = null; let targetY = null;
+                let minDist = BASE_DEBYE_LENGTH * (hydrophobicMoment / 0.2); 
+                this.currentTargetVirion = null;
+                
+                for (let v of viruses) {
+                    let isAttachedToNeuron = false;
+                    for (let h of humanCells) {
+                        let cellDist = Math.sqrt((v.x - h.x)**2 + (v.y - h.y)**2);
+                        if (cellDist <= h.radius + v.radius) {
+                            isAttachedToNeuron = true;
+                            break;
+                        }
+                    }
+
+                    if (!isAttachedToNeuron) {
+                        let dx = v.x - this.x; let dy = v.y - this.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < minDist) { 
+                            minDist = dist; 
+                            targetX = v.x; 
+                            targetY = v.y; 
+                            this.currentTargetVirion = v; 
+                        }
+                    }
+                }
+
+                if (selectionStringency < 80) {
+                    for (let h of humanCells) {
+                        if (h.health > 0) {
+                            let dx = h.x - this.x; let dy = h.y - this.y;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < minDist && Math.random() * 100 > selectionStringency) {
+                                minDist = dist; targetX = h.x; targetY = h.y;
+                                this.currentTargetVirion = null;
+                            }
+                        }
+                    }
+                }
+
+                if (targetX !== null) {
+                    let strength = 0.25 + (hydrophobicMoment * 1.5);
+                    this.vx += ((targetX - this.x) / minDist) * strength;
+                    this.vy += ((targetY - this.y) / minDist) * strength;
+                }
+
+                let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > maxVelocity) { this.vx = (this.vx/speed)*maxVelocity; this.vy = (this.vy/speed)*maxVelocity; }
+
+                this.x += this.vx; this.y += this.vy;
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) this.vx *= -1;
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) this.vy *= -1;
+            }
+
+            draw() {
+                this.pulse += 0.1;
+
+                // Visual Feature: Draw live telemetry tracking lines
+                if (this.currentTargetVirion) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.currentTargetVirion.x, this.currentTargetVirion.y);
+                    ctx.strokeStyle = 'rgba(0, 212, 255, 0.12)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.shadowBlur = 20; ctx.shadowColor = '#00d4ff';
+
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 212, 255, 0.15)'; ctx.fill();
+                ctx.lineWidth = 2.5; ctx.strokeStyle = '#00d4ff'; ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                let innerRad = 5 + Math.sin(this.pulse)*2;
+                ctx.beginPath(); ctx.arc(0, 0, innerRad, 0, Math.PI*2);
+                ctx.fillStyle = '#00d4ff'; ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                for (let i = 0; i < 10; i++) {
+                    let angle = (i * Math.PI * 2) / 10 + (this.pulse*0.2);
+                    ctx.beginPath(); ctx.arc(Math.cos(angle)*this.radius, Math.sin(angle)*this.radius, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function checkCollisions() {
+            let selectionStringency = parseFloat(document.getElementById('slider-negative').value);
+
+            for (let v of viruses) {
+                for (let h of humanCells) {
+                    if (h.health > 0) {
+                        let dx = v.x - h.x; let dy = v.y - h.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < v.radius + h.radius) {
+                            let damageCoefficient = h.shieldActive > 0 ? 0.01 : 0.06;
+                            h.health -= damageCoefficient; 
+                            if (h.health < 0) h.health = 0;
+                        }
+                    }
+                }
+            }
+
+            for (let i = virovores.length - 1; i >= 0; i--) {
+                for (let j = viruses.length - 1; j >= 0; j--) {
+                    let dx = virovores[i].x - viruses[j].x; let dy = virovores[i].y - viruses[j].y;
+                    if (Math.sqrt(dx*dx + dy*dy) < virovores[i].radius + viruses[j].radius) {
+                        // Visual Feature: Spark dynamic phagocytosis particles
+                        for(let p=0; p<12; p++) {
+                            burstParticles.push(new BurstParticle(viruses[j].x, viruses[j].y));
+                        }
+                        viruses.splice(j, 1);
+                        digestedCount++;
+                        break; 
+                    }
+                }
+            }
+
+            for (let vi of virovores) {
+                for (let h of humanCells) {
+                    if (h.health > 0) {
+                        let dx = vi.x - h.x; let dy = vi.y - h.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < vi.radius + h.radius) {
+                            let angle = Math.atan2(dy, dx);
+                            if (selectionStringency >= 85) {
+                                vi.vx = Math.cos(angle) * 3; vi.vy = Math.sin(angle) * 3;
+                                h.shieldActive = 90; 
+                            } else {
+                                h.health -= 0.1; if (h.health < 0) h.health = 0;
+                                offTargetDamage++;
+                                vi.vx = -Math.cos(angle) * 0.8; vi.vy = -Math.sin(angle) * 0.8;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function updateUIValues() {
+            let hVal = parseFloat(document.getElementById('slider-helix').value);
+            let mVal = parseFloat(document.getElementById('slider-moment').value);
+            let nVal = parseInt(document.getElementById('slider-negative').value);
+
+            document.getElementById('val-helix').innerText = hVal.toFixed(2);
+            document.getElementById('val-moment').innerText = mVal.toFixed(2);
+            document.getElementById('val-negative').innerText = nVal + "%";
+
+            let totalHealth = 0;
+            humanCells.forEach(c => totalHealth += c.health);
+            let averageSuccess = (totalHealth / (humanCells.length * 100)) * 100;
+            
+            let successSpan = document.getElementById('success-rate');
+            successSpan.innerText = averageSuccess.toFixed(1) + "%";
+            if(averageSuccess > 75) successSpan.style.color = "#00d4ff";
+            else if(averageSuccess > 40) successSpan.style.color = "#fca311";
+            else successSpan.style.color = "#ff2a5f";
+
+            let seqSpan = document.getElementById('seq-display');
+            let badge = document.getElementById('status-badge');
+
+            if (hVal == 1.2 && mVal == 0.2 && nVal == 100) {
+                seqSpan.innerText = "LILLVLVLIVVILVLLLKLIR";
+                seqSpan.style.color = "#00d4ff";
+                badge.innerText = "SYSTEM: ELITE BINDING CONFIRMED";
+                badge.style.color = "#00d4ff";
+                badge.style.borderColor = "rgba(0, 212, 255, 0.3)";
+            } else {
+                seqSpan.innerText = "LIXXVXVXIXVXLVXXLXXIX";
+                seqSpan.style.color = "#ff2a5f";
+                badge.innerText = "WARNING: MUTATIONAL DECAY / OFF-TARGET";
+                badge.style.color = "#ff2a5f";
+                badge.style.borderColor = "rgba(255, 42, 95, 0.3)";
+            }
+        }
+
+        function initEnvironment() {
+            humanCells = [
+                new HumanCell(canvas.width * 0.22, canvas.height * 0.50),
+                new HumanCell(canvas.width * 0.50, canvas.height * 0.72),
+                new HumanCell(canvas.width * 0.78, canvas.height * 0.42)
+            ];
+            backgroundParticles = [];
+            burstParticles = [];
+            for(let i=0; i<150; i++) backgroundParticles.push(new AmbientParticle());
+        }
+
+        canvas.addEventListener('click', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            let clickX = e.clientX - rect.left;
+            let clickY = e.clientY - rect.top;
+
+            for (let h of humanCells) {
+                let d = Math.sqrt((clickX - h.x)**2 + (clickY - h.y)**2);
+                if (d < h.radius + 15) { showModal('neuron'); return; }
+            }
+            for (let vi of virovores) {
+                let d = Math.sqrt((clickX - vi.x)**2 + (clickY - vi.y)**2);
+                if (d < vi.radius + 10) { showModal('virovore'); return; }
+            }
+            for (let v of viruses) {
+                let d = Math.sqrt((clickX - v.x)**2 + (clickY - v.y)**2);
+                if (d < v.radius + 10) { showModal('virus'); return; }
+            }
+
+            if(!isPaused) viruses.push(new Virus(clickX, clickY));
+        });
+
+        function showModal(type) {
+            isPaused = true;
+            let modal = document.getElementById('info-modal');
+            document.getElementById('modal-title').innerHTML = descriptions[type].title;
+            document.getElementById('modal-body').innerHTML = descriptions[type].body;
+            modal.style.display = 'block';
+        }
+
+        document.getElementById('close-btn').addEventListener('click', () => {
+            document.getElementById('info-modal').style.display = 'none';
+            isPaused = false;
+        });
+
+        function loop() {
+            if (!isPaused) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                updateUIValues();
+                
+                backgroundParticles.forEach(p => { p.update(); p.draw(); });
+                humanCells.forEach(h => h.draw());
+                viruses.forEach(v => { v.update(); v.draw(); });
+                virovores.forEach(vi => { vi.update(); vi.draw(); });
+
+                // Process active phagocytosis bursts
+                for (let i = burstParticles.length - 1; i >= 0; i--) {
+                    burstParticles[i].update();
+                    burstParticles[i].draw();
+                    if (burstParticles[i].alpha <= 0) {
+                        burstParticles.splice(i, 1);
+                    }
+                }
+
+                checkCollisions();
+
+                document.getElementById('v-count').innerText = viruses.length;
+                document.getElementById('vi-count').innerText = virovores.length;
+                document.getElementById('d-count').innerText = digestedCount;
+                document.getElementById('h-count').innerText = Math.floor(offTargetDamage / 5);
+            }
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('add-virus').addEventListener('click', () => { if(!isPaused) viruses.push(new Virus()); });
+        document.getElementById('add-virovore').addEventListener('click', () => { if(!isPaused) virovores.push(new Virovore()); });
+        document.getElementById('reset').addEventListener('click', () => { 
+            viruses = []; virovores = []; burstParticles = []; digestedCount = 0; offTargetDamage = 0; 
+            initEnvironment();
+        });
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth - 40; canvas.height = window.innerHeight - 170;
+            initEnvironment();
+        });
+
+        initEnvironment();
+        for(let i=0; i<8; i++) viruses.push(new Virus());
+        for(let i=0; i<4; i++) virovores.push(new Virovore());
+
+        loop();
+    </script>
+</body>
+</html>
