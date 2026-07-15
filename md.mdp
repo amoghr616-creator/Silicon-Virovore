@@ -1,0 +1,42 @@
+; Run control
+integrator              = md        ; Leap-frog integrator
+nsteps                  = 5000000   ; 2 fs * 5,000,000 = 10,000 ps (10 ns run - adjust as needed!)
+dt                      = 0.002     ; 2 fs step size
+
+; Output control
+nstxout-compressed      = 5000      ; save compressed coordinates every 10 ps
+nstenergy               = 5000      ; save energies every 10 ps
+nstlog                  = 5000      ; update log file every 10 ps
+
+; Bond dynamics
+continuation            = yes       ; Restarting from NPT, so continuation is YES
+constraint_algorithm    = lincs     ; holonomic constraints 
+constraints             = h-bonds   ; constrain bonds involving Hydrogen
+
+; Neighbor searching and Nonbonded interactions
+cutoff-scheme           = Verlet    ; Buffered neighbor searching
+nstlist                 = 10        ; 20 fs frequency to update neighbor list
+rcoulomb                = 1.0       
+rvdw                    = 1.0       
+DispCorr                = EnerPres  
+
+; Electrostatics
+coulombtype             = PME       ; Particle Mesh Ewald
+pme_order               = 4         
+fourierspacing          = 0.16      
+
+; Temperature coupling is ON
+tcoupl                  = V-rescale             
+tc-grps                 = Protein Non-Protein   
+tau_t                   = 0.1     0.1           
+ref_t                   = 300     300           
+
+; Pressure coupling is ON for Production MD
+pcoupl                  = Parrinello-Rahman     ; More accurate barostat for production runs
+pcoupltype              = isotropic             
+tau_p                   = 2.0                   
+ref_p                   = 1.0                   
+compressibility         = 4.5e-5                
+
+; Velocity generation
+gen_vel                 = no        ; Velocities are carried over from NPT

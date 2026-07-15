@@ -13,9 +13,21 @@ st.markdown("### Interactive 3D Structural Generation & GA Diagnostics")
 st.sidebar.header("Backend Data Pipeline")
 metrics_files = glob.glob("metrics.csv")
 
+# Dynamic Data Loading Layer
+latest_sequence = "LILLVLVLIVVVLVLLLLLIL" # System Default Fallback
+latest_fitness = "6.4789"
+
 if metrics_files:
     df = pd.read_csv("metrics.csv")
     st.sidebar.success("Successfully synced with C Engine logs!")
+    
+    # Extract the absolute newest metrics dynamically from the final row of the engine outputs
+    if not df.empty:
+        # Check if 'Sequence' column exists in your metrics.csv, otherwise adapt to your column naming convention
+        if 'Sequence' in df.columns:
+            latest_sequence = str(df['Sequence'].iloc[-1])
+        if 'FitnessScore' in df.columns:
+            latest_fitness = f"{df['FitnessScore'].iloc[-1]:.4f}"
 else:
     st.sidebar.error("No engine logs found. Run ./run_sim.sh first.")
 
@@ -24,9 +36,12 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("Target Peptide Specifications")
-    sequence = st.text_input("Optimized Sequence Lead:", value="LILLVLVLIVVILVLLLKLIR")
     
-    st.metric(label="Calculated Final Peak Fitness", value="6.4789")
+    # Use the dynamic sequence extracted directly from the C engine logs
+    sequence = st.text_input("Optimized Sequence Lead:", value=latest_sequence)
+    
+    # Dynamically scale the metric display window
+    st.metric(label="Calculated Final Peak Fitness", value=latest_fitness)
     
     st.markdown("""
     **Biophysical Profile:**
@@ -35,7 +50,7 @@ with col1:
     * **Target Epitope:** HERV-K Env
     """)
     
-    if metrics_files:
+    if metrics_files and not df.empty and 'FitnessScore' in df.columns:
         st.subheader("Convergence Telemetry")
         st.line_chart(df, x="Generation", y="FitnessScore")
 

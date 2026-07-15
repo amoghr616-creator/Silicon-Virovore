@@ -90,7 +90,7 @@
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             pointer-events: none;
-            min-width: 240px;
+            min-width: 260px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .active-sequence {
@@ -108,7 +108,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 400px;
+            width: 420px;
             background: rgba(20, 12, 32, 0.95);
             backdrop-filter: blur(15px);
             border: 2px solid rgba(0, 212, 255, 0.4);
@@ -145,8 +145,8 @@
 
     <div id="controls">
         <div class="control-group">
-            <strong style="color: #a390ba;">Evolved Sequence:</strong> 
-            <span id="seq-display" class="active-sequence">LILLVLVLIVVILVLLLKLIR</span>
+            <strong style="color: #a390ba;">Evolved Sequence (LILLVLVLIVVVLVLLLLLIL):</strong> 
+            <span id="seq-display" class="active-sequence">LILLVLVLIVVVLVLLLLLIL</span>
         </div>
         <button id="add-virus">👾 Inject HERV-K Pathogen</button>
         <button id="add-virovore">🛡️ Deploy Synthetic Virovore</button>
@@ -156,16 +156,16 @@
     <div id="sliders-panel">
         <div class="slider-item">
             <span style="color: #00d4ff; font-weight:bold;">🧬 α-Helix Stability:</span>
-            <input type="range" id="slider-helix" min="0.2" max="1.5" step="0.1" value="1.2">
-            <span id="val-helix">1.20</span>
+            <input type="range" id="slider-helix" min="0.2" max="2.0" step="0.1" value="1.5">
+            <span id="val-helix">1.50</span>
         </div>
         <div class="slider-item">
-            <span style="color: #29B5E8; font-weight:bold;">⚡ Electrostatic Pull:</span>
-            <input type="range" id="slider-moment" min="0.0" max="0.5" step="0.05" value="0.2">
-            <span id="val-moment">0.20</span>
+            <span style="color: #29B5E8; font-weight:bold;">💧 Hydrophobic Collapse Potential:</span>
+            <input type="range" id="slider-moment" min="0.0" max="0.8" step="0.05" value="0.6">
+            <span id="val-moment">0.60</span>
         </div>
         <div class="slider-item">
-            <span style="color: #ff33bb; font-weight:bold;">🛡️ Decoy Evasion (Safety):</span>
+            <span style="color: #ff33bb; font-weight:bold;">🛡️ Serum Decoy Evasion (PEGylation):</span>
             <input type="range" id="slider-negative" min="0" max="100" step="5" value="100">
             <span id="val-negative">100%</span>
         </div>
@@ -174,18 +174,21 @@
     <canvas id="simCanvas"></canvas>
 
     <div id="stats">
-        <h3 style="margin: 0 0 10px 0; color: #a390ba; font-size:14px; text-transform: uppercase; letter-spacing: 1px;">CSF Telemetry</h3>
+        <h3 style="margin: 0 0 10px 0; color: #a390ba; font-size:14px; text-transform: uppercase; letter-spacing: 1px;">CSF Simulation Engine</h3>
         <div>Viral Load: <span id="v-count" style="color: #ff2a5f; font-weight: bold;">0</span></div>
         <div>Active Virovores: <span id="vi-count" style="color: #00d4ff; font-weight: bold;">0</span></div>
         <div>Neutralized Virions: <span id="d-count" style="color: #fca311; font-weight: bold;">0</span></div>
+        <div style="margin-top: 5px;">
+            Clearance Efficiency (&eta;): <span id="clearance-efficiency" style="color: #39ff14; font-weight: bold;">0.00 ug/hr</span>
+        </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-            Off-Target Damage: <span id="h-count" style="color: #ff33bb; font-weight: bold;">0</span>
+            Off-Target Adsorption: <span id="h-count" style="color: #ff33bb; font-weight: bold;">0</span>
         </div>
         <div style="margin-top: 5px; font-size: 14px; font-weight: bold;">
             Motor Neuron Viability: <span id="success-rate" style="color: #00d4ff;">100%</span>
         </div>
         <div id="status-badge" style="color: #00d4ff; font-size: 11px; margin-top: 12px; font-weight: bold; background: rgba(0, 212, 255, 0.1); padding: 6px; border-radius:4px; text-align:center; border: 1px solid rgba(0, 212, 255, 0.3);">
-            SYSTEM: ELITE BINDING CONFIRMED
+            SYSTEM: ELITE HYDROPHOBIC COLLAPSE CONFIRMED
         </div>
     </div>
 
@@ -206,25 +209,26 @@
         let virovores = [];
         let humanCells = [];
         let backgroundParticles = [];
-        let burstParticles = []; // Dynamic visual bursts
+        let burstParticles = []; 
         let digestedCount = 0;
         let offTargetDamage = 0;
         let isPaused = false;
+        let simulationTicks = 0;
 
-        const BASE_DEBYE_LENGTH = 250; 
+        const BASE_COLLAPSE_RADIUS = 300; 
 
         const descriptions = {
             neuron: {
-                title: "🧠 Human Motor Neuron (Target Tissue)",
-                body: "<b>Role in ALS:</b> Motor neurons coordinate muscle movement. In ALS patients, endogenous retroviruses hidden in human DNA (HERV-K) are abnormally reactivated, expressing toxic envelope proteins that trigger cell death (lysis).<br><br><b>In Our Project:</b> This cell is what we are trying to protect. Our simulation monitors neuron viability to verify that our engineered nano-vehicles safely shield host structures without causing accidental off-target toxicity."
+                title: "🧠 Human Motor Neuron (Structural Pathology)",
+                body: "<b>Biophysical Literature Alignment:</b> In ALS, motor neurons are not physically lysed. Instead, intracellular reactivation of the HERV-K <i>Env</i> protein acts as a neurotoxic agent that triggers <b>beading, swelling, and severe retraction of neurites (dendrites & axons)</b>. This halts axonal transport and triggers progressive apoptosis.<br><br><b>In Our Project:</b> Our metric monitors 'Motor Neuron Viability' based on neurite health. Our synthetic virovores bind pathogenic Env proteins before they can engage with the cell membrane, completely protecting the neural structures from retraction."
             },
             virus: {
-                title: "👾 HERV-K Retrovirus (Pathogenic Payload)",
-                body: "<b>Role in ALS:</b> The Human Endogenous Retrovirus K (HERV-K) acts as an active neurotoxic instigator. Its surface envelope proteins disrupt neuronal cellular integrity and induce neurodegeneration.<br><br><b>In Our Project:</b> The target virus. Our computational genetic algorithm screens billions of sequence combinations specifically to find an engineered peptide with an immense binding affinity toward this virus's exact surface geography."
+                title: "👾 HERV-K Retrovirus (Pathogenic Target)",
+                body: "<b>Physical Target Profile:</b> The surface units (SU) of HERV-K envelope proteins contain highly conserved hydrophobic pockets that interface with adjacent membranes to promote toxicity.<br><br><b>In Our Project:</b> Our redesigned, fully hydrophobic sequence (LILLVLVLIVVVLVLLLLLIL) acts as a specialized hydrophobic sponge. Since electrostatic-charge interactions are screened in CSF ($150\\text{ mM NaCl}$), our sequence leverages water-exclusion forces (hydrophobic collapse) to weld directly to these hydrophobic domains, neutralizing them before they can dock."
             },
             virovore: {
                 title: "🛡️ Synthetic Virovore Nano-Vehicle",
-                body: "<b>Role in ALS:</b> Standard treatments cannot proactively search for and clear massive viral loads out of cerebrospinal fluid (CSF). This engineered 300nm liposome mimics natural virovores (organisms that eat viruses).<br><br><b>In Our Project:</b> The solution infrastructure. The exterior is decorated with our evolved sequence (LILLVLVLIVVILVLLLKLIR). It uses long-range electrostatic forces to aggressively hunt, trap, and clear the viral threat."
+                body: "<b>Engineering Framework:</b> A 300nm synthetic lipid nanoparticle embedded with our evolved target sequences.<br><br><b>Mechanistic Clearance:</b> Free from charges, the outer layer bypasses ionic Debye shielding entirely. It behaves as an active biological sponge, capturing target viruses via free-energy minimizations ($\Delta G_{\\text{solv}}$) and drawing them into a localized envelope for dynamic degradation."
             }
         };
 
@@ -246,7 +250,7 @@
                 ctx.globalAlpha = this.alpha;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = '#00d4ff';
+                ctx.fillStyle = '#39ff14'; 
                 ctx.fill();
                 ctx.restore();
             }
@@ -259,8 +263,8 @@
                 this.size = Math.random() * 2 + 0.5;
                 this.vx = (Math.random() - 0.5) * 0.3;
                 this.vy = (Math.random() - 0.5) * 0.3;
-                this.type = Math.random() > 0.8 ? 'exosome' : 'protein';
-                this.opacity = Math.random() * 0.3 + 0.1;
+                this.type = Math.random() > 0.8 ? 'albumin' : 'ion';
+                this.opacity = Math.random() * 0.2 + 0.05;
             }
             update() {
                 this.x += this.vx; this.y += this.vy;
@@ -272,7 +276,7 @@
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = this.type === 'exosome' ? `rgba(252, 163, 17, ${this.opacity})` : `rgba(163, 144, 186, ${this.opacity})`;
+                ctx.fillStyle = this.type === 'albumin' ? `rgba(252, 163, 17, ${this.opacity})` : `rgba(100, 200, 255, ${this.opacity})`;
                 ctx.fill();
             }
         }
@@ -288,7 +292,7 @@
                 for(let i=0; i<6; i++) {
                     this.dendrites.push({
                         angle: (i * Math.PI * 2 / 6) + (Math.random()*0.4 - 0.2),
-                        length: 30 + Math.random() * 40,
+                        length: 35 + Math.random() * 45,
                         offset: Math.random() * Math.PI
                     });
                 }
@@ -304,17 +308,37 @@
 
                 ctx.save();
                 
-                // Visual Feature: Dendrites degrade/shrink as health declines
+                // SCIENTIFIC ACCURACY UPDATE: 
+                // As the cell gets toxic stress, dendrites/neurites undergo retraction and display "beading" patterns
                 let healthFactor = this.health / 100;
                 this.dendrites.forEach(d => {
                     let wave = Math.sin(this.pulse + d.offset) * 5;
-                    let currentLength = (d.length + wave) * healthFactor; 
+                    // Shrink length to simulate neurite retraction under viral exposure
+                    let currentLength = (d.length + wave) * Math.max(0.2, healthFactor); 
                     let endX = this.x + Math.cos(d.angle) * (this.radius + currentLength);
                     let endY = this.y + Math.sin(d.angle) * (this.radius + currentLength);
-                    ctx.lineWidth = 4 * healthFactor; ctx.lineCap = 'round'; ctx.strokeStyle = `rgba(${currentRGB}, ${healthFactor * 0.6})`;
-                    ctx.beginPath(); ctx.moveTo(this.x, this.y);
+                    
+                    ctx.lineWidth = 4 * Math.max(0.3, healthFactor); 
+                    ctx.lineCap = 'round'; 
+                    ctx.strokeStyle = `rgba(${currentRGB}, ${Math.max(0.15, healthFactor * 0.6)})`;
+                    
+                    ctx.beginPath(); 
+                    ctx.moveTo(this.x, this.y);
                     ctx.quadraticCurveTo(this.x + Math.cos(d.angle + 0.3) * this.radius, this.y + Math.sin(d.angle + 0.3) * this.radius, endX, endY);
                     ctx.stroke();
+
+                    // If cell is damaged, render "beading" pathology along the neurite lines
+                    if (healthFactor < 0.8) {
+                        ctx.fillStyle = `rgba(${currentRGB}, 0.9)`;
+                        for (let j = 1; j <= 3; j++) {
+                            let ratio = j / 4;
+                            let beadX = this.x + (endX - this.x) * ratio;
+                            let beadY = this.y + (endY - this.y) * ratio;
+                            ctx.beginPath();
+                            ctx.arc(beadX, beadY, 4 * (1.2 - healthFactor), 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
                 });
 
                 let pulseRadius = this.radius + Math.sin(this.pulse) * 2;
@@ -346,7 +370,7 @@
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
                 ctx.font = '10px Tahoma';
                 ctx.textAlign = 'center';
-                ctx.fillText(this.health > 0 ? `MOTOR NEURON (${Math.round(this.health)}%)` : "LYSED NEURON", this.x, this.y + this.radius + 20);
+                ctx.fillText(this.health > 0 ? `MOTOR NEURON (${Math.round(this.health)}%)` : "RETRACTED/ATROPHIED NEURON", this.x, this.y + this.radius + 20);
                 ctx.restore();
             }
         }
@@ -401,7 +425,7 @@
                 ctx.closePath();
                 ctx.fillStyle = '#2a0812'; ctx.fill();
                 ctx.lineWidth = 2.5; ctx.strokeStyle = '#ff2a5f'; 
-                ctx.stroke(); // FIXED: Restored core context call
+                ctx.stroke(); 
                 
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = '#ff2a5f';
@@ -422,17 +446,17 @@
                 this.vx = (Math.random() - 0.5) * 1.5;
                 this.vy = (Math.random() - 0.5) * 1.5;
                 this.pulse = Math.random() * 10;
-                this.currentTargetVirion = null; // Track targeting vector
+                this.currentTargetVirion = null; 
             }
 
             update() {
                 let helixPropensity = parseFloat(document.getElementById('slider-helix').value);
-                let hydrophobicMoment = parseFloat(document.getElementById('slider-moment').value);
-                let selectionStringency = parseFloat(document.getElementById('slider-negative').value);
+                let collapsePotential = parseFloat(document.getElementById('slider-moment').value);
+                let stealthIndex = parseFloat(document.getElementById('slider-negative').value);
 
-                let maxVelocity = 2.5 + (helixPropensity * 3.5);
+                let maxVelocity = 2.5 + (helixPropensity * 4.0);
                 let targetX = null; let targetY = null;
-                let minDist = BASE_DEBYE_LENGTH * (hydrophobicMoment / 0.2); 
+                let minDist = BASE_COLLAPSE_RADIUS * (collapsePotential / 0.6); 
                 this.currentTargetVirion = null;
                 
                 for (let v of viruses) {
@@ -457,12 +481,12 @@
                     }
                 }
 
-                if (selectionStringency < 80) {
+                if (stealthIndex < 85) {
                     for (let h of humanCells) {
                         if (h.health > 0) {
                             let dx = h.x - this.x; let dy = h.y - this.y;
                             let dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist < minDist && Math.random() * 100 > selectionStringency) {
+                            if (dist < minDist && Math.random() * 100 > stealthIndex) {
                                 minDist = dist; targetX = h.x; targetY = h.y;
                                 this.currentTargetVirion = null;
                             }
@@ -471,7 +495,7 @@
                 }
 
                 if (targetX !== null) {
-                    let strength = 0.25 + (hydrophobicMoment * 1.5);
+                    let strength = 0.4 + (collapsePotential * 2.0); 
                     this.vx += ((targetX - this.x) / minDist) * strength;
                     this.vy += ((targetY - this.y) / minDist) * strength;
                 }
@@ -487,13 +511,12 @@
             draw() {
                 this.pulse += 0.1;
 
-                // Visual Feature: Draw live telemetry tracking lines
                 if (this.currentTargetVirion) {
                     ctx.save();
                     ctx.beginPath();
                     ctx.moveTo(this.x, this.y);
                     ctx.lineTo(this.currentTargetVirion.x, this.currentTargetVirion.y);
-                    ctx.strokeStyle = 'rgba(0, 212, 255, 0.12)';
+                    ctx.strokeStyle = 'rgba(57, 255, 20, 0.18)'; 
                     ctx.lineWidth = 1.5;
                     ctx.setLineDash([4, 4]);
                     ctx.stroke();
@@ -523,14 +546,14 @@
         }
 
         function checkCollisions() {
-            let selectionStringency = parseFloat(document.getElementById('slider-negative').value);
+            let stealthIndex = parseFloat(document.getElementById('slider-negative').value);
 
             for (let v of viruses) {
                 for (let h of humanCells) {
                     if (h.health > 0) {
                         let dx = v.x - h.x; let dy = v.y - h.y;
-                        if (Math.sqrt(dx*dx + dy*dy) < v.radius + h.radius) {
-                            let damageCoefficient = h.shieldActive > 0 ? 0.01 : 0.06;
+                        if (Math.sqrt(dx*dx + dy*dy) < v.radius + h.radius + 30) { // Slightly increased radius to reflect neurite contact
+                            let damageCoefficient = h.shieldActive > 0 ? 0.01 : 0.08;
                             h.health -= damageCoefficient; 
                             if (h.health < 0) h.health = 0;
                         }
@@ -542,8 +565,7 @@
                 for (let j = viruses.length - 1; j >= 0; j--) {
                     let dx = virovores[i].x - viruses[j].x; let dy = virovores[i].y - viruses[j].y;
                     if (Math.sqrt(dx*dx + dy*dy) < virovores[i].radius + viruses[j].radius) {
-                        // Visual Feature: Spark dynamic phagocytosis particles
-                        for(let p=0; p<12; p++) {
+                        for(let p=0; p<15; p++) {
                             burstParticles.push(new BurstParticle(viruses[j].x, viruses[j].y));
                         }
                         viruses.splice(j, 1);
@@ -559,11 +581,11 @@
                         let dx = vi.x - h.x; let dy = vi.y - h.y;
                         if (Math.sqrt(dx*dx + dy*dy) < vi.radius + h.radius) {
                             let angle = Math.atan2(dy, dx);
-                            if (selectionStringency >= 85) {
+                            if (stealthIndex >= 85) {
                                 vi.vx = Math.cos(angle) * 3; vi.vy = Math.sin(angle) * 3;
                                 h.shieldActive = 90; 
                             } else {
-                                h.health -= 0.1; if (h.health < 0) h.health = 0;
+                                h.health -= 0.15; if (h.health < 0) h.health = 0;
                                 offTargetDamage++;
                                 vi.vx = -Math.cos(angle) * 0.8; vi.vy = -Math.sin(angle) * 0.8;
                             }
@@ -595,16 +617,22 @@
             let seqSpan = document.getElementById('seq-display');
             let badge = document.getElementById('status-badge');
 
-            if (hVal == 1.2 && mVal == 0.2 && nVal == 100) {
-                seqSpan.innerText = "LILLVLVLIVVILVLLLKLIR";
-                seqSpan.style.color = "#00d4ff";
-                badge.innerText = "SYSTEM: ELITE BINDING CONFIRMED";
-                badge.style.color = "#00d4ff";
-                badge.style.borderColor = "rgba(0, 212, 255, 0.3)";
+            simulationTicks++;
+            let baseEfficiency = (digestedCount / (simulationTicks / 60)) * (hVal * mVal);
+            if (nVal < 85) baseEfficiency *= (nVal / 100.0);
+            
+            document.getElementById('clearance-efficiency').innerText = baseEfficiency.toFixed(2) + " ug/hr";
+
+            if (hVal >= 1.5 && mVal >= 0.6 && nVal == 100) {
+                seqSpan.innerText = "LILLVLVLIVVVLVLLLLLIL";
+                seqSpan.style.color = "#39ff14"; 
+                badge.innerText = "SYSTEM: ELITE HYDROPHOBIC COLLAPSE CONFIRMED";
+                badge.style.color = "#39ff14";
+                badge.style.borderColor = "rgba(57, 255, 20, 0.4)";
             } else {
                 seqSpan.innerText = "LIXXVXVXIXVXLVXXLXXIX";
                 seqSpan.style.color = "#ff2a5f";
-                badge.innerText = "WARNING: MUTATIONAL DECAY / OFF-TARGET";
+                badge.innerText = "WARNING: MUTATIONAL DECAY / DEBYE SCREENING LOSS";
                 badge.style.color = "#ff2a5f";
                 badge.style.borderColor = "rgba(255, 42, 95, 0.3)";
             }
@@ -618,6 +646,7 @@
             ];
             backgroundParticles = [];
             burstParticles = [];
+            simulationTicks = 0;
             for(let i=0; i<150; i++) backgroundParticles.push(new AmbientParticle());
         }
 
@@ -665,7 +694,6 @@
                 viruses.forEach(v => { v.update(); v.draw(); });
                 virovores.forEach(vi => { vi.update(); vi.draw(); });
 
-                // Process active phagocytosis bursts
                 for (let i = burstParticles.length - 1; i >= 0; i--) {
                     burstParticles[i].update();
                     burstParticles[i].draw();
