@@ -1,13 +1,19 @@
 ****The Silicon Virovore****
+
 An integrated cyber-biotic platform designed to engineer novel peptide inhibitors against Human Endogenous Retrovirus K (HERV-K) envelope proteins and monitor their biosynthesis in real time via closed-loop hardware telemetry.
 ****🧬 Project Overview****
+
 The Silicon Virovore is a multi-disciplinary, end-to-end therapeutic design and physical monitoring ecosystem. 
 
 The project is split into two primary engines:
 
-**In-Silico Molecular Design Engine**: Computationally engineers a custom 21-amino-acid helical peptide inhibitor to target and block the critical binding grooves of the HERV-K surface envelope protein (associated with neurodegenerative diseases).
+**In-Silico Molecular Design Engine**: 
 
-**Cyber-Biotic Hardware Telemetry Loop:** A physical micro-controlled bioreactor simulator that ensures peptide stability during biosynthesis. The system utilizes real-time environmental sensors and closed-loop actuation to prevent thermal denaturation (unfolding) of the engineered proteins.
+Computationally engineers a custom 21-amino-acid helical peptide inhibitor to target and block the critical binding grooves of the HERV-K surface envelope protein (associated with neurodegenerative diseases).
+
+**Cyber-Biotic Hardware Telemetry Loop:** 
+
+A physical micro-controlled bioreactor simulator that ensures peptide stability during biosynthesis. The system utilizes real-time environmental sensors and closed-loop actuation to prevent thermal denaturation (unfolding) of the engineered proteins.
 **
 🛠️ System Architecture******
 
