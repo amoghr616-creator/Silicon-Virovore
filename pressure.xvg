@@ -1,0 +1,30 @@
+# This file was created Thu Jul 16 14:14:18 2026
+# Created by:
+#                 :-) GROMACS - gmx energy, 2026.3-Homebrew (-:
+# 
+# Executable:   /opt/homebrew/bin/../Cellar/gromacs/2026.3/bin/gmx
+# Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2026.3
+# Working dir:  /Users/centurion616/Desktop/Silicon-Virovore
+# Command line:
+#   gmx energy -f npt.edr -o pressure.xvg
+# gmx energy is part of G R O M A C S:
+#
+# Gravel Rubs Often Many Awfully Cauterized Sores
+#
+@    title "GROMACS Energies"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "(bar)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Pressure"
+    0.000000  -551.337708
+    1.000000  -412.704498
+    2.000000  -93.132111
+    3.000000  162.690521
+    4.000000  -93.307335
+    5.000000  -18.704376

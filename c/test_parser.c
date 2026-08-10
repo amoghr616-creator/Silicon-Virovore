@@ -4,32 +4,15 @@
 #include <string.h>
 #include "virovore.h"
 
-Variant init_variant(size_t initial_capacity) {
-    Variant v;
-    v.sequence = (char *)malloc(initial_capacity * sizeof(char));
-    if (!v.sequence) {
-        fprintf(stderr, "Heap allocation failed.\n");
-        exit(1);
-    }
-    v.length = 0;
-    v.capacity = initial_capacity;
-    v.sequence[0] = '\0';
-    return v;
-}
+// Tell the compiler that our evolutionary loop function exists in ga_loop.c
+void run_evolutionary_loop(int generations, int pop_size, double mutation_rate, int tournament_size);
 
-void append_sequence(Variant *v, const char *chunk) {
-    size_t chunk_len = strlen(chunk);
+int main(void) {
+    printf("[*] Starting Ultra-Fidelity Silicon Virovore engine via test_parser.c...\n");
     
-    // Capacity doubling loop logic to guarantee zero fragmentation overhead
-    if (v->length + chunk_len + 1 > v->capacity) {
-        v->capacity = (v->capacity * 2) + chunk_len; 
-        v->sequence = (char *)realloc(v->sequence, v->capacity * sizeof(char));
-        if (!v->sequence) {
-            fprintf(stderr, "Realloc fragmentation failure.\n");
-            exit(1);
-        }
-    }
+    // SCALE UP THE POPULATION: 
+    // Run the genetic algorithm: 10,000 generations, 2,000 population size, 8% base mutation, tournament size 7
+    run_evolutionary_loop(10000, 2000, 0.08, 7);
     
-    strcat(v->sequence, chunk);
-    v->length += chunk_len;
+    return 0;
 }

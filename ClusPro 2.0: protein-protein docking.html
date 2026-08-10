@@ -1,0 +1,63 @@
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+            <html xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+        <title>ClusPro 2.0: protein-protein docking</title>
+      <meta http-equiv="refresh" content="300"/>      <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+      <link rel='stylesheet' type='text/css' href='/css/style.css' />
+      <link rel='stylesheet' type='text/css' href='/css/loginform.css' />
+      <link rel='stylesheet' type='text/css' href='/css/signupform.css' />
+      <link rel='stylesheet' type='text/css' href='/css/contactform.css' />
+      <link rel='stylesheet' type='text/css' href='/css/jobsform.css' />
+      <link rel='stylesheet' type='text/css' href='/css/goodform.css' />
+      <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/yui/2.9.0/grids/grids-min.css" />
+      <style type="text/css">#tabQueue { font-weight:bold; }</style>      <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+      <script type="text/javascript" src="/js/jquery-3.5.1.min.js"></script>
+      <script type="text/javascript" src="/js/jquery.equalheights.js"></script>
+      
+      
+    </head>
+
+    <body>
+      <div id="doc">
+        <div id="hd">
+          <ul id='tabs-menu'>
+            <li><a id='tabContact' href='/contact.php'>Contact</a></li>
+            <li><a id='tabHelp' href='/help.php'>Help</a></li>
+            <li><a id='tabPapers' href='/publications.php'>Papers</a></li>
+                        <li><a id='tabResults' href='/results.php'>Results</a></li>
+            <li><a id='tabQueue' href='/queue.php'>Queue</a></li>
+            <li><a id='tabDimer' href='/dimer_predict/submit.php'>Dimer Classification</a></li>
+            <li><a id='tabPeptide' href='/peptide/index.php'>Peptide Docking</a></li>
+            <li><a id='tabDock' href='/home.php'>Dock</a></li>
+          </ul>
+          <img src='/image/ClusPro1.png' width='750' height='160' alt=''/>
+        </div>
+	<div id="bd">
+	    
+          
+        <div id='main-header-right'>
+          <a href='/logout.php'>sign out</a>
+        </div>
+           <h3>Running Jobs</h3>
+	 <table class='nice'>
+      <tr>
+      	<th>Id</th>
+      	<th>Name</th>
+      	<th>User</th>
+      	<th>Status</th>
+     	</tr>
+
+<tr><td><a href='jobdetail.php?job=1447738'>1447738</a></td><td>Silicon Virovore</td><td>piper</td><td>pre-docking minimization</td></tr><tr><td>1447737</td><td>vft1</td><td>krongsakda</td><td>in queue on supercomputer</td></tr><tr><td>1447736</td><td>Antigen antibody lys</td><td>MAgrawal</td><td>clustering and minimization</td></tr><tr><td>1447735</td><td>Antigen antibody lys</td><td>MAgrawal</td><td>clustering and minimization</td></tr><tr><td>1447732</td><td>M AGT 3VCM</td><td>zafar</td><td>clustering and minimization</td></tr><tr><td>1447731</td><td>AGT 3VCM</td><td>zafar</td><td>clustering and minimization</td></tr><tr><td>1447730</td><td>1447730</td><td>Oyedokinp</td><td>in queue on supercomputer</td></tr><tr><td>1447729</td><td>1447729</td><td>Oyedokinp</td><td>in queue on supercomputer</td></tr><tr><td>1447728</td><td>1447728</td><td>Oyedokinp</td><td>in queue on supercomputer</td></tr><tr><td><a href='jobdetail.php?job=1447727'>1447727</a></td><td>1447727</td><td>piper</td><td>clustering and minimization</td></tr><tr><td>1447725</td><td>UNIPROT O13</td><td>Sidra_altaf</td><td>clustering and minimization</td></tr><tr><td>1447724</td><td>UNIPROT O8</td><td>Sidra_altaf</td><td>clustering and minimization</td></tr><tr><td>1447723</td><td>UNIPROT O3</td><td>Sidra_altaf</td><td>clustering and minimization</td></tr><tr><td>1447722</td><td>UNIPROT O2</td><td>Sidra_altaf</td><td>clustering and minimization</td></tr><tr><td><a href='jobdetail.php?job=1447720'>1447720</a></td><td>toxoplasma</td><td>piper</td><td>clustering and minimization</td></tr><tr><td>1447719</td><td>CARD14cc DOK3phptb</td><td>Lusia_Huang.</td><td>clustering and minimization</td></tr><tr><td>1447705</td><td>JABP FND2 EV71</td><td>aeldioluz</td><td>clustering and minimization</td></tr><tr><td>1447701</td><td>ANTIGEN AND ANTIBODY</td><td>swara28</td><td>clustering and minimization</td></tr><tr><td>1447699</td><td>Hamayun O8</td><td>Sidra_altaf</td><td>finalizing job</td></tr><tr><td>1447682</td><td>Chicken masala</td><td>StenyMacwan</td><td>in queue on supercomputer</td></tr><tr><td>1447677</td><td>EMcys zin</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447676</td><td>EMcys ser thr</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447675</td><td>EMcys wsc</td><td>naim13</td><td>finalizing job</td></tr><tr><td>1447674</td><td>EMcys ser car</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447673</td><td>EMcys rta</td><td>naim13</td><td>in queue on supercomputer</td></tr><tr><td>1447672</td><td>EMcys rib</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447671</td><td>EMcys pro</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447670</td><td>EMcys pol</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447669</td><td>EMcys pec</td><td>naim13</td><td>in queue on supercomputer</td></tr><tr><td>1447668</td><td>EMcys opt</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447667</td><td>EMcys mul</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447666</td><td>EMcys met</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447665</td><td>EMcys gpi</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447664</td><td>HCMV 4G8A</td><td>maryambaneshi</td><td>clustering and minimization</td></tr><tr><td>1447663</td><td>EMcys gly</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447662</td><td>EMcys fun</td><td>naim13</td><td>clustering and minimization</td></tr><tr><td>1447583</td><td>Molecular Docking</td><td>monishka.sharma123</td><td>clustering and minimization</td></tr><tr><td><a href='jobdetail.php?job=1447546'>1447546</a></td><td>Molecular Docking</td><td>piper</td><td>clustering and minimization</td></tr><tr><td><a href='jobdetail.php?job=1447536'>1447536</a></td><td>1447536</td><td>piper</td><td>clustering and minimization</td></tr><tr><td>1447522</td><td>antigen antibody</td><td>gungun</td><td>pre-docking minimization</td></tr><tr><td><a href='jobdetail.php?job=1447403'>1447403</a></td><td>CCDC25 DIMER</td><td>piper</td><td>pre-docking minimization</td></tr><tr><td>1447242</td><td>check</td><td>madfortuna</td><td>pre-docking minimization</td></tr><tr><td>1446621</td><td>Ranjana  Arvind</td><td>laugh12345</td><td>pre-docking minimization</td></tr><tr><td>1446586</td><td>Ranjana Kumari   Arvind Kumar</td><td>laugh12345</td><td>pre-docking minimization</td></tr><tr><td>1446417</td><td>Dimer</td><td>laugh12345</td><td>pre-docking minimization</td></tr><tr><td><a href='jobdetail.php?job=1446107'>1446107</a></td><td>1446107</td><td>piper</td><td>pre-docking minimization</td></tr><tr><td><a href='jobdetail.php?job=1446103'>1446103</a></td><td>1446103</td><td>piper</td><td>pre-docking minimization</td></tr><tr><td>1445593</td><td>smoc2 itgb1</td><td>jjbbffdd</td><td>pre-docking minimization</td></tr><tr><td>1444071</td><td>4KYT dimer</td><td>aloftus1</td><td>pre-docking minimization</td></tr><tr><td>1443933</td><td>2</td><td>Liu_Bo</td><td>pre-docking minimization</td></tr><tr><td>1443932</td><td>1</td><td>Liu_Bo</td><td>pre-docking minimization</td></tr><tr><td>1443639</td><td>Alpha3beta1</td><td>EvansAdu</td><td>pre-docking minimization</td></tr><tr><td>1443638</td><td>Alpha1Beta1</td><td>EvansAdu</td><td>pre-docking minimization</td></tr><tr><td>1443131</td><td>PPI GFAP Casp3</td><td>wr.prabhata</td><td>pre-docking minimization</td></tr><tr><td>1443074</td><td>il1rafc</td><td>Vignesh_Mahadev</td><td>pre-docking minimization</td></tr><tr><td>1443041</td><td>ASIL2 ASIL2</td><td>Liu_Bo</td><td>pre-docking minimization</td></tr><tr><td>1442968</td><td>123</td><td>justboy</td><td>pre-docking minimization</td></tr><tr><td>1442920</td><td>TmHU 4wj docking</td><td>Anugrah</td><td>pre-docking minimization</td></tr><tr><td>1442837</td><td>LLYRR-ACE 1</td><td>rashirastogi08</td><td>pre-docking minimization</td></tr><tr><td>1442833</td><td>LLYRR-ACE</td><td>rashirastogi08</td><td>pre-docking minimization</td></tr><tr><td>1442829</td><td>LLYRR-ACE</td><td>rashirastogi08</td><td>pre-docking minimization</td></tr><tr><td>1442804</td><td>1442804</td><td>s174125502</td><td>pre-docking minimization</td></tr><tr><td>1442757</td><td>p3_linear</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442704</td><td>human</td><td>luhan1</td><td>pre-docking minimization</td></tr><tr><td>1442689</td><td>p1_Methylation</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442688</td><td>p3_Methylation</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442687</td><td>p1_disulfid</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442686</td><td>p3_disulfid</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442684</td><td>p1_Lactam_Bridge</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442683</td><td>p3_Lactam_Bridge</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442682</td><td>p1_Photo Thiol-Ene</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442681</td><td>p3_Photo Thiol-Ene</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442680</td><td>p1_SNAr</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442679</td><td>p3_SNAr</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442678</td><td>p1_linear</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442674</td><td>p3_linear</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr><tr><td>1442673</td><td>p3_linear</td><td>ali.taghdisi</td><td>pre-docking minimization</td></tr>
+	</table>
+        </div>
+        <div id="ft">
+          ClusPro should only be used for noncommercial purposes.
+          <br/>
+          <a href='https://www.vajdalab.org' target='_blank'>Vajda Lab</a> and <a href='http://abcgroup.cluspro.org'>ABC Group</a>
+          <br/>
+          <a href='https://www.bu.edu/'>Boston University</a> and <a href='http://www.stonybrook.edu'>Stony Brook University</a>
+        </div>
+      </div>
+
+    </body>
+  </html>

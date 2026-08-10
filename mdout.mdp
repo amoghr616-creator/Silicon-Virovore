@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: root (501)
 ;	On host: Amoghs-MacBook-Air.local
-;	At date: Wed Jul 15 09:52:02 2026
+;	At date: Thu Jul 16 15:24:46 2026
 ;
 ;	Created by:
 ;	                :-) GROMACS - gmx grompp, 2026.3-Homebrew (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2026.3
 ;	Working dir:  /Users/centurion616/Desktop/Silicon-Virovore
 ;	Command line:
-;	  gmx grompp -f md.mdp -c npt.gro -t npt.cpt -p topol.top -o md.tpr
+;	  gmx grompp -f md.mdp -c npt_new.gro -t npt_new.cpt -p topol.top -o md.tpr
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -175,7 +175,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen_vel                  = no
 gen-temp                 = 300
-gen-seed                 = -641749513
+gen-seed                 = -68159493
 
 ; OPTIONS FOR BONDS    
 constraints              = h-bonds

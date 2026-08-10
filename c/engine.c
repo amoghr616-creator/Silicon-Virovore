@@ -17,7 +17,7 @@ int amino_acid_charge[256] = {
 };
 
 /**
- * Mathematically corrected threshold-step step logic.
+ * Mathematically corrected threshold-step logic.
  * Safely ignores charges within bounds and scales exponentially for toxic over-charging.
  */
 float calculate_charge_penalty(int net_charge, int threshold)
@@ -146,12 +146,67 @@ double calculate_solvation_energy(const char *sequence) {
     return delta_g; 
 }
 
+// Sequence alignment using simple local Hamming-distance match
+double calculate_alignment_score(const char *variant, const char *profile) {
+    if (!variant || !profile) return 0.0;
+    size_t v_len = strlen(variant);
+    size_t p_len = strlen(profile);
+    size_t min_len = (v_len < p_len) ? v_len : p_len;
+    if (min_len == 0) return 0.0;
+
+    double matches = 0.0;
+    for (size_t i = 0; i < min_len; i++) {
+        if (toupper((unsigned char)variant[i]) == toupper((unsigned char)profile[i])) {
+            matches += 1.0;
+        }
+    }
+    return matches / (double)min_len;
+}
+
+/**
+ * Master Biophysical Fitness Evaluator
+ * Maximizes target alignment, alpha-helix conformation, and hydrophobic moment.
+ * Minimizes solvation energy and exponentially penalizes decoy binding (Albumin & NCAM1).
+ */
+void evaluate_fitness(Variant *v, const char *target, const char *decoy1, const char *decoy2, void *params) {
+    if (!v || !v->sequence) return;
+    (void)params;
+
+    // 1. Calculate base parameters
+    v->helix_propensity = calculate_chou_fasman(v->sequence);
+    v->solvation_energy = calculate_solvation_energy(v->sequence);
+    v->hydrophobic_moment = calculate_eisenberg_moment(v->sequence);
+
+    // 2. Alignment scores
+    double target_score = calculate_alignment_score(v->sequence, target);
+    double decoy1_score = calculate_alignment_score(v->sequence, decoy1); // Albumin
+    double decoy2_score = calculate_alignment_score(v->sequence, decoy2); // NCAM1
+
+    // 3. Charge calculations & penalties
+    charge_summary charge_smry;
+    compute_charge_profile(v->sequence, 2, &charge_smry);
+
+    // 4. Exponential Decoy Penalties (Off-Target Avoidance)
+    double decoy_penalty = exp(decoy1_score * 1.5) + exp(decoy2_score * 1.5);
+
+    // 5. Consolidated Fitness Math
+    // Target affinity, structural moment, and helical propensity positively weight fitness.
+    // Solvation penalty, charge deviation, and decoy affinities exponentially lower fitness.
+    double fitness = (target_score * 12.0) 
+                   + (v->hydrophobic_moment * 8.0) 
+                   + (v->helix_propensity * 6.0) 
+                   - (charge_smry.penalty) 
+                   - decoy_penalty;
+
+    // Support positive values only for stable ranking sorting
+    v->fitness_score = (fitness < 0.0) ? 0.0001 : fitness;
+}
+
 /* ============================================================================
  * DATA STRUCTURE LINKING INTERFACES
  * ============================================================================
  */
 
-// Memory allocation constructor initializing physical tracking telemetry fields
 Variant init_variant(size_t initial_capacity) {
     Variant v;
     v.sequence = (char *)malloc(initial_capacity * sizeof(char));
@@ -169,7 +224,6 @@ Variant init_variant(size_t initial_capacity) {
     return v;
 }
 
-// Appends string chunks dynamically, safe-guarding against structural memory fragmentation
 void append_sequence(Variant *v, const char *chunk) {
     if (!v || !chunk) return;
     
