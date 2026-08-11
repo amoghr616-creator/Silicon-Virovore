@@ -1,16 +1,27 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+#include "virovore.h"
 
-// Replace these declarations with your actual function signatures from grep
-extern void init_variant(void); 
-extern double calculate_alignment_score(const char* seq);
+// Forward declaration from engine.c
+extern void evaluate_fitness(Variant *v, const char *target, const char *decoy1, const char *decoy2, void *params);
+
+#define HERV_K_ENV "MKLAVDALLVTFAGSSDKKRR"
+#define ALBUMIN "DAHKSEVAHRFKDLGEENFKALVL"
+#define NCAM1 "MLQTKDLIWTLFFLGTAVS"
+
+#define SEQ_LEN 21
+static const char AA_ALPHABET[] = "ACDEFGHIKLMNPQRSTVWY";
 
 static int is_valid_amino_acid(char c) {
-    const char *valid_aa = "ACDEFGHIKLMNPQRSTVWY";
-    return (strchr(valid_aa, toupper((unsigned char)c)) != NULL);
+    return (strchr(AA_ALPHABET, toupper((unsigned char)c)) != NULL);
 }
 
+/**
+ * Executes full biophysical evaluation from engine.c on the given candidate.
+ */
 double c_check_sequence_fitness(const char* sequence) {
     if (sequence == NULL) return -999.0;
     
@@ -23,12 +34,43 @@ double c_check_sequence_fitness(const char* sequence) {
         }
     }
     
-    // 1. Initialize any required C global tables/state
-    // init_variant(); 
-    
-    // 2. Safely call internal routines
-    // double align = calculate_alignment_score(sequence);
-    // return align;
+    // Instantiate temporary Variant structure
+    Variant v = init_variant(len + 1);
+    strcpy(v.sequence, sequence);
+    v.length = len;
 
-    return 1.0; // Baseline safe score for pipeline testing
+    // Call full biophysical evaluator in engine.c
+    evaluate_fitness(&v, HERV_K_ENV, ALBUMIN, NCAM1, NULL);
+
+    double score = v.fitness_score;
+
+    // Clean up temporary variant buffer memory
+    free(v.sequence);
+
+    return score;
+}
+
+/**
+ * C dynamic population generator
+ */
+void c_generate_mutated_population(const char* seed_sequence, char output_population[][SEQ_LEN + 1], int pop_size, double mutation_rate) {
+    if (seed_sequence == NULL || strlen(seed_sequence) != SEQ_LEN) return;
+
+    static int rand_seeded = 0;
+    if (!rand_seeded) {
+        srand((unsigned int)time(NULL));
+        rand_seeded = 1;
+    }
+
+    for (int p = 0; p < pop_size; p++) {
+        for (int i = 0; i < SEQ_LEN; i++) {
+            double r = (double)rand() / RAND_MAX;
+            if (r < mutation_rate) {
+                output_population[p][i] = AA_ALPHABET[rand() % 20];
+            } else {
+                output_population[p][i] = seed_sequence[i];
+            }
+        }
+        output_population[p][SEQ_LEN] = '\0';
+    }
 }

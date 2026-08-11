@@ -1,0 +1,61 @@
+{
+    "sequence": "QCDPLGHDKLDNFQASTVWYA",
+    "c_score": 4.6871570151492605,
+    "mean_delta_g": -5.65,
+    "strongest_anchor_delta_g": -6.8,
+    "passed_tier_2": false,
+    "fragments": [
+        {
+            "fragment": "QCDPLGHDK",
+            "delta_g": -4.9
+        },
+        {
+            "fragment": "CDPLGHDKL",
+            "delta_g": -5.2
+        },
+        {
+            "fragment": "DPLGHDKLD",
+            "delta_g": -5.1
+        },
+        {
+            "fragment": "PLGHDKLDN",
+            "delta_g": -5.2
+        },
+        {
+            "fragment": "LGHDKLDNF",
+            "delta_g": -5.5
+        },
+        {
+            "fragment": "GHDKLDNFQ",
+            "delta_g": -5.2
+        },
+        {
+            "fragment": "HDKLDNFQA",
+            "delta_g": -5.5
+        },
+        {
+            "fragment": "DKLDNFQAS",
+            "delta_g": -5.6
+        },
+        {
+            "fragment": "KLDNFQAST",
+            "delta_g": -5.7
+        },
+        {
+            "fragment": "LDNFQASTV",
+            "delta_g": -6.1
+        },
+        {
+            "fragment": "DNFQASTVW",
+            "delta_g": -6.1
+        },
+        {
+            "fragment": "NFQASTVWY",
+            "delta_g": -6.5
+        },
+        {
+            "fragment": "FQASTVWYA",
+            "delta_g": -6.8
+        }
+    ]
+}
