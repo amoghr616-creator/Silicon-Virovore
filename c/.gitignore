@@ -1,0 +1,7 @@
+
+# Exclude large binary/trajectory files
+*.mov
+*.xtc
+full_codebase.txt
+__pycache__/
+*.pyc

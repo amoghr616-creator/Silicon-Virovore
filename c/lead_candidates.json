@@ -1,0 +1,124 @@
+[
+    {
+        "sequence": "ACDEFGHIKLMNPQRSTVWYA",
+        "c_score": 1.0,
+        "mean_delta_g": -5.74,
+        "strongest_anchor_delta_g": -6.1,
+        "passed_tier_2": false,
+        "fragments": [
+            {
+                "fragment": "ACDEFGHIK",
+                "delta_g": -5.5
+            },
+            {
+                "fragment": "CDEFGHIKL",
+                "delta_g": -5.5
+            },
+            {
+                "fragment": "DEFGHIKLM",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "EFGHIKLMN",
+                "delta_g": -5.9
+            },
+            {
+                "fragment": "FGHIKLMNP",
+                "delta_g": -6.0
+            },
+            {
+                "fragment": "GHIKLMNPQ",
+                "delta_g": -5.7
+            },
+            {
+                "fragment": "HIKLMNPQR",
+                "delta_g": -5.6
+            },
+            {
+                "fragment": "IKLMNPQRS",
+                "delta_g": -5.7
+            },
+            {
+                "fragment": "KLMNPQRST",
+                "delta_g": -5.4
+            },
+            {
+                "fragment": "LMNPQRSTV",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "MNPQRSTVW",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "NPQRSTVWY",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "PQRSTVWYA",
+                "delta_g": -6.1
+            }
+        ]
+    },
+    {
+        "sequence": "KLMNPQRSTVWACDEFGHIKL",
+        "c_score": 1.0,
+        "mean_delta_g": -5.75,
+        "strongest_anchor_delta_g": -6.0,
+        "passed_tier_2": false,
+        "fragments": [
+            {
+                "fragment": "KLMNPQRST",
+                "delta_g": -5.4
+            },
+            {
+                "fragment": "LMNPQRSTV",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "MNPQRSTVW",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "NPQRSTVWA",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "PQRSTVWAC",
+                "delta_g": -5.8
+            },
+            {
+                "fragment": "QRSTVWACD",
+                "delta_g": -5.7
+            },
+            {
+                "fragment": "RSTVWACDE",
+                "delta_g": -5.6
+            },
+            {
+                "fragment": "STVWACDEF",
+                "delta_g": -6.0
+            },
+            {
+                "fragment": "TVWACDEFG",
+                "delta_g": -6.0
+            },
+            {
+                "fragment": "VWACDEFGH",
+                "delta_g": -5.9
+            },
+            {
+                "fragment": "WACDEFGHI",
+                "delta_g": -5.9
+            },
+            {
+                "fragment": "ACDEFGHIK",
+                "delta_g": -5.5
+            },
+            {
+                "fragment": "CDEFGHIKL",
+                "delta_g": -5.5
+            }
+        ]
+    }
+]
