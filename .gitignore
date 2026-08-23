@@ -1,5 +1,31 @@
-PyMOL MOVIE.mov
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Editor backup files
+#*#
+
+# Molecular dynamics
 *.xtc
-full_codebase.txt
 *.trr
 *.edr
+*.cpt
+*.log
+
+# Generated structures
+*.gro
+
+# Videos
+*.mov
+*.mp4
+
+# Archives
+*.tar
+*.tgz
