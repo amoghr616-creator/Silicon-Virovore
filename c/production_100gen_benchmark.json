@@ -1,0 +1,802 @@
+[
+  {
+    "generation": 1,
+    "best_sequence": "QCDPLGHRKLDFFYSSTVWDA",
+    "c_score": 5.837566105993177,
+    "anchor_delta_g": -9.06,
+    "composite_fitness": 16.4152,
+    "strongest_anchor": "LDFFYSSTV"
+  },
+  {
+    "generation": 2,
+    "best_sequence": "ACDPLAHIALDFFYSSTNWAN",
+    "c_score": 7.049424133003996,
+    "anchor_delta_g": -9.69,
+    "composite_fitness": 20.7112,
+    "strongest_anchor": "LAHIALDFF"
+  },
+  {
+    "generation": 3,
+    "best_sequence": "AIDPMAHIALDFFRSSTNWAN",
+    "c_score": 7.814139460247724,
+    "anchor_delta_g": -9.46,
+    "composite_fitness": 22.5985,
+    "strongest_anchor": "MAHIALDFF"
+  },
+  {
+    "generation": 4,
+    "best_sequence": "YIDPVATIALDFFRKSTAWAN",
+    "c_score": 7.5644324820853415,
+    "anchor_delta_g": -10.2,
+    "composite_fitness": 22.9959,
+    "strongest_anchor": "VATIALDFF"
+  },
+  {
+    "generation": 5,
+    "best_sequence": "YIDPVATIALDFFRKSTAWAN",
+    "c_score": 7.5644324820853415,
+    "anchor_delta_g": -10.19,
+    "composite_fitness": 22.9807,
+    "strongest_anchor": "VATIALDFF"
+  },
+  {
+    "generation": 6,
+    "best_sequence": "TIFQVATIALDFFRKLTAWAR",
+    "c_score": 8.501741458481241,
+    "anchor_delta_g": -9.91,
+    "composite_fitness": 25.3522,
+    "strongest_anchor": "VATIALDFF"
+  },
+  {
+    "generation": 7,
+    "best_sequence": "TIFQVATIALDFFRKLTAWAR",
+    "c_score": 8.501741458481241,
+    "anchor_delta_g": -9.93,
+    "composite_fitness": 25.3862,
+    "strongest_anchor": "VATIALDFF"
+  },
+  {
+    "generation": 8,
+    "best_sequence": "EIFAVALIALDFFRKLDAWAR",
+    "c_score": 9.418532331127956,
+    "anchor_delta_g": -11.12,
+    "composite_fitness": 30.3653,
+    "strongest_anchor": "IFAVALIAL"
+  },
+  {
+    "generation": 9,
+    "best_sequence": "EIFAVALIWLDFLRMLDAWAR",
+    "c_score": 9.449360919168452,
+    "anchor_delta_g": -11.37,
+    "composite_fitness": 30.9372,
+    "strongest_anchor": "IFAVALIWL"
+  },
+  {
+    "generation": 10,
+    "best_sequence": "EIFAVALIWLDFLRMLDAWAR",
+    "c_score": 9.449360919168452,
+    "anchor_delta_g": -11.21,
+    "composite_fitness": 30.6348,
+    "strongest_anchor": "IFAVALIWL"
+  },
+  {
+    "generation": 11,
+    "best_sequence": "EIFAVAAIWLQFLRMLDAWAR",
+    "c_score": 10.343350817818,
+    "anchor_delta_g": -10.9,
+    "composite_fitness": 32.8919,
+    "strongest_anchor": "IFAVAAIWL"
+  },
+  {
+    "generation": 12,
+    "best_sequence": "FYKAVAAIWEQFAEMLDHWAR",
+    "c_score": 11.747765326032578,
+    "anchor_delta_g": -9.58,
+    "composite_fitness": 34.2565,
+    "strongest_anchor": "FYKAVAAIW"
+  },
+  {
+    "generation": 13,
+    "best_sequence": "FYKAVAAIIEQFAEMVDHWAR",
+    "c_score": 11.810049075692785,
+    "anchor_delta_g": -9.9,
+    "composite_fitness": 35.1939,
+    "strongest_anchor": "FYKAVAAII"
+  },
+  {
+    "generation": 14,
+    "best_sequence": "FYKAVAAIIEQFAEMVDHWAR",
+    "c_score": 11.810049075692785,
+    "anchor_delta_g": -9.93,
+    "composite_fitness": 35.2648,
+    "strongest_anchor": "FYKAVAAII"
+  },
+  {
+    "generation": 15,
+    "best_sequence": "FYKAVAAIIEQFAEMVDHWAR",
+    "c_score": 11.810049075692785,
+    "anchor_delta_g": -9.74,
+    "composite_fitness": 34.816,
+    "strongest_anchor": "FYKAVAAII"
+  },
+  {
+    "generation": 16,
+    "best_sequence": "FYKAVYAIIEEFAESKDHWRR",
+    "c_score": 11.902824240986675,
+    "anchor_delta_g": -9.83,
+    "composite_fitness": 35.3038,
+    "strongest_anchor": "FYKAVYAII"
+  },
+  {
+    "generation": 17,
+    "best_sequence": "FKKAVYAIIEEFAESKDHWRR",
+    "c_score": 12.668256910338991,
+    "anchor_delta_g": -9.2,
+    "composite_fitness": 35.9778,
+    "strongest_anchor": "AVYAIIEEF"
+  },
+  {
+    "generation": 18,
+    "best_sequence": "FKKAVYAIVCEFAESKDHWRR",
+    "c_score": 12.265556135386571,
+    "anchor_delta_g": -10.05,
+    "composite_fitness": 36.9193,
+    "strongest_anchor": "AVYAIVCEF"
+  },
+  {
+    "generation": 19,
+    "best_sequence": "MKKFVYAVICVFAESHDKWGH",
+    "c_score": 11.03043311139665,
+    "anchor_delta_g": -12.01,
+    "composite_fitness": 37.5255,
+    "strongest_anchor": "FVYAVICVF"
+  },
+  {
+    "generation": 20,
+    "best_sequence": "MVKFVYAVIVVFAESHDKWGH",
+    "c_score": 11.057807881336071,
+    "anchor_delta_g": -12.24,
+    "composite_fitness": 38.1273,
+    "strongest_anchor": "FVYAVIVVF"
+  },
+  {
+    "generation": 21,
+    "best_sequence": "MKKFVYAVIVYFAESHDKWQH",
+    "c_score": 11.541495694399531,
+    "anchor_delta_g": -11.61,
+    "composite_fitness": 38.3408,
+    "strongest_anchor": "FVYAVIVYF"
+  },
+  {
+    "generation": 22,
+    "best_sequence": "MKKFVYAVIVCFAESHDKWQH",
+    "c_score": 11.599633469739738,
+    "anchor_delta_g": -11.88,
+    "composite_fitness": 39.1604,
+    "strongest_anchor": "FVYAVIVCF"
+  },
+  {
+    "generation": 23,
+    "best_sequence": "MKKFVAAVIVCFAESHDKWQH",
+    "c_score": 11.770252663086927,
+    "anchor_delta_g": -11.92,
+    "composite_fitness": 39.8305,
+    "strongest_anchor": "FVAAVIVCF"
+  },
+  {
+    "generation": 24,
+    "best_sequence": "AKKFVAAVLVCFAESLDKWQH",
+    "c_score": 12.352739758941713,
+    "anchor_delta_g": -11.68,
+    "composite_fitness": 41.2087,
+    "strongest_anchor": "FVAAVLVCF"
+  },
+  {
+    "generation": 25,
+    "best_sequence": "AKKFVAAVLVCFAESLDKWQH",
+    "c_score": 12.352739758941713,
+    "anchor_delta_g": -11.42,
+    "composite_fitness": 40.5664,
+    "strongest_anchor": "FVAAVLVCF"
+  },
+  {
+    "generation": 26,
+    "best_sequence": "AKKFVAAFLVCFAESLDKWQS",
+    "c_score": 12.237213707665031,
+    "anchor_delta_g": -11.91,
+    "composite_fitness": 41.3863,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 27,
+    "best_sequence": "AKKFVAAFLVCFAESLDKWQS",
+    "c_score": 12.237213707665031,
+    "anchor_delta_g": -12.15,
+    "composite_fitness": 41.9736,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 28,
+    "best_sequence": "AKKFVAAFLVCFAESLDKWQS",
+    "c_score": 12.237213707665031,
+    "anchor_delta_g": -12.06,
+    "composite_fitness": 41.7534,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 29,
+    "best_sequence": "AKKFVAAFLVCFAESLDKWQS",
+    "c_score": 12.237213707665031,
+    "anchor_delta_g": -11.78,
+    "composite_fitness": 41.0681,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 30,
+    "best_sequence": "AKKFVAAFLVCFAESLDKWQS",
+    "c_score": 12.237213707665031,
+    "anchor_delta_g": -11.75,
+    "composite_fitness": 40.9947,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 31,
+    "best_sequence": "AKKFVAAFLVCFAESWDKWQE",
+    "c_score": 12.418702066581524,
+    "anchor_delta_g": -11.78,
+    "composite_fitness": 41.6772,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 32,
+    "best_sequence": "AKKFVAAFLVCFAESLDKWQS",
+    "c_score": 12.237213707665031,
+    "anchor_delta_g": -11.96,
+    "composite_fitness": 41.5086,
+    "strongest_anchor": "FVAAFLVCF"
+  },
+  {
+    "generation": 33,
+    "best_sequence": "AKKFVAAFLVWFAESLDKWHS",
+    "c_score": 12.324012963256738,
+    "anchor_delta_g": -12.13,
+    "composite_fitness": 42.2221,
+    "strongest_anchor": "FVAAFLVWF"
+  },
+  {
+    "generation": 34,
+    "best_sequence": "AKKFVAAFLVWFAESLDKWHS",
+    "c_score": 12.324012963256738,
+    "anchor_delta_g": -11.94,
+    "composite_fitness": 41.7538,
+    "strongest_anchor": "FVAAFLVWF"
+  },
+  {
+    "generation": 35,
+    "best_sequence": "AKKFVAAFLVWFAESLDKWHS",
+    "c_score": 12.324012963256738,
+    "anchor_delta_g": -11.88,
+    "composite_fitness": 41.6059,
+    "strongest_anchor": "FVAAFLVWF"
+  },
+  {
+    "generation": 36,
+    "best_sequence": "AKKFVAAFLVWFAESLDKWHS",
+    "c_score": 12.324012963256738,
+    "anchor_delta_g": -12.18,
+    "composite_fitness": 42.3453,
+    "strongest_anchor": "FVAAFLVWF"
+  },
+  {
+    "generation": 37,
+    "best_sequence": "AKKFVCAFLVWFAESLDKWRS",
+    "c_score": 12.75305900997068,
+    "anchor_delta_g": -12.21,
+    "composite_fitness": 43.896,
+    "strongest_anchor": "FVCAFLVWF"
+  },
+  {
+    "generation": 38,
+    "best_sequence": "AKKFVCAFLVWFAESLDKWRS",
+    "c_score": 12.75305900997068,
+    "anchor_delta_g": -12.14,
+    "composite_fitness": 43.7175,
+    "strongest_anchor": "FVCAFLVWF"
+  },
+  {
+    "generation": 39,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.39,
+    "composite_fitness": 44.3993,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 40,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.53,
+    "composite_fitness": 44.7567,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 41,
+    "best_sequence": "AKKFVCAFLVIFAESLDKARS",
+    "c_score": 12.812102765783514,
+    "anchor_delta_g": -12.36,
+    "composite_fitness": 44.4836,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 42,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.28,
+    "composite_fitness": 44.1184,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 43,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.53,
+    "composite_fitness": 44.7567,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 44,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.54,
+    "composite_fitness": 44.7823,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 45,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.29,
+    "composite_fitness": 44.144,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 46,
+    "best_sequence": "FKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.809733831030314,
+    "anchor_delta_g": -12.46,
+    "composite_fitness": 44.7316,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 47,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.33,
+    "composite_fitness": 44.2461,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 48,
+    "best_sequence": "AKKFVCAFLVIFAESLDKWRS",
+    "c_score": 12.765755001944836,
+    "anchor_delta_g": -12.52,
+    "composite_fitness": 44.7312,
+    "strongest_anchor": "FVCAFLVIF"
+  },
+  {
+    "generation": 49,
+    "best_sequence": "AKKFVCALLVIFEESLDKWRS",
+    "c_score": 13.052378023543781,
+    "anchor_delta_g": -12.07,
+    "composite_fitness": 44.5608,
+    "strongest_anchor": "FVCALLVIF"
+  },
+  {
+    "generation": 50,
+    "best_sequence": "AKKFVCAFLVFFAESLDKWRS",
+    "c_score": 12.70555063997055,
+    "anchor_delta_g": -12.53,
+    "composite_fitness": 44.5457,
+    "strongest_anchor": "FVCAFLVFF"
+  },
+  {
+    "generation": 51,
+    "best_sequence": "AKKFVDAFLVIFAESSDKKRL",
+    "c_score": 13.855190551205549,
+    "anchor_delta_g": -11.44,
+    "composite_fitness": 45.5559,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 52,
+    "best_sequence": "AKKFVDAFLVIFAESSDKKRL",
+    "c_score": 13.855190551205549,
+    "anchor_delta_g": -11.65,
+    "composite_fitness": 46.1378,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 53,
+    "best_sequence": "AKKFVDAFLVIFAESSDKKRL",
+    "c_score": 13.855190551205549,
+    "anchor_delta_g": -11.59,
+    "composite_fitness": 45.9715,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 54,
+    "best_sequence": "AKKFVDAFLVIFAESSDKKRL",
+    "c_score": 13.855190551205549,
+    "anchor_delta_g": -11.31,
+    "composite_fitness": 45.1956,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 55,
+    "best_sequence": "AKKFVDAFLVIFAESSDKKRL",
+    "c_score": 13.855190551205549,
+    "anchor_delta_g": -11.27,
+    "composite_fitness": 45.0848,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 56,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRL",
+    "c_score": 14.323582468348633,
+    "anchor_delta_g": -11.47,
+    "composite_fitness": 47.1819,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 57,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRL",
+    "c_score": 14.323582468348633,
+    "anchor_delta_g": -11.53,
+    "composite_fitness": 47.3538,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 58,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRL",
+    "c_score": 14.323582468348633,
+    "anchor_delta_g": -11.58,
+    "composite_fitness": 47.497,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 59,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.28,
+    "composite_fitness": 49.1398,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 60,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 61,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.6,
+    "composite_fitness": 50.1056,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 62,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.53,
+    "composite_fitness": 49.8944,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 63,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.48,
+    "composite_fitness": 49.7434,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 64,
+    "best_sequence": "AKLFVDAFLVIFAESSDKARR",
+    "c_score": 15.104338649696416,
+    "anchor_delta_g": -11.52,
+    "composite_fitness": 49.9047,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 65,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.59,
+    "composite_fitness": 50.0755,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 66,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.64,
+    "composite_fitness": 50.2264,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 67,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.61,
+    "composite_fitness": 50.1358,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 68,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.59,
+    "composite_fitness": 50.0755,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 69,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.54,
+    "composite_fitness": 49.9245,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 70,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.64,
+    "composite_fitness": 50.2264,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 71,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.58,
+    "composite_fitness": 50.0453,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 72,
+    "best_sequence": "AKLFVDAFLVIFAESSDKFRR",
+    "c_score": 15.066338883418087,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.201,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 73,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.53,
+    "composite_fitness": 49.8944,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 74,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.62,
+    "composite_fitness": 50.166,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 75,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 76,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.48,
+    "composite_fitness": 49.7434,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 77,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.6,
+    "composite_fitness": 50.1056,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 78,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.52,
+    "composite_fitness": 49.8642,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 79,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.63,
+    "composite_fitness": 50.1962,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 80,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.6,
+    "composite_fitness": 50.1056,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 81,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 82,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.6,
+    "composite_fitness": 50.1056,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 83,
+    "best_sequence": "AKLFVDAFLVLFAESSDKKRR",
+    "c_score": 15.068667657961793,
+    "anchor_delta_g": -11.47,
+    "composite_fitness": 49.6362,
+    "strongest_anchor": "FVDAFLVLF"
+  },
+  {
+    "generation": 84,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.65,
+    "composite_fitness": 50.2566,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 85,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.64,
+    "composite_fitness": 50.2264,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 86,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.61,
+    "composite_fitness": 50.1358,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 87,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 88,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.64,
+    "composite_fitness": 50.2264,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 89,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 90,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.64,
+    "composite_fitness": 50.2264,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 91,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.65,
+    "composite_fitness": 50.2566,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 92,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.63,
+    "composite_fitness": 50.1962,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 93,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.58,
+    "composite_fitness": 50.0453,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 94,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.62,
+    "composite_fitness": 50.166,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 95,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 96,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.62,
+    "composite_fitness": 50.166,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 97,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.61,
+    "composite_fitness": 50.1358,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 98,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.61,
+    "composite_fitness": 50.1358,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 99,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.66,
+    "composite_fitness": 50.2868,
+    "strongest_anchor": "FVDAFLVIF"
+  },
+  {
+    "generation": 100,
+    "best_sequence": "AKLFVDAFLVIFAESSDKKRR",
+    "c_score": 15.09206282605513,
+    "anchor_delta_g": -11.64,
+    "composite_fitness": 50.2264,
+    "strongest_anchor": "FVDAFLVIF"
+  }
+]

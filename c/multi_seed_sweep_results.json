@@ -1,0 +1,407 @@
+[
+  {
+    "seed_name": "Native Env Target",
+    "initial_seed": "MKLAVDALLVTFAGSSDKKRR",
+    "champion": {
+      "sequence": "MKLAVFALLVFFAGSSDLIRR",
+      "c_score": 15.721514619058578,
+      "strongest_anchor": "VFALLVFFA",
+      "strongest_anchor_delta_g": -12.35,
+      "tier_triggered": "Tier 2 (AutoDock Vina Physical)",
+      "mean_delta_g": -9.58,
+      "all_anchors": [
+        {
+          "fragment": "VFALLVFFA",
+          "delta_g": -12.35,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "AVFALLVFF",
+          "delta_g": -12.03,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LAVFALLVF",
+          "delta_g": -11.68,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FALLVFFAG",
+          "delta_g": -11.51,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "ALLVFFAGS",
+          "delta_g": -10.19,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "KLAVFALLV",
+          "delta_g": -10.0,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "MKLAVFALL",
+          "delta_g": -9.94,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LLVFFAGSS",
+          "delta_g": -9.87,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LVFFAGSSD",
+          "delta_g": -9.05,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FFAGSSDLI",
+          "delta_g": -8.85,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "VFFAGSSDL",
+          "delta_g": -8.78,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FAGSSDLIR",
+          "delta_g": -5.98,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "AGSSDLIRR",
+          "delta_g": -4.34,
+          "tier": "Tier 1 (ML Surrogate)"
+        }
+      ],
+      "composite_fitness": 54.5537
+    },
+    "execution_time_s": 0.13
+  },
+  {
+    "seed_name": "Alpha-Helical Seed",
+    "initial_seed": "EALEKALKEALEKALKEALEK",
+    "champion": {
+      "sequence": "MFLAVFALLVTFAGSSDKKLR",
+      "c_score": 16.06734309026196,
+      "strongest_anchor": "FLAVFALLV",
+      "strongest_anchor_delta_g": -11.95,
+      "tier_triggered": "Tier 2 (AutoDock Vina Physical)",
+      "mean_delta_g": -8.34,
+      "all_anchors": [
+        {
+          "fragment": "FLAVFALLV",
+          "delta_g": -11.95,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "MFLAVFALL",
+          "delta_g": -11.23,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "VFALLVTFA",
+          "delta_g": -11.16,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "AVFALLVTF",
+          "delta_g": -11.0,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LAVFALLVT",
+          "delta_g": -10.55,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FALLVTFAG",
+          "delta_g": -10.44,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "ALLVTFAGS",
+          "delta_g": -9.21,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LLVTFAGSS",
+          "delta_g": -8.85,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LVTFAGSSD",
+          "delta_g": -6.51,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "VTFAGSSDK",
+          "delta_g": -5.35,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "FAGSSDKKL",
+          "delta_g": -4.81,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "TFAGSSDKK",
+          "delta_g": -4.14,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "AGSSDKKLR",
+          "delta_g": -3.17,
+          "tier": "Tier 1 (ML Surrogate)"
+        }
+      ],
+      "composite_fitness": 54.4683
+    },
+    "execution_time_s": 0.1
+  },
+  {
+    "seed_name": "Aromatic Stacking Seed",
+    "initial_seed": "YWWFARMWYAFWYAQASTVWY",
+    "champion": {
+      "sequence": "MFRAVDALLVFFAFFFDKVLR",
+      "c_score": 14.57474245380002,
+      "strongest_anchor": "LLVFFAFFF",
+      "strongest_anchor_delta_g": -13.39,
+      "tier_triggered": "Tier 2 (AutoDock Vina Physical)",
+      "mean_delta_g": -10.66,
+      "all_anchors": [
+        {
+          "fragment": "LLVFFAFFF",
+          "delta_g": -13.39,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "ALLVFFAFF",
+          "delta_g": -12.5,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LVFFAFFFD",
+          "delta_g": -12.25,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "DALLVFFAF",
+          "delta_g": -11.12,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "VFFAFFFDK",
+          "delta_g": -11.05,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FFAFFFDKV",
+          "delta_g": -10.87,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "VDALLVFFA",
+          "delta_g": -10.77,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "AVDALLVFF",
+          "delta_g": -10.76,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FAFFFDKVL",
+          "delta_g": -10.53,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "RAVDALLVF",
+          "delta_g": -9.08,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FRAVDALLV",
+          "delta_g": -8.95,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "AFFFDKVLR",
+          "delta_g": -8.71,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "MFRAVDALL",
+          "delta_g": -8.54,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        }
+      ],
+      "composite_fitness": 53.6059
+    },
+    "execution_time_s": 0.11
+  },
+  {
+    "seed_name": "Charged Amphipathic Seed",
+    "initial_seed": "KRLRDALLVTFAKRLRDKKRR",
+    "champion": {
+      "sequence": "MKLFVFAFLVFFRGSSDKLRE",
+      "c_score": 14.125924666519396,
+      "strongest_anchor": "FVFAFLVFF",
+      "strongest_anchor_delta_g": -13.45,
+      "tier_triggered": "Tier 2 (AutoDock Vina Physical)",
+      "mean_delta_g": -8.75,
+      "all_anchors": [
+        {
+          "fragment": "FVFAFLVFF",
+          "delta_g": -13.45,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LFVFAFLVF",
+          "delta_g": -12.88,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "VFAFLVFFR",
+          "delta_g": -11.6,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "KLFVFAFLV",
+          "delta_g": -11.37,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "MKLFVFAFL",
+          "delta_g": -10.8,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FAFLVFFRG",
+          "delta_g": -10.8,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "AFLVFFRGS",
+          "delta_g": -9.95,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FLVFFRGSS",
+          "delta_g": -9.25,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LVFFRGSSD",
+          "delta_g": -6.64,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "VFFRGSSDK",
+          "delta_g": -5.48,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "FFRGSSDKL",
+          "delta_g": -5.43,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "FRGSSDKLR",
+          "delta_g": -3.78,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "RGSSDKLRE",
+          "delta_g": -2.28,
+          "tier": "Tier 1 (ML Surrogate)"
+        }
+      ],
+      "composite_fitness": 52.1247
+    },
+    "execution_time_s": 0.11
+  },
+  {
+    "seed_name": "High-Hydrophobic Seed",
+    "initial_seed": "QCDPLGHDKLDNFQASTVWYA",
+    "champion": {
+      "sequence": "MELARDALRVFFAFISFFKRI",
+      "c_score": 14.527172811022702,
+      "strongest_anchor": "VFFAFISFF",
+      "strongest_anchor_delta_g": -12.8,
+      "tier_triggered": "Tier 2 (AutoDock Vina Physical)",
+      "mean_delta_g": -8.83,
+      "all_anchors": [
+        {
+          "fragment": "VFFAFISFF",
+          "delta_g": -12.8,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FFAFISFFK",
+          "delta_g": -11.28,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "ALRVFFAFI",
+          "delta_g": -11.02,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "RVFFAFISF",
+          "delta_g": -10.83,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "LRVFFAFIS",
+          "delta_g": -10.41,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "FAFISFFKR",
+          "delta_g": -9.94,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "DALRVFFAF",
+          "delta_g": -9.63,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "AFISFFKRI",
+          "delta_g": -9.37,
+          "tier": "Tier 2 (AutoDock Vina Physical)"
+        },
+        {
+          "fragment": "ARDALRVFF",
+          "delta_g": -6.8,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "RDALRVFFA",
+          "delta_g": -6.8,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "LARDALRVF",
+          "delta_g": -6.4,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "ELARDALRV",
+          "delta_g": -4.91,
+          "tier": "Tier 1 (ML Surrogate)"
+        },
+        {
+          "fragment": "MELARDALR",
+          "delta_g": -4.56,
+          "tier": "Tier 1 (ML Surrogate)"
+        }
+      ],
+      "composite_fitness": 51.7167
+    },
+    "execution_time_s": 0.11
+  }
+]
