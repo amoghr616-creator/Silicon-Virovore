@@ -4,7 +4,7 @@ import sys
 import math
 import csv
 import os
-from contact_scorer import calculate_hydrophobic_score
+from src.contact_scorer import calculate_hydrophobic_score
 
 # CHANGE THIS to match the port shown in your Arduino IDE
 SERIAL_PORT = '/dev/cu.usbmodem101' 
