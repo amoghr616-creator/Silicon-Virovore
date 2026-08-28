@@ -1,77 +1,253 @@
-****The Silicon Virovore****
+# Silicon Virovore
 
-An integrated cyber-biotic platform designed to engineer novel peptide inhibitors against Human Endogenous Retrovirus K (HERV-K) envelope proteins and monitor their biosynthesis in real time via closed-loop hardware telemetry.
-****🧬 Project Overview****
+> A computational peptide engineering platform for the rational design and in silico evaluation of peptide inhibitors targeting the Human Endogenous Retrovirus K (HERV-K) envelope protein.
 
-The Silicon Virovore is a multi-disciplinary, end-to-end therapeutic design and physical monitoring ecosystem. 
+---
 
-The project is split into two primary engines:
+## Authors
 
-**In-Silico Molecular Design Engine**: 
+**Amogh Ramesh**  
+Lead Software Engineer • Computational Biology • Pipeline Architecture
 
-Computationally engineers a custom 21-amino-acid helical peptide inhibitor to target and block the critical binding grooves of the HERV-K surface envelope protein (associated with neurodegenerative diseases).
+**Paul Vu**  
+Research Collaborator • Computational Biology • Scientific Development
 
-**Cyber-Biotic Hardware Telemetry Loop:** 
+--
 
-A physical micro-controlled bioreactor simulator that ensures peptide stability during biosynthesis. The system utilizes real-time environmental sensors and closed-loop actuation to prevent thermal denaturation (unfolding) of the engineered proteins.
-**
-🛠️ System Architecture******
+## Overview
 
-[ NCBI API / Data ] ──> [ Python Bio-Parser ] ──> [ Static C Engine (12GB Heap) ]
-                                                            │ (Docking & Design)
-                                                            ▼
-[ Python Telemetry Dashboard ] <── Serial USB ── [ Elegoo Uno R3 Board (Firmware) ]
-             │                                              │ (Closed-Loop)
-             ▼                                              ▼
-    [ Real-Time Plotting ]                     [ DHT11 Sensor & SG90 Servo Vent ]
+Silicon Virovore is a computational drug-discovery platform that integrates peptide generation, molecular docking, molecular dynamics, structural analysis, and hardware telemetry into a unified, reproducible workflow.
 
-1. Computational Software Layer
-Data Parsing: Python 3.14 utilizing the NCBI API and high-speed text-parsing libraries to fetch and structure HERV-K target sequences.
-Execution Engine: High-performance, memory-optimized C Core utilizing a static 12 GB heap array to run docking, sequence alignments, and structural predictions.
-Visualization & Analytics: * PyMOL molecular rendering engines to analyze atomic-level hydrophobic contact maps.
-Streamlit local analytics dashboard for interactive sequence mutation tracking.
+The project investigates whether computationally designed peptide inhibitors can bind conserved regions of the HERV-K envelope glycoprotein while demonstrating an end-to-end engineering pipeline suitable for rapid therapeutic candidate evaluation.
 
-2. Cyber-Physical Hardware Layer
-Microcontroller: Elegoo Uno R3 running low-level C++ firmware.
-Sensing: DHT11 digital thermistor tracking environmental temperature inside the synthesis chamber.
-Actuation: Active closed-loop physical feedback. When temperature thresholds exceed biological stability limits (≥28 C), the microcontroller:
+Although developed as an independent high school research project, the software is designed using modular software engineering principles commonly found in academic computational biology laboratories.
 
-Triggers an SG90 micro-servo to actuate a physical cooling vent.
-Illuminates a physical Red LED warning indicator.
-Telemetry Link: A Python-based Serial (pyserial) bridge that streams raw physical telemetry out of the microcontroller's USB port directly into a terminal-based live CLI dashboard.
+---
 
-**🚀 Repository Structure**
+## Motivation
 
-Code snippet
-├── src/
-│   ├── parser.py              # NCBI sequence fetcher & data parser
-│   ├── main.c                 # C-based execution core
-│   └── firmware/
-│       └── bioreactor_loop.ino # Elegoo Uno R3 Arduino firmware
-├── telemetry/
-│   └── virovore_monitor.py    # Python Serial telemetry dashboard
-├── models/
-│   └── docking.res.1.pdb      # Target receptor & peptide complex coordinates
-├── output/
-│   └── binding_pose_1.png     # High-resolution PyMOL molecular render
-└── app.py                     # Streamlit local analytics dashboard
+Human Endogenous Retrovirus K (HERV-K) is the most recently active endogenous retrovirus within the human genome and has been implicated in several pathological conditions, including certain cancers and neurodegenerative disorders.
 
-**📈 Real-Time Telemetry Interface**
+Traditional peptide discovery is experimentally intensive and time consuming.
 
-When the physical hardware loop is active, the Python telemetry engine outputs live structural integrity metrics:
+Silicon Virovore explores whether modern computational biology methods can accelerate early-stage peptide discovery through automated in silico screening before experimental validation.
 
-Bash
-==============================================================
-VIROVORE BIOREACTOR CYBER-BIOTIC MONITORING SYSTEM
-==============================================================
-[*] Successfully connected to hardware on port: /dev/cu.usbmodem14101
-[*] Waiting for incoming bioreactor telemetry...
+---
 
-[🟢 SAFE ] Temp: 24.20°C | Bioreactor Vent: CLOSED [Stable]
-[🟢 SAFE ] Temp: 24.50°C | Bioreactor Vent: CLOSED [Stable]
-[🚨 ALERT] Temp: 28.10°C | Bioreactor Vent: OPEN [Venting Heat]
-[🚨 ALERT] Temp: 28.40°C | Bioreactor Vent: OPEN [Venting Heat]
-🏆 GSEF / International Science and Engineering Fair (ISEF) Compliance
-This project is fully compliant with all ISEF Rules and Regulations:
-100% In-Silico & Mock-Hardware Design: No physical viral agents, live pathogens, or biological materials are cultured or handled. The project bypasses hazardous biological agent restrictions (no BSL-2 wet-lab approval required).
-Low-Voltage Electrical Safety: The physical monitoring loop is completely powered by low-voltage 5V DC via USB, ensuring 100% compliance with display safety rules.
+# Features
+
+- Modular computational biology pipeline
+- Evolutionary peptide optimization
+- High-performance C acceleration backend
+- Automated molecular docking workflow
+- Molecular dynamics simulation support
+- Structural visualization
+- Hardware telemetry integration
+- Interactive analysis dashboard
+- Reproducible pipeline architecture
+
+---
+
+# Computational Workflow
+
+Protein Target
+      │
+      ▼
+Sequence Processing
+      │
+      ▼
+Peptide Generation
+      │
+      ▼
+Candidate Optimization
+      │
+      ▼
+Structure Prediction
+      │
+      ▼
+Receptor Preparation
+      │
+      ▼
+Molecular Docking
+      │
+      ▼
+Pose Analysis
+      │
+      ▼
+Molecular Dynamics
+      │
+      ▼
+Scoring & Ranking
+      │
+      ▼
+Visualization & Dashboard
+```
+
+---
+
+# Repository Structure
+
+```
+Silicon-Virovore/
+
+├── src/                # Core computational pipeline
+├── c/                  # High-performance C backend
+├── configs/            # Configuration files
+├── dashboard/          # Streamlit visualization
+├── data/               # Input datasets
+├── results/            # Generated outputs
+├── figures/            # Images for documentation
+├── docs/               # Technical documentation
+├── firmware/           # Arduino telemetry system
+├── tests/              # Unit and integration tests
+└── README.md
+```
+
+---
+
+# Software Architecture
+
+Silicon Virovore is organized as a modular workflow in which each stage performs a single computational task.
+
+Each module produces standardized outputs that serve as inputs to the next stage, allowing the pipeline to remain reproducible, maintainable, and extensible.
+
+The computational architecture separates
+
+- biological data processing
+- optimization algorithms
+- structural prediction
+- docking
+- molecular dynamics
+- visualization
+- hardware monitoring
+
+into independent components.
+
+---
+
+# Technologies
+
+| Category | Software |
+|----------|----------|
+| Language | Python |
+| Systems Programming | C |
+| Structural Biology | PyMOL |
+| Docking | AutoDock Vina |
+| Molecular Dynamics | GROMACS |
+| Bioinformatics | Biopython |
+| Data Analysis | NumPy, Pandas |
+| Visualization | Matplotlib |
+| Dashboard | Streamlit |
+| Embedded Systems | Arduino |
+
+---
+
+# Installation
+
+Clone the repository
+
+```bash
+git clone https://github.com/yourusername/Silicon-Virovore.git
+cd Silicon-Virovore
+```
+
+Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Compile the C backend
+
+```bash
+make
+```
+
+Run the pipeline
+
+```bash
+python run_pipeline.py
+```
+
+Launch the dashboard
+
+```bash
+streamlit run dashboard/app.py
+```
+
+---
+
+# Example Outputs
+
+The pipeline produces
+
+- ranked peptide candidates
+- docking affinity tables
+- docking poses
+- RMSD trajectories
+- RMSF analyses
+- contact maps
+- structural visualizations
+- interactive dashboards
+
+Example output files are located in
+
+```
+results/
+```
+
+---
+
+# Engineering Highlights
+
+- Modular software architecture
+- Native C acceleration
+- Automated computational workflow
+- Reproducible analysis pipeline
+- Cross-platform design
+- Integrated visualization tools
+- Hardware/software co-design
+
+---
+
+# Scientific Limitations
+
+Silicon Virovore performs computational hypothesis generation only.
+
+Docking scores and molecular dynamics simulations should not be interpreted as experimental evidence of therapeutic efficacy.
+
+Experimental validation, including biochemical binding assays and cell-based studies, is required to evaluate biological activity.
+
+---
+
+# Future Work
+
+Planned improvements include
+
+- machine-learning-assisted peptide generation
+- multi-objective evolutionary optimization
+- GPU acceleration
+- expanded structural databases
+- AlphaFold integration improvements
+- experimental validation
+- automated statistical benchmarking
+
+---
+
+# Citation
+
+If you use Silicon Virovore in academic work, please cite the repository or contact the author.
+
+---
+
+# License
+
+MIT License
+
+---
+
+# Acknowledgments
+
+This project was developed as an independent computational biology and software engineering research project.
+
+The author acknowledges the developers of open-source scientific software including Biopython, AutoDock Vina, GROMACS, PyMOL, Streamlit, and the broader computational biology community.
