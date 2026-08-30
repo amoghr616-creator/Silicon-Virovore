@@ -1,7 +1,7 @@
 import json
 import time
-from bridge import generate_c_population, process_candidate_peptide
-from docking_vina import PeptideDockingScorer
+from .bridge import generate_c_population, process_candidate_peptide
+from src.docking_vina import PeptideDockingScorer
 
 def calculate_composite_fitness(c_score: float, anchor_dg: float) -> float:
     if c_score <= 0.01:

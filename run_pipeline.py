@@ -1,204 +1,129 @@
 """
-Silicon Virovore
-================
+run_pipeline.py
 
-Master Pipeline
-
-Author:
-    Amogh Ramesh
-    Paul Vu
-
-Purpose:
-    Orchestrates the complete Silicon Virovore computational workflow.
-
-Future pipeline:
-
-    Load configuration
-        ↓
-    Prepare receptor
-        ↓
-    Generate peptides
-        ↓
-    Optimize candidates
-        ↓
-    Predict structures
-        ↓
-    Molecular docking
-        ↓
-    Contact analysis
-        ↓
-    Molecular dynamics
-        ↓
-    Rank candidates
-        ↓
-    Generate report
-        ↓
-    Launch dashboard (optional)
+Master execution pipeline for Silicon Virovore.
 """
 
-from pathlib import Path
-from datetime import datetime
-import time
+from __future__ import annotations
+
 import logging
-import sys
+import time
+
+from src.population_runner import generate_candidates
+from src.predict_structure import predict_population_structures
+from src.docking_vina import PeptideDockingScorer
+from src.ranking import CandidateRanker
+from src.analysis import AnalysisEngine
+from src.report import ReportGenerator
+from src.plots import PlotGenerator
+
+from src.config import (
+    RESULTS_DIR,
+    DEFAULT_SEED_SEQUENCE,
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
-# --------------------------------------------------------
-# Configuration
-# --------------------------------------------------------
-
-PROJECT_ROOT = Path(__file__).resolve().parent
-
-RESULTS = PROJECT_ROOT / "results"
-LOGS = RESULTS / "logs"
-REPORTS = RESULTS / "reports"
-FIGURES = RESULTS / "figures"
-
-
-# --------------------------------------------------------
-# Utility Functions
-# --------------------------------------------------------
-
-def create_directories():
-    """Create output directories if they do not already exist."""
-
-    RESULTS.mkdir(exist_ok=True)
-    LOGS.mkdir(exist_ok=True)
-    REPORTS.mkdir(exist_ok=True)
-    FIGURES.mkdir(exist_ok=True)
-
-
-def configure_logging():
-
-    logfile = LOGS / f"pipeline_{datetime.now():%Y%m%d_%H%M%S}.log"
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-        handlers=[
-            logging.FileHandler(logfile),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-
-
-def banner():
-
-    print("=" * 60)
-    print("Silicon Virovore")
-    print("Computational Peptide Engineering Platform")
-    print("=" * 60)
-    print()
-
-
-def stage(name):
-
-    logging.info(f"Starting: {name}")
-
-
-def finish(name):
-
-    logging.info(f"Finished: {name}")
-
-
-# --------------------------------------------------------
-# Pipeline Stages
-# --------------------------------------------------------
-
-def prepare_receptor():
-    stage("Prepare Receptor")
-
-    # TODO
-    # Call prepare.py
-
-    finish("Prepare Receptor")
-
-
-def generate_peptides():
-    stage("Generate Peptides")
-
-    # TODO
-    # population_runner.py
-
-    finish("Generate Peptides")
-
-
-def predict_structures():
-    stage("Predict Structures")
-
-    # TODO
-
-    finish("Predict Structures")
-
-
-def run_docking():
-    stage("Molecular Docking")
-
-    # TODO
-    # docking_vina.py
-
-    finish("Molecular Docking")
-
-
-def analyze_results():
-    stage("Analyze Results")
-
-    # TODO
-
-    finish("Analyze Results")
-
-
-def run_md():
-    stage("Molecular Dynamics")
-
-    # TODO
-
-    finish("Molecular Dynamics")
-
-
-def generate_report():
-    stage("Generate Report")
-
-    # TODO
-
-    finish("Generate Report")
-
-
-# --------------------------------------------------------
-# Main
-# --------------------------------------------------------
-
-def main():
+def run_pipeline():
 
     start = time.time()
 
-    banner()
+    logger.info("===================================")
+    logger.info("Silicon Virovore")
+    logger.info("Pipeline Started")
+    logger.info("===================================")
 
-    create_directories()
+    # ------------------------------------------------------
+    # Population Generation
+    # ------------------------------------------------------
 
-    configure_logging()
+    logger.info("Generating candidates...")
 
-    logging.info("Pipeline initialized.")
+    candidates = generate_candidates(
+        DEFAULT_SEED_SEQUENCE,
+    )
 
-    prepare_receptor()
+    # ------------------------------------------------------
+    # Structure Prediction
+    # ------------------------------------------------------
 
-    generate_peptides()
+    logger.info("Predicting structures...")
 
-    predict_structures()
+    candidates = predict_population_structures(
+        candidates
+    )
 
-    run_docking()
+    # ------------------------------------------------------
+    # Docking
+    # ------------------------------------------------------
 
-    analyze_results()
+    logger.info("Running docking...")
 
-    run_md()
+    scorer = PeptideDockingScorer()
 
-    generate_report()
+    docked = []
 
-    elapsed = time.time() - start
+    for candidate in candidates:
+        docked.append(
+            scorer.evaluate_candidate(candidate)
+        )
 
-    logging.info(f"Pipeline completed successfully.")
-    logging.info(f"Elapsed time: {elapsed:.2f} seconds")
+    # ------------------------------------------------------
+    # Ranking
+    # ------------------------------------------------------
+
+    logger.info("Ranking candidates...")
+
+    ranked = CandidateRanker().rank(
+        docked
+    )
+
+    # ------------------------------------------------------
+    # Scientific Analysis
+    # ------------------------------------------------------
+
+    runtime = time.time() - start
+
+    report = AnalysisEngine().analyze(
+        ranked,
+        runtime_seconds=runtime,
+    )
+
+    # ------------------------------------------------------
+    # Figures
+    # ------------------------------------------------------
+
+    logger.info("Generating figures...")
+
+    PlotGenerator(
+        RESULTS_DIR,
+    ).generate_all(
+        ranked,
+        [c.overall_score for c in ranked],
+    )
+
+    # ------------------------------------------------------
+    # Report
+    # ------------------------------------------------------
+
+    logger.info("Generating report...")
+
+    ReportGenerator(
+        RESULTS_DIR,
+    ).export(report)
+
+    logger.info("===================================")
+    logger.info("Pipeline Complete")
+    logger.info("Runtime %.2f sec", runtime)
+    logger.info("===================================")
 
 
 if __name__ == "__main__":
-    main()
+
+    run_pipeline()

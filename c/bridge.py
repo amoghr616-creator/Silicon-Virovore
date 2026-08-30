@@ -1,55 +1,154 @@
+"""
+bridge.py
+
+Python interface to the Silicon Virovore native C backend.
+"""
+
+from pathlib import Path
 import ctypes
-import os
+import platform
 
-# Load shared library
-lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "libsafety.so"))
-c_lib = ctypes.CDLL(lib_path)
+from pathlib import Path
+import sys
 
-# Configure argument & return types for safety check
-c_lib.c_check_sequence_fitness.argtypes = [ctypes.c_char_p]
-c_lib.c_check_sequence_fitness.restype = ctypes.c_double
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
-# Configure types for dynamic C population generator
-SEQ_LEN = 21
-POP_SIZE = 10
-PopulationArray = (ctypes.c_char * (SEQ_LEN + 1)) * POP_SIZE
+from src.models import Candidate
+from src.config import (
+    PEPTIDE_FRAGMENT_SIZE,
+    POPULATION_SIZE,
+    MUTATION_RATE,
+)
 
-c_lib.c_generate_mutated_population.argtypes = [
-    ctypes.c_char_p,
-    PopulationArray,
-    ctypes.c_int,
-    ctypes.c_double
-]
-c_lib.c_generate_mutated_population.restype = None
+# ==========================================================
+# Locate Native Library
+# ==========================================================
 
-def generate_c_population(seed_seq: str, pop_size: int = 10, mutation_rate: float = 0.15) -> list[str]:
-    """
-    Calls the native C PRNG engine to mutate a seed candidate sequence directly in memory.
-    """
-    pop_buffer = PopulationArray()
-    c_lib.c_generate_mutated_population(
-        seed_seq.encode('utf-8'),
-        pop_buffer,
-        pop_size,
-        mutation_rate
+ROOT = Path(__file__).resolve().parent
+
+SYSTEM = platform.system()
+
+if SYSTEM == "Darwin":
+    library_candidates = [
+        ROOT / "libsafety.dylib",
+        ROOT / "libsafety.so",
+    ]
+elif SYSTEM == "Linux":
+    library_candidates = [
+        ROOT / "libsafety.so",
+    ]
+else:
+    raise RuntimeError(f"Unsupported operating system: {SYSTEM}")
+
+LIB_PATH = next((p for p in library_candidates if p.exists()), None)
+
+if LIB_PATH is None:
+    raise FileNotFoundError(
+        "Could not locate the Silicon Virovore native backend.\n"
+        "Run `make` before executing the pipeline."
     )
-    return [pop_buffer[i].value.decode('utf-8') for i in range(pop_size)]
 
-def run_c_safety_scan(sequence: str, threshold: float = 0.0) -> tuple[bool, float]:
-    score = c_lib.c_check_sequence_fitness(sequence.encode('utf-8'))
-    return (score >= threshold), score
+lib = ctypes.CDLL(str(LIB_PATH))
 
-def slice_into_9mers(sequence: str, window_size: int = 9) -> list[str]:
-    if len(sequence) < window_size:
-        return []
-    return [sequence[i:i + window_size] for i in range(len(sequence) - window_size + 1)]
+print(f"[Bridge] Loaded native backend: {LIB_PATH.name}")
 
-def process_candidate_peptide(sequence: str) -> dict | None:
-    is_safe, score = run_c_safety_scan(sequence)
-    if not is_safe:
-        return None
-    return {
-        "sequence": sequence,
-        "c_score": score,
-        "fragments": slice_into_9mers(sequence)
-    }
+# ==========================================================
+# Constants
+# ==========================================================
+
+SEQ_LEN = 21
+FRAGMENT_SIZE = PEPTIDE_FRAGMENT_SIZE
+
+# ==========================================================
+# C Function Signatures
+# ==========================================================
+
+lib.c_check_sequence_fitness.argtypes = [
+    ctypes.c_char_p,
+]
+lib.c_check_sequence_fitness.restype = ctypes.c_double
+
+PopulationArray = (
+    (ctypes.c_char * (SEQ_LEN + 1))
+)
+
+lib.c_generate_mutated_population.restype = None
+
+# ==========================================================
+# Python Wrappers
+# ==========================================================
+
+def process_candidate_peptide(sequence: str) -> Candidate:
+    """
+    Evaluate a peptide using the native C backend.
+
+    Returns
+    -------
+    Candidate
+        Shared pipeline data model.
+    """
+
+    sequence = sequence.upper()
+
+    if len(sequence) != SEQ_LEN:
+        raise ValueError(
+            f"Sequence must be exactly {SEQ_LEN} amino acids."
+        )
+
+    score = lib.c_check_sequence_fitness(
+        sequence.encode("utf-8")
+    )
+
+    fragments = [
+        sequence[i:i + FRAGMENT_SIZE]
+        for i in range(len(sequence) - FRAGMENT_SIZE + 1)
+    ]
+
+    return Candidate(
+        sequence=sequence,
+        c_score=score,
+        fragments=fragments,
+    )
+
+def generate_c_population(
+    seed_sequence: str,
+    pop_size: int = POPULATION_SIZE,
+    mutation_rate: float = MUTATION_RATE,
+) -> list[str]:
+    """
+    Generate a mutated peptide population using the native C engine.
+    """
+
+    seed_sequence = seed_sequence.upper()
+
+    if len(seed_sequence) != SEQ_LEN:
+        raise ValueError(
+            f"Seed sequence must be {SEQ_LEN} amino acids."
+        )
+
+    PopulationType = (
+        (ctypes.c_char * (SEQ_LEN + 1))
+        * pop_size
+    )
+
+    population = PopulationType()
+
+    lib.c_generate_mutated_population.argtypes = [
+        ctypes.c_char_p,
+        PopulationType,
+        ctypes.c_int,
+        ctypes.c_double,
+    ]
+
+    lib.c_generate_mutated_population(
+        seed_sequence.encode("utf-8"),
+        population,
+        pop_size,
+        mutation_rate,
+    )
+
+    return [
+        population[i].value.decode("utf-8")
+        for i in range(pop_size)
+    ]

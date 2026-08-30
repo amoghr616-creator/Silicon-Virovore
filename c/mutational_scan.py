@@ -1,6 +1,6 @@
 # mutational_scan.py
-from bridge import process_candidate_peptide
-from docking_vina import PeptideDockingScorer
+from .bridge import process_candidate_peptide
+from src.docking_vina import PeptideDockingScorer
 
 AA_POOL = "ACDEFGHIKLMNPQRSTVWY"
 CHAMPION = "MKLAVFALLVFFAGSSDLIRR"
