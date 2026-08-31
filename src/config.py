@@ -44,6 +44,17 @@ RECEPTOR_PDB = RECEPTOR_DIR / "herv_k_env.pdb"
 
 CLEAN_RECEPTOR = RESULTS_DIR / "receptor" / "clean_env.pdb"
 
+# ============================================================
+# Initial Peptide
+# ============================================================
+
+DEFAULT_SEED_SEQUENCE = "ACDEFGHIKLMNPQRSTVWYA"
+
+PEPTIDE_LENGTH = 21
+
+AMINO_ACIDS = (
+    "ACDEFGHIKLMNPQRSTVWY"
+)
 
 # ============================================================
 # Evolutionary Algorithm
@@ -127,6 +138,9 @@ GENERATE_REPORT = True
 
 GENERATE_PLOTS = True
 
+seed_sequence: str = DEFAULT_SEED_SEQUENCE
+
+peptide_length: int = PEPTIDE_LENGTH
 
 # ============================================================
 # Optional Future Features

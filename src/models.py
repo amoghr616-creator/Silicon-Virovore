@@ -26,104 +26,101 @@ class Candidate:
     Represents one peptide throughout the entire pipeline.
     """
 
+    # ============================================================
     # Identity
+    # ============================================================
+
     sequence: str
 
-    # Native backend
+    # ============================================================
+    # Native Backend
+    # ============================================================
+
     c_score: float = 0.0
 
     # ============================================================
-# Docking
-# ============================================================
+    # Pipeline Notes
+    # ============================================================
+
+    notes: list[str] = field(default_factory=list)
+
+    # ============================================================
+    # Docking
+    # ============================================================
 
     mean_delta_g: float | None = None
-
     strongest_anchor_delta_g: float | None = None
-
     passed_tier_2: bool = False
-
     vina_delta_g: float | None = None
 
     docking_scores: list[float] = field(default_factory=list)
-
     fragment_scores: dict[str, float] = field(default_factory=dict)
-
     best_fragment: str | None = None
 
     # ============================================================
-# Native Biophysical Metrics
-# ============================================================
+    # Native Biophysical Metrics
+    # ============================================================
 
     hydrophobic_moment: float = 0.0
-
     helix_propensity: float = 0.0
-
     solvation_energy: float = 0.0
 
     net_charge: float | None = None
-
     hydropathy_index: float | None = None
 
     # ============================================================
-# Molecular Dynamics
-# ============================================================
+    # Molecular Dynamics
+    # ============================================================
 
     rmsd: float | None = None
-
     rmsf: float | None = None
-
     radius_of_gyration: float | None = None
+    md_stability_score: float | None = None
 
-    md_stability_score: float | None = None 
-
-        # ============================================================
-# Safety Prediction
-# ============================================================
+    # ============================================================
+    # Safety Prediction
+    # ============================================================
 
     toxicity_score: float | None = None
-
     hemolysis_score: float | None = None
-
     immunogenicity_score: float | None = None
 
     # ============================================================
-# Ranking
-# ============================================================
+    # Ranking
+    # ============================================================
 
     confidence: float = 1.0
-
     overall_score: float = 0.0
-
-    ank: int = 0
+    rank: int = 0
 
     ranking_breakdown: dict[str, float] = field(default_factory=dict)
 
     # ============================================================
-# Structure Prediction
-# ============================================================
+    # Structure Prediction
+    # ============================================================
 
     structure_path: Path | None = None
-
-# ESMFold / Boltz confidence
     structure_confidence: float | None = None
-
-# Optional future metrics
     predicted_tm_score: float | None = None
-    # Sliding-window fragments
+
     fragments: list[str] = field(default_factory=list)
 
-        # ============================================================
-# Provenance
-# ============================================================
+    # ============================================================
+    # Provenance
+    # ============================================================
 
     created_at: str = ""
-
     updated_at: str = ""
 
-    # Arbitrary metadata
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    # ============================================================
+    # Methods
+    # ============================================================
 
+    def add_note(self, text: str) -> None:
+        """Append a pipeline note."""
+        self.notes.append(text)
 # ============================================================
 # Ranked Candidate
 # ============================================================

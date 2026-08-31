@@ -90,8 +90,7 @@ class PeptideDockingScorer:
 
     # --------------------------------------------------
 
-    def evaluate(self, candidate: Candidate):
-
+    def evaluate_candidate(self, candidate: Candidate):
         logger.info(
             "Docking %s",
             candidate.sequence,
@@ -142,3 +141,10 @@ class PeptideDockingScorer:
             candidate.vina_delta_g = None
 
         return candidate
+    # --------------------------------------------------
+
+def evaluate(self, candidate: Candidate):
+    """
+    Backwards-compatible alias.
+    """
+    return self.evaluate_candidate(candidate)
