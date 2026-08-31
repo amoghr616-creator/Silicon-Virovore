@@ -268,3 +268,13 @@ class PipelineConfig:
     receptor_path: Path | None = None
 
     output_directory: Path | None = None
+
+@dataclass(slots=True)
+class PositionStatistics:
+
+    observations: int = 0
+    cumulative_score: float = 0.0
+    importance: float = 0.0
+
+    mutations: int = 0
+    successful_mutations: int = 0

@@ -9,15 +9,15 @@ Top Candidates: 100
 
 ## Rank 1
 
-- Sequence: `ACDEFDHIKLMNPGFSTVWYA`
+- Sequence: `ACDEFGHIKLMNPLRSIFWYA`
 
-- Overall Score: 1.0000
+- Overall Score: 0.9501
 
-- Native Fitness: 6.2670
+- Native Fitness: 4.9886
 
-- Best ΔG: -6.5
+- Best ΔG: -6.7
 
-- Mean ΔG: -5.91
+- Mean ΔG: -6.04
 
 - Confidence: 1.000
 
@@ -25,15 +25,15 @@ Top Candidates: 100
 
 ## Rank 2
 
-- Sequence: `AGDEFQHIKLMNPQISTVWYA`
+- Sequence: `ACDVFGHIKLMYPQRSTVWYA`
 
-- Overall Score: 0.9061
+- Overall Score: 0.8935
 
-- Native Fitness: 5.4849
+- Native Fitness: 4.5410
 
-- Best ΔG: -6.5
+- Best ΔG: -6.6
 
-- Mean ΔG: -5.95
+- Mean ΔG: -6.07
 
 - Confidence: 1.000
 
@@ -41,15 +41,15 @@ Top Candidates: 100
 
 ## Rank 3
 
-- Sequence: `ACDEFGAIKLMNPVRSTVWYA`
+- Sequence: `ACDEFGHISLMNAQRSTVWYA`
 
-- Overall Score: 0.8617
+- Overall Score: 0.8819
 
-- Native Fitness: 5.4719
+- Native Fitness: 5.6001
 
 - Best ΔG: -6.4
 
-- Mean ΔG: -6.14
+- Mean ΔG: -6.02
 
 - Confidence: 1.000
 
@@ -57,13 +57,13 @@ Top Candidates: 100
 
 ## Rank 4
 
-- Sequence: `ACDEFGHIKLMNPQLSTVWYA`
+- Sequence: `ACDRFGHIKLMNAQRSTVYYA`
 
-- Overall Score: 0.8594
+- Overall Score: 0.8774
 
-- Native Fitness: 5.0956
+- Native Fitness: 5.5134
 
-- Best ΔG: -6.5
+- Best ΔG: -6.4
 
 - Mean ΔG: -5.95
 
@@ -73,11 +73,11 @@ Top Candidates: 100
 
 ## Rank 5
 
-- Sequence: `ACDEFGHIALMNPQRSTVWAA`
+- Sequence: `ACDEFGHIALMNPQRSTVWYA`
 
-- Overall Score: 0.8472
+- Overall Score: 0.8525
 
-- Native Fitness: 5.3517
+- Native Fitness: 5.0330
 
 - Best ΔG: -6.4
 
@@ -89,15 +89,15 @@ Top Candidates: 100
 
 ## Rank 6
 
-- Sequence: `ACDEFGHDKLMNPQRSFVWYA`
+- Sequence: `ACDEFGHIKLYNPQRSMVWYA`
 
-- Overall Score: 0.8357
+- Overall Score: 0.8265
 
-- Native Fitness: 5.2559
+- Native Fitness: 4.5344
 
 - Best ΔG: -6.4
 
-- Mean ΔG: -5.61
+- Mean ΔG: -5.85
 
 - Confidence: 1.000
 
@@ -105,11 +105,11 @@ Top Candidates: 100
 
 ## Rank 7
 
-- Sequence: `ACDEFGHIVLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIYLMNPCRSTVWYA`
 
-- Overall Score: 0.8112
+- Overall Score: 0.8220
 
-- Native Fitness: 5.0518
+- Native Fitness: 4.4464
 
 - Best ΔG: -6.4
 
@@ -121,15 +121,15 @@ Top Candidates: 100
 
 ## Rank 8
 
-- Sequence: `ACDEFGHIVLMNPQRSTVWYA`
+- Sequence: `AGIEFGHIKLMNPQRVTVWYA`
 
-- Overall Score: 0.8112
+- Overall Score: 0.8080
 
-- Native Fitness: 5.0518
+- Native Fitness: 4.1785
 
 - Best ΔG: -6.4
 
-- Mean ΔG: -6.02
+- Mean ΔG: -5.97
 
 - Confidence: 1.000
 
@@ -137,15 +137,15 @@ Top Candidates: 100
 
 ## Rank 9
 
-- Sequence: `ACDEFGHIKLMFPQRSTVWYA`
+- Sequence: `ACDEFGHITLMNPQRSTKWYA`
 
-- Overall Score: 0.8079
+- Overall Score: 0.8000
 
-- Native Fitness: 5.3812
+- Native Fitness: 5.9480
 
-- Best ΔG: -6.3
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.95
+- Mean ΔG: -5.68
 
 - Confidence: 1.000
 
@@ -153,15 +153,15 @@ Top Candidates: 100
 
 ## Rank 10
 
-- Sequence: `ACDEFGHIKLVNLQRSTQWYA`
+- Sequence: `ACDEFWHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.8064
+- Overall Score: 0.7984
 
-- Native Fitness: 5.3683
+- Native Fitness: 4.6336
 
 - Best ΔG: -6.3
 
-- Mean ΔG: -5.85
+- Mean ΔG: -5.88
 
 - Confidence: 1.000
 
@@ -169,15 +169,15 @@ Top Candidates: 100
 
 ## Rank 11
 
-- Sequence: `ACDEFGHIWLMNPQRSTVWYA`
+- Sequence: `ACDEFFHIKLMNPQGSTVWYA`
 
-- Overall Score: 0.7919
+- Overall Score: 0.7930
 
-- Native Fitness: 4.8910
+- Native Fitness: 4.5297
 
-- Best ΔG: -6.4
+- Best ΔG: -6.3
 
-- Mean ΔG: -6.02
+- Mean ΔG: -5.93
 
 - Confidence: 1.000
 
@@ -185,15 +185,15 @@ Top Candidates: 100
 
 ## Rank 12
 
-- Sequence: `ACDEFGHIYLMNPQRSTVWYA`
+- Sequence: `ACDEFGHCKLAFPQRSTVWYA`
 
-- Overall Score: 0.7704
+- Overall Score: 0.7738
 
-- Native Fitness: 4.7113
+- Native Fitness: 5.4438
 
-- Best ΔG: -6.4
+- Best ΔG: -6.1
 
-- Mean ΔG: -6.02
+- Mean ΔG: -5.76
 
 - Confidence: 1.000
 
@@ -201,11 +201,75 @@ Top Candidates: 100
 
 ## Rank 13
 
-- Sequence: `ACDEFGHIKLMNPQSSTVWYA`
+- Sequence: `ACDEFGHLKLMNPQRSTVWYA`
 
-- Overall Score: 0.7435
+- Overall Score: 0.7622
 
-- Native Fitness: 5.2017
+- Native Fitness: 5.2209
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 14
+
+- Sequence: `ACDEFGHIKKRNPQRSTVWYA`
+
+- Overall Score: 0.7541
+
+- Native Fitness: 5.0647
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.18
+
+- Confidence: 1.000
+
+
+
+## Rank 15
+
+- Sequence: `ACDEFGHIKLMNPGRSTVWYL`
+
+- Overall Score: 0.7538
+
+- Native Fitness: 5.0596
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 16
+
+- Sequence: `ACDEFGHIKLMNPQRSTKWYA`
+
+- Overall Score: 0.7514
+
+- Native Fitness: 5.6550
+
+- Best ΔG: -6.0
+
+- Mean ΔG: -5.62
+
+- Confidence: 1.000
+
+
+
+## Rank 17
+
+- Sequence: `ACDKFGHIKLMNPQTSTVWYA`
+
+- Overall Score: 0.7497
+
+- Native Fitness: 4.3395
 
 - Best ΔG: -6.2
 
@@ -215,81 +279,17 @@ Top Candidates: 100
 
 
 
-## Rank 14
-
-- Sequence: `ALDEFGHIKLMAPPRSTVWYA`
-
-- Overall Score: 0.7211
-
-- Native Fitness: 4.6584
-
-- Best ΔG: -6.3
-
-- Mean ΔG: -5.99
-
-- Confidence: 1.000
-
-
-
-## Rank 15
-
-- Sequence: `ACDEFGHIKLMNPQFSTSWYA`
-
-- Overall Score: 0.7199
-
-- Native Fitness: 5.0049
-
-- Best ΔG: -6.2
-
-- Mean ΔG: -5.86
-
-- Confidence: 1.000
-
-
-
-## Rank 16
-
-- Sequence: `APDEFIHIKLMNPQRSTVWYA`
-
-- Overall Score: 0.7139
-
-- Native Fitness: 4.5984
-
-- Best ΔG: -6.3
-
-- Mean ΔG: -5.88
-
-- Confidence: 1.000
-
-
-
-## Rank 17
-
-- Sequence: `ACDEFGYIKLMNPQRSTVWYA`
-
-- Overall Score: 0.7039
-
-- Native Fitness: 4.1581
-
-- Best ΔG: -6.4
-
-- Mean ΔG: -5.95
-
-- Confidence: 1.000
-
-
-
 ## Rank 18
 
-- Sequence: `ACDEFVHIKLMHPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPLRSTVWEA`
 
-- Overall Score: 0.7004
+- Overall Score: 0.7424
 
-- Native Fitness: 4.8423
+- Native Fitness: 4.8388
 
-- Best ΔG: -6.2
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.81
+- Mean ΔG: -5.86
 
 - Confidence: 1.000
 
@@ -297,15 +297,15 @@ Top Candidates: 100
 
 ## Rank 19
 
-- Sequence: `ACDLFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLQNPQRSTVWYA`
 
-- Overall Score: 0.6948
+- Overall Score: 0.7416
 
-- Native Fitness: 4.4394
+- Native Fitness: 4.8237
 
-- Best ΔG: -6.3
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.86
+- Mean ΔG: -5.53
 
 - Confidence: 1.000
 
@@ -313,15 +313,15 @@ Top Candidates: 100
 
 ## Rank 20
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWYR`
+- Sequence: `ACDEFGHIKLMNPQRSTVWVA`
 
-- Overall Score: 0.6945
+- Overall Score: 0.7373
 
-- Native Fitness: 5.5075
+- Native Fitness: 4.7422
 
-- Best ΔG: -6.0
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.71
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -329,15 +329,15 @@ Top Candidates: 100
 
 ## Rank 21
 
-- Sequence: `AWDEFGHIPLMNPQPSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTAWYA`
 
-- Overall Score: 0.6779
+- Overall Score: 0.7347
 
-- Native Fitness: 4.6553
+- Native Fitness: 4.6914
 
-- Best ΔG: -6.2
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.91
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -345,15 +345,15 @@ Top Candidates: 100
 
 ## Rank 22
 
-- Sequence: `ACDWFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWWA`
 
-- Overall Score: 0.6773
+- Overall Score: 0.7340
 
-- Native Fitness: 4.2935
+- Native Fitness: 4.6776
 
-- Best ΔG: -6.3
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.86
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -361,15 +361,15 @@ Top Candidates: 100
 
 ## Rank 23
 
-- Sequence: `ACDEFGHIKLMNPQRYTVWYA`
+- Sequence: `ACREFGHIKCMNPQRSTVWYA`
 
-- Overall Score: 0.6692
+- Overall Score: 0.7330
 
-- Native Fitness: 3.8690
+- Native Fitness: 4.6583
 
-- Best ΔG: -6.4
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.88
+- Mean ΔG: -5.53
 
 - Confidence: 1.000
 
@@ -377,185 +377,9 @@ Top Candidates: 100
 
 ## Rank 24
 
-- Sequence: `ACDERGHIKLMNPQRSTVWYA`
-
-- Overall Score: 0.6617
-
-- Native Fitness: 4.8774
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.58
-
-- Confidence: 1.000
-
-
-
-## Rank 25
-
-- Sequence: `ACDEFGHHKLMNPQRSTVWYA`
-
-- Overall Score: 0.6585
-
-- Native Fitness: 4.8507
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.49
-
-- Confidence: 1.000
-
-
-
-## Rank 26
-
-- Sequence: `ACDEFGHHKLMNPQRSTVWYA`
-
-- Overall Score: 0.6585
-
-- Native Fitness: 4.8507
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.49
-
-- Confidence: 1.000
-
-
-
-## Rank 27
-
-- Sequence: `ACDDFGHIKLMDPQRYTVWYA`
-
-- Overall Score: 0.6571
-
-- Native Fitness: 3.7684
-
-- Best ΔG: -6.4
-
-- Mean ΔG: -5.81
-
-- Confidence: 1.000
-
-
-
-## Rank 28
-
-- Sequence: `ACDEFGHSKLMNPQRSTVWYA`
-
-- Overall Score: 0.6423
-
-- Native Fitness: 4.7159
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.55
-
-- Confidence: 1.000
-
-
-
-## Rank 29
-
-- Sequence: `ACDEFGRIKLMNPQRSTVWYY`
-
-- Overall Score: 0.6416
-
-- Native Fitness: 4.7096
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.74
-
-- Confidence: 1.000
-
-
-
-## Rank 30
-
-- Sequence: `ACDEFGHIKLMNPKRSTEWYA`
-
-- Overall Score: 0.6413
-
-- Native Fitness: 5.0639
-
-- Best ΔG: -6.0
-
-- Mean ΔG: -5.55
-
-- Confidence: 1.000
-
-
-
-## Rank 31
-
-- Sequence: `ACDEFKHIKLMNPQRSTVWYA`
-
-- Overall Score: 0.6392
-
-- Native Fitness: 4.6897
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.69
-
-- Confidence: 1.000
-
-
-
-## Rank 32
-
-- Sequence: `ACDEFGHIKLMNPQHSTVWYA`
-
-- Overall Score: 0.6364
-
-- Native Fitness: 4.6669
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.74
-
-- Confidence: 1.000
-
-
-
-## Rank 33
-
-- Sequence: `ACDEFGHIKEMNPQRSTVWYA`
-
-- Overall Score: 0.6359
-
-- Native Fitness: 4.6625
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.46
-
-- Confidence: 1.000
-
-
-
-## Rank 34
-
-- Sequence: `ACDEFGHIKLMNPQRSTVWMA`
-
-- Overall Score: 0.6327
-
-- Native Fitness: 4.6359
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.74
-
-- Confidence: 1.000
-
-
-
-## Rank 35
-
 - Sequence: `ACDEQGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6323
+- Overall Score: 0.7316
 
 - Native Fitness: 4.6322
 
@@ -567,13 +391,189 @@ Top Candidates: 100
 
 
 
+## Rank 25
+
+- Sequence: `ACDEFGHIHLMNPQRSTVWYA`
+
+- Overall Score: 0.7307
+
+- Native Fitness: 4.6152
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 26
+
+- Sequence: `ACDEFGHIHLMNPQRSTVWYA`
+
+- Overall Score: 0.7307
+
+- Native Fitness: 4.6152
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 27
+
+- Sequence: `AMDEFGHIKLMNPQRSTVWYA`
+
+- Overall Score: 0.7285
+
+- Native Fitness: 4.5712
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.78
+
+- Confidence: 1.000
+
+
+
+## Rank 28
+
+- Sequence: `ACDEFGHIKLMNPQRSTWWYA`
+
+- Overall Score: 0.7276
+
+- Native Fitness: 4.5547
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 29
+
+- Sequence: `ACKEFGHIKLMNPQRSTVWYA`
+
+- Overall Score: 0.7267
+
+- Native Fitness: 4.5370
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 30
+
+- Sequence: `ACDEFGHIKLINPQDSTVWYA`
+
+- Overall Score: 0.7266
+
+- Native Fitness: 4.5354
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 31
+
+- Sequence: `ACDEFHHIKLMNPQRSTVWYA`
+
+- Overall Score: 0.7262
+
+- Native Fitness: 4.5270
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.69
+
+- Confidence: 1.000
+
+
+
+## Rank 32
+
+- Sequence: `ACDEFGHIKLANPQRSTVWYA`
+
+- Overall Score: 0.7246
+
+- Native Fitness: 4.4974
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
+## Rank 33
+
+- Sequence: `ACDEFGHIKLMDPQRSTVWYA`
+
+- Overall Score: 0.7223
+
+- Native Fitness: 4.4520
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.67
+
+- Confidence: 1.000
+
+
+
+## Rank 34
+
+- Sequence: `ACDEFGHIKLMNPQRSTNWFA`
+
+- Overall Score: 0.7214
+
+- Native Fitness: 5.0760
+
+- Best ΔG: -6.0
+
+- Mean ΔG: -5.65
+
+- Confidence: 1.000
+
+
+
+## Rank 35
+
+- Sequence: `ACDEFSHIKLMNPQRSTVWYA`
+
+- Overall Score: 0.7211
+
+- Native Fitness: 4.4302
+
+- Best ΔG: -6.1
+
+- Mean ΔG: -5.74
+
+- Confidence: 1.000
+
+
+
 ## Rank 36
 
-- Sequence: `ACDEFGHMKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNSQRSTVWYA`
 
-- Overall Score: 0.6321
+- Overall Score: 0.7210
 
-- Native Fitness: 4.6310
+- Native Fitness: 4.4275
 
 - Best ΔG: -6.1
 
@@ -585,15 +585,15 @@ Top Candidates: 100
 
 ## Rank 37
 
-- Sequence: `AWDEFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEIGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6300
+- Overall Score: 0.7198
 
-- Native Fitness: 4.6129
+- Native Fitness: 4.4043
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.78
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -601,15 +601,15 @@ Top Candidates: 100
 
 ## Rank 38
 
-- Sequence: `AWDEFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6300
+- Overall Score: 0.7197
 
-- Native Fitness: 4.6129
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.78
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -617,15 +617,15 @@ Top Candidates: 100
 
 ## Rank 39
 
-- Sequence: `ACDEFGHIKLNNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6285
+- Overall Score: 0.7197
 
-- Native Fitness: 4.6009
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.53
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -633,15 +633,15 @@ Top Candidates: 100
 
 ## Rank 40
 
-- Sequence: `AADEFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6259
+- Overall Score: 0.7197
 
-- Native Fitness: 4.5793
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.78
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -649,11 +649,11 @@ Top Candidates: 100
 
 ## Rank 41
 
-- Sequence: `ACDEFGHIKLMNPQRSTMWYV`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6231
+- Overall Score: 0.7197
 
-- Native Fitness: 4.5555
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
@@ -665,11 +665,11 @@ Top Candidates: 100
 
 ## Rank 42
 
-- Sequence: `ACDEFGHIKLMQPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6206
+- Overall Score: 0.7197
 
-- Native Fitness: 4.5346
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
@@ -681,11 +681,11 @@ Top Candidates: 100
 
 ## Rank 43
 
-- Sequence: `ACDEFGHIKLMQPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6206
+- Overall Score: 0.7197
 
-- Native Fitness: 4.5346
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
@@ -697,15 +697,15 @@ Top Candidates: 100
 
 ## Rank 44
 
-- Sequence: `ACDEFGHIKDMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6187
+- Overall Score: 0.7197
 
-- Native Fitness: 4.5194
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.46
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -713,15 +713,15 @@ Top Candidates: 100
 
 ## Rank 45
 
-- Sequence: `ACDEFGHIKLMCEQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6170
+- Overall Score: 0.7197
 
-- Native Fitness: 4.8621
+- Native Fitness: 4.4022
 
-- Best ΔG: -6.0
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.67
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -729,15 +729,15 @@ Top Candidates: 100
 
 ## Rank 46
 
-- Sequence: `ACCEFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6146
+- Overall Score: 0.7197
 
-- Native Fitness: 4.4849
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.76
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -745,11 +745,11 @@ Top Candidates: 100
 
 ## Rank 47
 
-- Sequence: `ACDEFGHIKLMNGQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6143
+- Overall Score: 0.7197
 
-- Native Fitness: 4.4824
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
@@ -761,11 +761,11 @@ Top Candidates: 100
 
 ## Rank 48
 
-- Sequence: `ACDEYGHIELMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6109
+- Overall Score: 0.7197
 
-- Native Fitness: 4.4544
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
@@ -777,15 +777,15 @@ Top Candidates: 100
 
 ## Rank 49
 
-- Sequence: `ACDENGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6064
+- Overall Score: 0.7197
 
-- Native Fitness: 4.4170
+- Native Fitness: 4.4022
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.62
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -795,7 +795,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -811,7 +811,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -827,7 +827,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -843,7 +843,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -859,7 +859,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -875,7 +875,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -891,7 +891,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -907,7 +907,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -923,7 +923,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -939,7 +939,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -955,7 +955,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -971,7 +971,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -987,7 +987,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1003,7 +1003,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1019,7 +1019,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1035,7 +1035,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1051,7 +1051,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1067,7 +1067,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1083,7 +1083,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1099,7 +1099,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1115,7 +1115,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1131,7 +1131,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1147,7 +1147,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1163,7 +1163,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1179,7 +1179,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1195,7 +1195,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1211,7 +1211,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1227,7 +1227,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1243,7 +1243,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1259,7 +1259,7 @@ Top Candidates: 100
 
 - Sequence: `ACDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7197
 
 - Native Fitness: 4.4022
 
@@ -1273,11 +1273,11 @@ Top Candidates: 100
 
 ## Rank 80
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
+- Sequence: `FCDEFGHIKLMNGQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7195
 
-- Native Fitness: 4.4022
+- Native Fitness: 4.3983
 
 - Best ΔG: -6.1
 
@@ -1289,15 +1289,15 @@ Top Candidates: 100
 
 ## Rank 81
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWYA`
+- Sequence: `AMDEFGHIKYMNPQRSTVWYA`
 
-- Overall Score: 0.6047
+- Overall Score: 0.7185
 
-- Native Fitness: 4.4022
+- Native Fitness: 4.3806
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.74
+- Mean ΔG: -5.78
 
 - Confidence: 1.000
 
@@ -1305,15 +1305,15 @@ Top Candidates: 100
 
 ## Rank 82
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWYF`
+- Sequence: `NCDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6026
+- Overall Score: 0.7173
 
-- Native Fitness: 4.3847
+- Native Fitness: 4.3570
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.74
+- Mean ΔG: -5.72
 
 - Confidence: 1.000
 
@@ -1321,11 +1321,11 @@ Top Candidates: 100
 
 ## Rank 83
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWYV`
+- Sequence: `FCDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.6018
+- Overall Score: 0.7167
 
-- Native Fitness: 4.3780
+- Native Fitness: 4.3450
 
 - Best ΔG: -6.1
 
@@ -1337,11 +1337,11 @@ Top Candidates: 100
 
 ## Rank 84
 
-- Sequence: `ACDEFPHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKWMNPQRSTVWYA`
 
-- Overall Score: 0.5991
+- Overall Score: 0.7152
 
-- Native Fitness: 4.3557
+- Native Fitness: 4.3167
 
 - Best ΔG: -6.1
 
@@ -1353,15 +1353,15 @@ Top Candidates: 100
 
 ## Rank 85
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWYQ`
+- Sequence: `ACDESGTIKLMLPQRSTVWYA`
 
-- Overall Score: 0.5967
+- Overall Score: 0.7148
 
-- Native Fitness: 4.6930
+- Native Fitness: 4.3075
 
-- Best ΔG: -6.0
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.72
+- Mean ΔG: -5.88
 
 - Confidence: 1.000
 
@@ -1369,15 +1369,15 @@ Top Candidates: 100
 
 ## Rank 86
 
-- Sequence: `CCDEFEHIKLMNPQRSTVWYA`
+- Sequence: `TCDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.5957
+- Overall Score: 0.7135
 
-- Native Fitness: 4.3271
+- Native Fitness: 4.2834
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.67
+- Mean ΔG: -5.72
 
 - Confidence: 1.000
 
@@ -1385,11 +1385,11 @@ Top Candidates: 100
 
 ## Rank 87
 
-- Sequence: `ACDEFGHIKLMNPTRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYY`
 
-- Overall Score: 0.5930
+- Overall Score: 0.7134
 
-- Native Fitness: 4.3047
+- Native Fitness: 4.2823
 
 - Best ΔG: -6.1
 
@@ -1401,11 +1401,11 @@ Top Candidates: 100
 
 ## Rank 88
 
-- Sequence: `ACDEFGHIKIMNPQRSTVWYA`
+- Sequence: `APDEFGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.5921
+- Overall Score: 0.7131
 
-- Native Fitness: 4.2975
+- Native Fitness: 4.2751
 
 - Best ΔG: -6.1
 
@@ -1417,15 +1417,15 @@ Top Candidates: 100
 
 ## Rank 89
 
-- Sequence: `ACDEFGHIKTMNPQRSTVWYA`
+- Sequence: `ACDEFGTIKLMNPQRSTVWYA`
 
-- Overall Score: 0.5863
+- Overall Score: 0.7119
 
-- Native Fitness: 4.2494
+- Native Fitness: 4.2519
 
 - Best ΔG: -6.1
 
-- Mean ΔG: -5.53
+- Mean ΔG: -5.79
 
 - Confidence: 1.000
 
@@ -1433,11 +1433,11 @@ Top Candidates: 100
 
 ## Rank 90
 
-- Sequence: `ACDEFGHIKYMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLMNPPRSTVWYA`
 
-- Overall Score: 0.5846
+- Overall Score: 0.7115
 
-- Native Fitness: 4.2348
+- Native Fitness: 4.2447
 
 - Best ΔG: -6.1
 
@@ -1449,15 +1449,15 @@ Top Candidates: 100
 
 ## Rank 91
 
-- Sequence: `ACDEFKHIKLMNPQRSTHWYA`
+- Sequence: `ACDEPGHIKLMNPQRSTVWYA`
 
-- Overall Score: 0.5798
+- Overall Score: 0.7103
 
-- Native Fitness: 4.9092
+- Native Fitness: 4.2211
 
-- Best ΔG: -5.9
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.57
+- Mean ΔG: -5.62
 
 - Confidence: 1.000
 
@@ -1465,15 +1465,15 @@ Top Candidates: 100
 
 ## Rank 92
 
-- Sequence: `ACDEWGHIKLGNPQRSTVFYA`
+- Sequence: `ACDEFGHIKLMNPQRSTVNYA`
 
-- Overall Score: 0.5720
+- Overall Score: 0.6908
 
-- Native Fitness: 4.1300
+- Native Fitness: 4.4876
 
-- Best ΔG: -6.1
+- Best ΔG: -6.0
 
-- Mean ΔG: -5.53
+- Mean ΔG: -5.67
 
 - Confidence: 1.000
 
@@ -1481,15 +1481,15 @@ Top Candidates: 100
 
 ## Rank 93
 
-- Sequence: `ACDEFGHIKLMNPQRSTGWYV`
+- Sequence: `ACDEFGHIKLMNPQRQTVWYA`
 
-- Overall Score: 0.5637
+- Overall Score: 0.6892
 
-- Native Fitness: 4.4182
+- Native Fitness: 3.8164
 
-- Best ΔG: -6.0
+- Best ΔG: -6.1
 
-- Mean ΔG: -5.65
+- Mean ΔG: -5.74
 
 - Confidence: 1.000
 
@@ -1497,11 +1497,43 @@ Top Candidates: 100
 
 ## Rank 94
 
-- Sequence: `ACDEFGHIKLMNPQRSTVWTA`
+- Sequence: `ACDEFGHIKLMNPQRSTVWYT`
 
-- Overall Score: 0.5597
+- Overall Score: 0.6857
 
-- Native Fitness: 4.3842
+- Native Fitness: 4.3905
+
+- Best ΔG: -6.0
+
+- Mean ΔG: -5.72
+
+- Confidence: 1.000
+
+
+
+## Rank 95
+
+- Sequence: `ACDEFGHIKLMNPQRSTVGYA`
+
+- Overall Score: 0.6783
+
+- Native Fitness: 4.2474
+
+- Best ΔG: -6.0
+
+- Mean ΔG: -5.67
+
+- Confidence: 1.000
+
+
+
+## Rank 96
+
+- Sequence: `ACDEFGHIKLMNPQRSTVWNA`
+
+- Overall Score: 0.6769
+
+- Native Fitness: 4.2200
 
 - Best ΔG: -6.0
 
@@ -1511,29 +1543,13 @@ Top Candidates: 100
 
 
 
-## Rank 95
+## Rank 97
 
-- Sequence: `ACDTFGHIKLMNPQRSTVWYA`
+- Sequence: `ACDEFGHIKLFNPHRSTVWYA`
 
-- Overall Score: 0.5580
+- Overall Score: 0.6767
 
-- Native Fitness: 4.0137
-
-- Best ΔG: -6.1
-
-- Mean ΔG: -5.77
-
-- Confidence: 1.000
-
-
-
-## Rank 96
-
-- Sequence: `SCDEFGHIKLMNPQRSEVWYA`
-
-- Overall Score: 0.5461
-
-- Native Fitness: 4.2712
+- Native Fitness: 4.2161
 
 - Best ΔG: -6.0
 
@@ -1543,33 +1559,17 @@ Top Candidates: 100
 
 
 
-## Rank 97
-
-- Sequence: `ACDEFGHIKLMNPQRSTVGYA`
-
-- Overall Score: 0.5432
-
-- Native Fitness: 4.2474
-
-- Best ΔG: -6.0
-
-- Mean ΔG: -5.67
-
-- Confidence: 1.000
-
-
-
 ## Rank 98
 
-- Sequence: `ACDEFGHIKLMNPQRSTVGYA`
+- Sequence: `WCQEFGHIKLMNPQRKTVWYA`
 
-- Overall Score: 0.5432
+- Overall Score: 0.6470
 
-- Native Fitness: 4.2474
+- Native Fitness: 3.6458
 
 - Best ΔG: -6.0
 
-- Mean ΔG: -5.67
+- Mean ΔG: -5.72
 
 - Confidence: 1.000
 
@@ -1577,15 +1577,15 @@ Top Candidates: 100
 
 ## Rank 99
 
-- Sequence: `ACDEFGHIKLMNPQRKTVWYA`
+- Sequence: `ACDEFGHIYLMNPQASTVWEA`
 
-- Overall Score: 0.4943
+- Overall Score: 0.6333
 
-- Native Fitness: 3.8400
+- Native Fitness: 0.1750
 
-- Best ΔG: -6.0
+- Best ΔG: -6.5
 
-- Mean ΔG: -5.69
+- Mean ΔG: -6.17
 
 - Confidence: 1.000
 
@@ -1593,15 +1593,15 @@ Top Candidates: 100
 
 ## Rank 100
 
-- Sequence: `ACDEFGHIKSMNPQRSTVWPA`
+- Sequence: `ACDEGGHIKLMNPQDSTVWTA`
 
-- Overall Score: 0.4670
+- Overall Score: 0.6166
 
-- Native Fitness: 4.3262
+- Native Fitness: 4.3424
 
 - Best ΔG: -5.8
 
-- Mean ΔG: -5.48
+- Mean ΔG: -5.58
 
 - Confidence: 1.000
 

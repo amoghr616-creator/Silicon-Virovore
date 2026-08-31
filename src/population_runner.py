@@ -17,8 +17,12 @@ from src.config import (
     MUTATION_RATE,
 )
 
+from src.ARISE import ARISE
+
+
 logger = logging.getLogger(__name__)
 
+ARISE_ENGINE = ARISE()
 
 def generate_candidates(
     seed_sequence: str,
@@ -53,6 +57,18 @@ def generate_candidates(
         "Successfully generated %d candidates.",
         len(candidates),
     )
+
+    # ---------------------------------------
+    # ARISE learns from this generation
+    # ---------------------------------------
+
+    ARISE_ENGINE.observe_generation(candidates)
+    ARISE_ENGINE.update_importance()
+
+    logger.info(
+        "ARISE importance map: %s",
+        ARISE_ENGINE.importance_map(),
+)
 
     return candidates
 

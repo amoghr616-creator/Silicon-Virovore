@@ -168,40 +168,102 @@ double calculate_alignment_score(const char *variant, const char *profile) {
  * Maximizes target alignment, alpha-helix conformation, and hydrophobic moment.
  * Minimizes solvation energy and exponentially penalizes decoy binding (Albumin & NCAM1).
  */
-void evaluate_fitness(Variant *v, const char *target, const char *decoy1, const char *decoy2, void *params) {
-    if (!v || !v->sequence) return;
+void evaluate_fitness(
+    Variant *v,
+    const char *target,
+    const char *decoy1,
+    const char *decoy2,
+    void *params
+)
+{
+    if (!v || !v->sequence)
+        return;
+
     (void)params;
 
-    // 1. Calculate base parameters
-    v->helix_propensity = calculate_chou_fasman(v->sequence);
-    v->solvation_energy = calculate_solvation_energy(v->sequence);
-    v->hydrophobic_moment = calculate_eisenberg_moment(v->sequence);
+    /* ---------------------------------------------------------
+     * Native Biophysical Metrics
+     * --------------------------------------------------------- */
 
-    // 2. Alignment scores
-    double target_score = calculate_alignment_score(v->sequence, target);
-    double decoy1_score = calculate_alignment_score(v->sequence, decoy1); // Albumin
-    double decoy2_score = calculate_alignment_score(v->sequence, decoy2); // NCAM1
+    v->helix_propensity =
+        calculate_chou_fasman(v->sequence);
 
-    // 3. Charge calculations & penalties
+    v->solvation_energy =
+        calculate_solvation_energy(v->sequence);
+
+    v->hydrophobic_moment =
+        calculate_eisenberg_moment(v->sequence);
+
+    /* ---------------------------------------------------------
+     * Sequence Alignment
+     * --------------------------------------------------------- */
+
+    double target_score =
+        calculate_alignment_score(
+            v->sequence,
+            target
+        );
+
+    double decoy1_score =
+        calculate_alignment_score(
+            v->sequence,
+            decoy1
+        );
+
+    double decoy2_score =
+        calculate_alignment_score(
+            v->sequence,
+            decoy2
+        );
+
+    /* ---------------------------------------------------------
+     * Charge Profile
+     * --------------------------------------------------------- */
+
     charge_summary charge_smry;
-    compute_charge_profile(v->sequence, 2, &charge_smry);
 
-    // 4. Exponential Decoy Penalties (Off-Target Avoidance)
-    double decoy_penalty = exp(decoy1_score * 1.5) + exp(decoy2_score * 1.5);
+    compute_charge_profile(
+        v->sequence,
+        2,
+        &charge_smry
+    );
 
-    // 5. Consolidated Fitness Math
-    // Target affinity, structural moment, and helical propensity positively weight fitness.
-    // Solvation penalty, charge deviation, and decoy affinities exponentially lower fitness.
-    double fitness = (target_score * 12.0) 
-                   + (v->hydrophobic_moment * 8.0) 
-                   + (v->helix_propensity * 6.0) 
-                   - (charge_smry.penalty) 
-                   - decoy_penalty;
+    /* ---------------------------------------------------------
+     * Decoy Penalty
+     * --------------------------------------------------------- */
 
-    // Support positive values only for stable ranking sorting
-    v->fitness_score = (fitness < 0.0) ? 0.0001 : fitness;
+    double decoy_penalty =
+        exp(decoy1_score * 1.5)
+        + exp(decoy2_score * 1.5);
+
+    /* ---------------------------------------------------------
+     * Save Metrics
+     * --------------------------------------------------------- */
+
+    v->target_alignment = target_score;
+
+    v->decoy_penalty = decoy_penalty;
+
+    v->charge_penalty = charge_smry.penalty;
+
+    v->charge_density = charge_smry.max_patch_density;
+
+    /* ---------------------------------------------------------
+     * Overall Fitness
+     * --------------------------------------------------------- */
+
+    double fitness =
+        (target_score * 12.0)
+        + (v->hydrophobic_moment * 8.0)
+        + (v->helix_propensity * 6.0)
+        - charge_smry.penalty
+        - decoy_penalty;
+
+    if (fitness < 0.0)
+        fitness = 0.0001;
+
+    v->fitness_score = fitness;
 }
-
 /* ============================================================================
  * DATA STRUCTURE LINKING INTERFACES
  * ============================================================================

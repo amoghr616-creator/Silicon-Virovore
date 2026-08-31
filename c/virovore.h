@@ -13,6 +13,10 @@ typedef struct {
     double solvation_energy;    // Delta G solvation parameter
     double hydrophobic_moment;   // Eisenberg structural vector magnitude
     double helix_propensity;    // Chou-Fasman folding stability score
+    double target_alignment;    // Alignment score with target sequence
+    double decoy_penalty;       // Exponential penalty for decoy binding
+    double charge_penalty;      // Charge-based penalty
+    double charge_density;      // Maximum localized charge density
 } Variant;
 
 typedef struct {

@@ -16,6 +16,7 @@ from src.ranking import CandidateRanker
 from src.analysis import AnalysisEngine
 from src.report import ReportGenerator
 from src.plots import PlotGenerator
+from src.ARISE import ARISE
 
 from src.config import (
     RESULTS_DIR,
@@ -48,6 +49,8 @@ def run_pipeline():
     candidates = generate_candidates(
         DEFAULT_SEED_SEQUENCE,
     )
+
+    arise = ARISE()
 
     # ------------------------------------------------------
     # Structure Prediction
@@ -83,6 +86,18 @@ def run_pipeline():
     ranked = CandidateRanker().rank(
         docked
     )
+
+    # ------------------------------------
+    # ARISE learns from this generation
+    # ------------------------------------
+
+    arise.observe_generation(ranked)
+
+    arise.update_importance()
+
+    logger.info("ARISE Importance Map")
+
+    logger.info(arise.importance_map()) 
 
     # ------------------------------------------------------
     # Scientific Analysis
