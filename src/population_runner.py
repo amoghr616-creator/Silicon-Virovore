@@ -9,6 +9,7 @@ import logging
 
 from c.bridge import (
     generate_c_population,
+    generate_adaptive_population,
     process_candidate_peptide,
 )
 
@@ -36,11 +37,30 @@ def generate_candidates(
 
     logger.info("Generating peptide candidates...")
 
-    sequences = generate_c_population(
-        seed_sequence,
-        pop_size=population_size,
-        mutation_rate=mutation_rate,
-    )
+    # --------------------------------------------------
+    # Generation 0 -> random exploration
+    # Later generations -> ARISE-guided mutation
+    # --------------------------------------------------
+
+    if ARISE_ENGINE.generation == 0:
+
+        logger.info("Using standard random mutation engine...")
+
+        sequences = generate_c_population(
+            seed_sequence,
+            pop_size=population_size,
+            mutation_rate=mutation_rate,
+        )
+
+    else:
+
+        logger.info("Using ARISE adaptive mutation engine...")
+
+        sequences = generate_adaptive_population(
+            seed_sequence,
+            ARISE_ENGINE.importance_map(),
+            pop_size=population_size,
+        )
 
     candidates = []
 
@@ -58,18 +78,11 @@ def generate_candidates(
         len(candidates),
     )
 
-    # ---------------------------------------
+    # --------------------------------------------------
     # ARISE learns from this generation
-    # ---------------------------------------
+    # --------------------------------------------------
 
-    ARISE_ENGINE.observe_generation(candidates)
-    ARISE_ENGINE.update_importance()
-
-    logger.info(
-        "ARISE importance map: %s",
-        ARISE_ENGINE.importance_map(),
-)
-
+    
     return candidates
 
 

@@ -51,8 +51,7 @@ if LIB_PATH is None:
 
 lib = ctypes.CDLL(str(LIB_PATH))
 
-print(f"[Bridge] Loaded native backend: {LIB_PATH.name}")
-
+print(f"[Bridge] Loaded native backend: {LIB_PATH.resolve()}")
 # ==========================================================
 # Constants
 # ==========================================================
@@ -75,6 +74,21 @@ PopulationArray = (
 
 lib.c_generate_mutated_population.restype = None
 
+ImportanceArray = ctypes.c_double * SEQ_LEN
+
+PopulationType = (
+    (ctypes.c_char * (SEQ_LEN + 1))
+    * POPULATION_SIZE
+)
+
+lib.c_generate_adaptive_population.argtypes = [
+    ctypes.c_char_p,
+    ImportanceArray,
+    PopulationType,
+    ctypes.c_int,
+]
+
+lib.c_generate_adaptive_population.restype = None
 # ==========================================================
 # Python Wrappers
 # ==========================================================
@@ -146,6 +160,37 @@ def generate_c_population(
         population,
         pop_size,
         mutation_rate,
+    )
+
+    return [
+        population[i].value.decode("utf-8")
+        for i in range(pop_size)
+    ]
+
+def generate_adaptive_population(
+    seed_sequence: str,
+    importance_map: list[float],
+    pop_size: int = POPULATION_SIZE,
+) -> list[str]:
+
+    seed_sequence = seed_sequence.upper()
+
+    PopulationType = (
+        (ctypes.c_char * (SEQ_LEN + 1))
+        * pop_size
+    )
+
+    population = PopulationType()
+
+    ImportanceType = ctypes.c_double * SEQ_LEN
+
+    importance = ImportanceType(*importance_map)
+
+    lib.c_generate_adaptive_population(
+        seed_sequence.encode("utf-8"),
+        importance,
+        population,
+        pop_size,
     )
 
     return [

@@ -4,6 +4,10 @@
 
 #include <stddef.h>
 
+#ifndef SEQ_LEN
+#define SEQ_LEN 21
+#endif
+
 // Core Structures upgraded for High-Fidelity Biophysics
 typedef struct {
     char *sequence;
@@ -47,6 +51,13 @@ typedef struct {
 Variant init_variant(size_t initial_capacity);
 void append_sequence(Variant *v, const char *chunk);
 double calculate_alignment_score(const char *variant, const char *profile);
+void c_generate_adaptive_population(
+    const char *seed,
+    double importance[],
+    char output[][SEQ_LEN + 1],
+    int pop_size
+);
+
 
 // Advanced Physics Math Engines
 int compute_charge_profile(const char *sequence, int charge_threshold, charge_summary *summary_out);

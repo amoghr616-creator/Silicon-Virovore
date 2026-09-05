@@ -9,15 +9,16 @@ from __future__ import annotations
 import logging
 import time
 
-from src.population_runner import generate_candidates
 from src.predict_structure import predict_population_structures
 from src.docking_vina import PeptideDockingScorer
 from src.ranking import CandidateRanker
 from src.analysis import AnalysisEngine
 from src.report import ReportGenerator
 from src.plots import PlotGenerator
-from src.ARISE import ARISE
-
+from src.population_runner import (
+    generate_candidates,
+    ARISE_ENGINE,
+)
 from src.config import (
     RESULTS_DIR,
     DEFAULT_SEED_SEQUENCE,
@@ -50,7 +51,7 @@ def run_pipeline():
         DEFAULT_SEED_SEQUENCE,
     )
 
-    arise = ARISE()
+
 
     # ------------------------------------------------------
     # Structure Prediction
@@ -91,14 +92,14 @@ def run_pipeline():
     # ARISE learns from this generation
     # ------------------------------------
 
-    arise.observe_generation(ranked)
-
-    arise.update_importance()
+    ARISE_ENGINE.observe_generation(ranked)
+    ARISE_ENGINE.update_importance()
 
     logger.info("ARISE Importance Map")
+    logger.info(ARISE_ENGINE.importance_map())
 
-    logger.info(arise.importance_map()) 
-
+    logger.info("ARISE Mutation Rates")
+    logger.info(ARISE_ENGINE.mutation_rate_map())
     # ------------------------------------------------------
     # Scientific Analysis
     # ------------------------------------------------------

@@ -235,6 +235,26 @@ class ARISE:
 
         return probability
 
+    def mutation_rate_map(
+        self,
+        base_rate: float = 0.05,
+    ) -> list[float]:
+        """
+        Returns the mutation probability for every
+        residue position.
+
+        This will be passed to the native C engine.
+        """
+
+        if self.reference_sequence is None:
+
+            return []
+
+        return [
+        self.mutation_probability(i, base_rate)
+        for i in range(self.sequence_length)
+    ]
+
     # ========================================================
     # Queries
     # ========================================================

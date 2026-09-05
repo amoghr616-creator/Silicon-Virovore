@@ -74,3 +74,41 @@ void c_generate_mutated_population(const char* seed_sequence, char output_popula
         output_population[p][SEQ_LEN] = '\0';
     }
 }
+
+void c_generate_adaptive_population(
+    const char *seed,
+    double importance[],
+    char output[][SEQ_LEN + 1],
+    int pop_size)
+{
+    if (seed == NULL || strlen(seed) != SEQ_LEN) return;
+
+    static int rand_seeded = 0;
+    if (!rand_seeded) {
+        srand((unsigned int)time(NULL));
+        rand_seeded = 1;
+    }
+
+    for (int p = 0; p < pop_size; p++) {
+        strcpy(output[p], seed);
+
+        for (int i = 0; i < SEQ_LEN; i++) {
+            /*
+             * High importance
+             * -> mutate less
+             *
+             * Low importance
+             * -> mutate more
+             */
+
+            double mutation_rate = 0.05 + (1.0 - importance[i]) * 0.20;
+            double r = (double)rand() / RAND_MAX;
+
+            if (r < mutation_rate) {
+                output[p][i] = AA_ALPHABET[rand() % 20];
+            }
+        }
+
+        output[p][SEQ_LEN] = '\0';
+    }
+}
