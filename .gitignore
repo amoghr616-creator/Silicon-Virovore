@@ -1,12 +1,17 @@
-# Virtual environments
-.venv/
-venv/
-
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-*.pyd
+
+# Virtual environments
+.venv/
+.venv310/
+venv/
+
+# Torch / HuggingFace
+.cache/
+*.pt
+*.pth
 
 # macOS
 .DS_Store
@@ -15,15 +20,33 @@ __pycache__/
 .vscode/
 .idea/
 
-# Build artifacts
+# Build
 build/
 dist/
-*.egg-info/
-
-# Results (optional)
-results/structures/
-results/reports/
-results/plots/
 
 # Logs
+*.log
+
+# Results
+results/
+structures/
+
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
+
+# Coverage
+.coverage
+htmlcov/
+temp_backup/
+results/
+structures/
+*.xtc
+*.trr
+*.cpt
+*.gro
+*.tpr
+*.edr
 *.log

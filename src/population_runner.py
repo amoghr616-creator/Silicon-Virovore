@@ -1,39 +1,153 @@
 """
 population_runner.py
 
-Generates candidate peptides using the native C backend.
-Returns Candidate objects.
+Generates candidate peptides using the native C backend and
+implements the Adaptive Recursive Intelligent Selection Engine (ARISE).
+
+ARISE learns which residue positions consistently contribute to
+high-performing peptides and biases future generations toward
+those positions while preserving diversity.
 """
 
+from __future__ import annotations
+
 import logging
+import random
 
 from c.bridge import (
     generate_c_population,
     process_candidate_peptide,
 )
 
+from src.models import Candidate
+
 from src.config import (
     POPULATION_SIZE,
     MUTATION_RATE,
 )
 
-
 logger = logging.getLogger(__name__)
+
+
+# ==========================================================
+# ARISE
+# ==========================================================
+
+
+class ARISEEngine:
+    """
+    Adaptive Recursive Intelligent Selection Engine.
+
+    Learns positional importance from successful peptides.
+    """
+
+    def __init__(self):
+
+        self.position_scores: dict[int, float] = {}
+
+    def observe_generation(
+        self,
+        ranked_candidates: list[Candidate],
+    ) -> None:
+        """
+        Learn from the best candidates in the generation.
+        """
+
+        if not ranked_candidates:
+            return
+
+        top = ranked_candidates[:10]
+
+        for candidate in top:
+
+            score = candidate.overall_score
+
+            for i, residue in enumerate(candidate.sequence):
+
+                self.position_scores.setdefault(i, 0.0)
+
+                self.position_scores[i] += score
+
+    def update_importance(self) -> None:
+        """
+        Normalize importance values.
+        """
+
+        if not self.position_scores:
+            return
+
+        maximum = max(self.position_scores.values())
+
+        if maximum <= 0:
+            return
+
+        for position in self.position_scores:
+
+            self.position_scores[position] /= maximum
+
+    def importance_map(self) -> dict[int, float]:
+
+        return {
+            k: round(v, 3)
+            for k, v in sorted(self.position_scores.items())
+        }
+
+    def bias_sequence(
+        self,
+        sequence: str,
+    ) -> str:
+        """
+        Preserve residues at positions ARISE believes
+        are highly important.
+        """
+
+        if not self.position_scores:
+            return sequence
+
+        seq = list(sequence)
+
+        amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+
+        for i in range(len(seq)):
+
+            importance = self.position_scores.get(i, 0)
+
+            # Highly important positions mutate less often.
+            mutation_probability = max(
+                0.05,
+                1.0 - importance,
+            )
+
+            if random.random() < mutation_probability:
+
+                seq[i] = random.choice(amino_acids)
+
+        return "".join(seq)
+
+
+ARISE_ENGINE = ARISEEngine()
+
+
+# ==========================================================
+# Population generation
+# ==========================================================
 
 
 def generate_candidates(
     seed_sequence: str,
     population_size: int = POPULATION_SIZE,
     mutation_rate: float = MUTATION_RATE,
-):
+) -> list[Candidate]:
     """
-    Generate a population of Candidate objects using the native
-    Silicon Virovore mutation engine.
+    Generate peptide candidates.
+
+    The native C backend performs the primary mutation.
+
+    Afterwards ARISE lightly biases candidates according to
+    learned positional importance.
     """
 
     logger.info("Generating peptide candidates...")
-
-    logger.info("Using standard random mutation engine...")
 
     sequences = generate_c_population(
         seed_sequence,
@@ -41,9 +155,12 @@ def generate_candidates(
         mutation_rate=mutation_rate,
     )
 
-    candidates = []
+    candidates: list[Candidate] = []
 
     for sequence in sequences:
+
+        # Apply ARISE bias after native mutation
+        sequence = ARISE_ENGINE.bias_sequence(sequence)
 
         candidate = process_candidate_peptide(sequence)
 
@@ -53,11 +170,16 @@ def generate_candidates(
         candidates.append(candidate)
 
     logger.info(
-        "Successfully generated %d candidates.",
+        "Generated %d candidates.",
         len(candidates),
     )
 
     return candidates
+
+
+# ==========================================================
+# Debug
+# ==========================================================
 
 
 if __name__ == "__main__":
@@ -73,14 +195,8 @@ if __name__ == "__main__":
     for candidate in population:
 
         print("--------------------------------------")
-        print(f"Sequence      : {candidate.sequence}")
-        print(f"C Score       : {candidate.c_score:.4f}")
+        print(candidate.sequence)
 
-        if candidate.hydrophobic_moment is not None:
-            print(f"Hydro Moment  : {candidate.hydrophobic_moment:.3f}")
-
-        if candidate.helix_propensity is not None:
-            print(f"Helix Score   : {candidate.helix_propensity:.3f}")
-
-        if candidate.solvation_energy is not None:
-            print(f"Solvation ΔG  : {candidate.solvation_energy:.3f}")
+    print()
+    print("ARISE importance map:")
+    print(ARISE_ENGINE.importance_map())

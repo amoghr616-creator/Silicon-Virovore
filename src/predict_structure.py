@@ -1,16 +1,19 @@
 """
 predict_structure.py
 
-Predicts peptide structures and attaches structural metadata
-to Candidate objects.
+Predict peptide structures with ESMFold and attach the
+generated PDB path to Candidate objects.
 """
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from models import Candidate
-from config import STRUCTURE_DIR
+
+import torch
+
+from src.config import STRUCTURE_DIR
+from src.models import Candidate
 
 logger = logging.getLogger(__name__)
 
@@ -19,37 +22,52 @@ STRUCTURE_DIR.mkdir(parents=True, exist_ok=True)
 
 class StructurePredictor:
     """
-    Structure prediction interface.
+    Uses ESMFold to predict peptide structures.
 
-    Currently acts as a placeholder for ESMFold/Boltz/OpenFold.
+    Structures are cached on disk so they are only
+    generated once.
     """
 
     def __init__(self):
-        logger.info("Structure predictor initialized.")
 
-    def predict(self, candidate: Candidate) -> Candidate:
+        logger.info("Loading ESMFold model...")
+
+        self.device = (
+            "cuda"
+            if torch.cuda.is_available()
+            else "cpu"
+        )
+
+        import esm
+
+        self.model = esm.pretrained.esmfold_v1()
+
+        self.model = self.model.eval().to(self.device)
+
+        logger.info(
+            "ESMFold loaded on %s",
+            self.device,
+        )
+
+    def predict(
+        self,
+        candidate: Candidate,
+    ) -> Candidate:
 
         pdb_path = STRUCTURE_DIR / f"{candidate.sequence}.pdb"
 
-        # -------------------------------------------------
-        # Placeholder
-        #
-        # Replace later with:
-        #
-        #   ESMFold
-        #   Boltz-2
-        #   Chai-1
-        #   OpenFold
-        #
-        # -------------------------------------------------
+        # Already predicted
+        if pdb_path.exists():
+            candidate.structure_path = pdb_path
+            return candidate
 
-        pdb_contents = (
-            "HEADER    SILICON VIROVORE PREDICTION\n"
-            f"REMARK    Sequence {candidate.sequence}\n"
-            "END\n"
-        )
+        with torch.no_grad():
 
-        pdb_path.write_text(pdb_contents)
+            pdb_string = self.model.infer_pdb(
+                candidate.sequence
+            )
+
+        pdb_path.write_text(pdb_string)
 
         candidate.structure_path = pdb_path
 
