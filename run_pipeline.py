@@ -2,6 +2,8 @@
 run_pipeline.py
 
 Master execution pipeline for Silicon Virovore.
+Prototype 1:
+Computational peptide discovery + ARISE learning.
 """
 
 from __future__ import annotations
@@ -9,20 +11,35 @@ from __future__ import annotations
 import logging
 import time
 
-from src.predict_structure import predict_population_structures
-from src.docking_vina import PeptideDockingScorer
-from src.ranking import CandidateRanker
-from src.analysis import AnalysisEngine
-from src.report import ReportGenerator
-from src.plots import PlotGenerator
 from src.population_runner import (
     generate_candidates,
     ARISE_ENGINE,
 )
+from src.predict_structure import (
+    predict_population_structures,
+)
+from src.docking_vina import (
+    PeptideDockingScorer,
+)
+from src.ranking import (
+    CandidateRanker,
+)
+from src.analysis import (
+    AnalysisEngine,
+)
+from src.report import (
+    ReportGenerator,
+)
+from src.plots import (
+    PlotGenerator,
+)
 from src.config import (
     RESULTS_DIR,
     DEFAULT_SEED_SEQUENCE,
+    GENERATIONS,
+    TOP_K,
 )
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,76 +55,162 @@ def run_pipeline():
 
     logger.info("===================================")
     logger.info("Silicon Virovore")
-    logger.info("Pipeline Started")
+    logger.info("Prototype 1 Pipeline Started")
     logger.info("===================================")
 
     # ------------------------------------------------------
-    # Population Generation
+    # Evolutionary state
     # ------------------------------------------------------
 
-    logger.info("Generating candidates...")
+    seed_sequence = DEFAULT_SEED_SEQUENCE
 
-    candidates = generate_candidates(
-        DEFAULT_SEED_SEQUENCE,
-    )
-
-
+    best_scores = []
+    final_ranked = []
 
     # ------------------------------------------------------
-    # Structure Prediction
+    # Multi-generation optimization
     # ------------------------------------------------------
 
-    logger.info("Predicting structures...")
+    for generation in range(1, GENERATIONS + 1):
 
-    candidates = predict_population_structures(
-        candidates
-    )
+        logger.info("-----------------------------------")
+        logger.info(
+            "Generation %d / %d",
+            generation,
+            GENERATIONS,
+        )
+        logger.info(
+            "Seed: %s",
+            seed_sequence,
+        )
+        logger.info("-----------------------------------")
 
-    # ------------------------------------------------------
-    # Docking
-    # ------------------------------------------------------
+        # --------------------------------------------------
+        # Population Generation
+        # --------------------------------------------------
 
-    logger.info("Running docking...")
+        logger.info("Generating candidates...")
 
-    scorer = PeptideDockingScorer()
-
-    docked = []
-
-    for candidate in candidates:
-        docked.append(
-            scorer.evaluate_candidate(candidate)
+        candidates = generate_candidates(
+            seed_sequence,
         )
 
+        if not candidates:
+
+            logger.error(
+                "No candidates generated for generation %d.",
+                generation,
+            )
+            break
+
+        # --------------------------------------------------
+        # Structure Prediction
+        # --------------------------------------------------
+
+        logger.info(
+            "Predicting structures..."
+        )
+
+        candidates = predict_population_structures(
+            candidates
+        )
+
+        # --------------------------------------------------
+        # Docking
+        # --------------------------------------------------
+
+        logger.info(
+            "Running docking..."
+        )
+
+        scorer = PeptideDockingScorer()
+
+        docked = []
+
+        for candidate in candidates:
+
+            docked.append(
+                scorer.evaluate_candidate(candidate)
+            )
+
+        # --------------------------------------------------
+        # Ranking
+        # --------------------------------------------------
+
+        logger.info(
+            "Ranking candidates..."
+        )
+
+        ranked = CandidateRanker().rank(
+            docked
+        )
+
+        if not ranked:
+
+            logger.error(
+                "No ranked candidates for generation %d.",
+                generation,
+            )
+            break
+
+        # --------------------------------------------------
+        # ARISE learns from completed generation
+        # --------------------------------------------------
+
+        ARISE_ENGINE.observe_generation(
+            ranked
+        )
+
+        ARISE_ENGINE.update_importance()
+
+        best = ranked[0]
+
+        best_scores.append(
+            best.overall_score
+        )
+
+        logger.info(
+            "Generation %d best score: %.4f",
+            generation,
+            best.overall_score,
+        )
+
+        logger.info(
+            "ARISE importance map: %s",
+            ARISE_ENGINE.importance_map(),
+        )
+
+        # --------------------------------------------------
+        # Select best candidate as next-generation seed
+        # --------------------------------------------------
+
+        seed_sequence = best.sequence
+
+        final_ranked = ranked
+
     # ------------------------------------------------------
-    # Ranking
+    # Final Results
     # ------------------------------------------------------
 
-    logger.info("Ranking candidates...")
+    if not final_ranked:
 
-    ranked = CandidateRanker().rank(
-        docked
-    )
+        logger.error(
+            "Pipeline produced no final candidates."
+        )
+        return
 
-    # ------------------------------------
-    # ARISE learns from this generation
-    # ------------------------------------
+    logger.info("Preparing final results...")
 
-    ARISE_ENGINE.observe_generation(ranked)
-    ARISE_ENGINE.update_importance()
+    top_candidates = final_ranked[:TOP_K]
 
-    logger.info("ARISE Importance Map")
-    logger.info(ARISE_ENGINE.importance_map())
-
-    logger.info("ARISE Mutation Rates")
-    logger.info(ARISE_ENGINE.mutation_rate_map())
     # ------------------------------------------------------
-    # Scientific Analysis
+    # Final Scientific Analysis
     # ------------------------------------------------------
 
     runtime = time.time() - start
 
     report = AnalysisEngine().analyze(
-        ranked,
+        top_candidates,
         runtime_seconds=runtime,
     )
 
@@ -115,31 +218,49 @@ def run_pipeline():
     # Figures
     # ------------------------------------------------------
 
-    logger.info("Generating figures...")
+    logger.info(
+        "Generating figures..."
+    )
 
     PlotGenerator(
         RESULTS_DIR,
     ).generate_all(
-        ranked,
-        [c.overall_score for c in ranked],
+        top_candidates,
+        best_scores,
     )
 
     # ------------------------------------------------------
     # Report
     # ------------------------------------------------------
 
-    logger.info("Generating report...")
+    logger.info(
+        "Generating report..."
+    )
 
     ReportGenerator(
         RESULTS_DIR,
     ).export(report)
 
+    # ------------------------------------------------------
+    # Completion
+    # ------------------------------------------------------
+
     logger.info("===================================")
-    logger.info("Pipeline Complete")
-    logger.info("Runtime %.2f sec", runtime)
+    logger.info("Prototype 1 Pipeline Complete")
+    logger.info(
+        "Generations completed: %d",
+        len(best_scores),
+    )
+    logger.info(
+        "Final best score: %.4f",
+        final_ranked[0].overall_score,
+    )
+    logger.info(
+        "Runtime %.2f sec",
+        runtime,
+    )
     logger.info("===================================")
 
 
 if __name__ == "__main__":
-
     run_pipeline()

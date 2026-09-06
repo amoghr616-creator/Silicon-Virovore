@@ -9,9 +9,8 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-
-from src.models import Candidate
-from src.config import STRUCTURE_DIR
+from models import Candidate
+from config import STRUCTURE_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -76,17 +75,3 @@ def predict_population_structures(
         )
 
     return results
-
-
-if __name__ == "__main__":
-
-    candidate = Candidate(
-        sequence="ACDEFGHIKLMNPQRSTVWYA",
-        c_score=15.2,
-    )
-
-    predictor = StructurePredictor()
-
-    candidate = predictor.predict(candidate)
-
-    print(candidate.structure_path)

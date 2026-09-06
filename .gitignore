@@ -1,31 +1,29 @@
-# macOS
-.DS_Store
+# Virtual environments
+.venv/
+venv/
 
 # Python
 __pycache__/
 *.pyc
-temp_backup/
-# VS Code
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+
+# IDE
 .vscode/
-*.code-workspace
+.idea/
 
-# Editor backup files
-#*#
+# Build artifacts
+build/
+dist/
+*.egg-info/
 
-# Molecular dynamics
-*.xtc
-*.trr
-*.edr
-*.cpt
+# Results (optional)
+results/structures/
+results/reports/
+results/plots/
+
+# Logs
 *.log
-
-# Generated structures
-*.gro
-
-# Videos
-*.mov
-*.mp4
-
-# Archives
-*.tar
-*.tgz
