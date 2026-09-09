@@ -11,10 +11,14 @@ engines (DiffDock, Boltz-2, Rosetta, GNINA, etc.) can be swapped
 without changing the remainder of the pipeline.
 """
 
-from __future__ import annotations
-
 import logging
+import os
+import re
+import shutil
 import statistics
+import subprocess
+import tempfile
+from pathlib import Path
 
 from src.models import Candidate
 
@@ -40,22 +44,19 @@ class MLSurrogateBackend(DockingBackend):
     """
     Lightweight heuristic docking surrogate.
 
-    Used during evolutionary optimization because it is
-    several orders of magnitude faster than physical docking.
+    This backend must remain fast and must not invoke
+    AutoDock Vina. It is used for Tier-1 screening.
     """
 
     HYDROPHOBIC = set("AILMFWYV")
     CHARGED = set("RHKDE")
 
     def score_fragment(self, fragment: str) -> float:
-
         score = -5.0
 
         for aa in fragment:
-
             if aa in self.HYDROPHOBIC:
                 score -= 0.30
-
             elif aa in self.CHARGED:
                 score += 0.10
 
@@ -64,27 +65,68 @@ class MLSurrogateBackend(DockingBackend):
 
 class AutoDockBackend(DockingBackend):
     """
-    Placeholder AutoDock Vina backend.
+    Optional structure-validation backend.
 
-    Replace score_fragment() with a real Vina invocation later.
+    This class is intentionally disabled unless a valid executable,
+    receptor, and candidate structure are available.
     """
 
-    def score_fragment(self, fragment: str) -> float:
+    def __init__(self):
 
-        logger.info(
-            "Running AutoDock Vina placeholder for %s",
-            fragment,
+        self.vina = Path(
+            "/Users/centurion616/Desktop/Silicon-Virovore/"
+            "vina_1.2.7_mac_aarch64"
         )
 
-        #
-        # TODO:
-        # Launch AutoDock Vina
-        # Parse docking score
-        #
+        self.obabel = (
+            shutil.which("obabel")
+            or shutil.which("babel")
+        )
 
-        return -8.40
+        self.receptor = Path(
+            "data/receptor/receptor.pdbqt"
+        )
 
+        if not self.vina.exists():
+            raise RuntimeError(
+                f"Vina executable not found: {self.vina}"
+            )
 
+        if not os.access(self.vina, os.X_OK):
+            raise RuntimeError(
+                f"Vina executable is not executable: {self.vina}"
+            )
+
+        if self.obabel is None:
+            raise RuntimeError(
+                "Open Babel executable not found."
+            )
+
+        if not self.receptor.exists():
+            raise RuntimeError(
+                f"Missing receptor: {self.receptor}"
+            )
+
+    def score_fragment(
+        self,
+        fragment: str,
+        structure_path: str | Path | None = None,
+    ) -> float:
+        """
+        Placeholder for structure-based validation.
+
+        Do not silently substitute the Tier-1 surrogate here.
+        """
+
+        if structure_path is None:
+            raise RuntimeError(
+                "Structure path required for validation."
+            )
+
+        raise NotImplementedError(
+            "Structure-based docking execution is not "
+            "implemented in this backend yet."
+        )
 # ============================================================
 # Docking Engine
 # ============================================================
@@ -109,7 +151,18 @@ class PeptideDockingScorer:
 
         self.backend = backend or MLSurrogateBackend()
 
-        self.vina_backend = AutoDockBackend()
+        try:
+
+            self.vina_backend = AutoDockBackend()
+
+        except Exception as exc:
+
+            logger.warning(
+                "AutoDock disabled: %s",
+                exc,
+            )
+
+            self.vina_backend = None
 
     # --------------------------------------------------------
 
@@ -135,16 +188,16 @@ class PeptideDockingScorer:
         mean_delta_g: float,
     ) -> float:
         """
-        Consensus docking score.
+        Composite surrogate docking score.
 
-        Combines strongest interaction with overall
-        fragment performance.
+        Lower (more negative) remains better, matching the
+        sign convention of the underlying docking scores.
         """
 
         return round(
             (
-                0.60 * abs(best_delta_g)
-                + 0.40 * abs(mean_delta_g)
+                0.60 * best_delta_g
+                + 0.40 * mean_delta_g
             ),
             3,
         )
@@ -217,37 +270,88 @@ class PeptideDockingScorer:
             "docking_std"
         ] = docking_std
 
-        candidate.metadata[
-            "consensus_docking"
-        ] = self._consensus_score(
+        consensus_score = self._consensus_score(
             candidate.strongest_anchor_delta_g,
             candidate.mean_delta_g,
         )
 
-        # ----------------------------------------------------
+        candidate.metadata[
+            "consensus_docking"
+        ] = consensus_score
+
+        candidate.metadata[
+            "docking_backend"
+        ] = type(self.backend).__name__
+
+        candidate.metadata[
+            "docking_is_surrogate"
+        ] = isinstance(
+            self.backend,
+            MLSurrogateBackend,
+        )
+
+        candidate.metadata[
+            "docking_validated"
+        ] = False
+
+        # --------------------------------------------------------
         # Tier-2 Validation
-        # ----------------------------------------------------
+        # --------------------------------------------------------
 
         if (
-            candidate.strongest_anchor_delta_g
+            self.vina_backend is not None
+            and candidate.strongest_anchor_delta_g
             <= TIER2_THRESHOLD
         ):
 
             logger.info(
-                "Tier-2 docking triggered."
+                "Tier-2 validation triggered."
             )
 
-            candidate.passed_tier_2 = True
+            if candidate.structure_path is None:
 
-            candidate.vina_delta_g = (
-                self.vina_backend.score_fragment(
-                    candidate.best_fragment
+                logger.warning(
+                    "No structure available for %s; "
+                    "Tier-2 validation skipped.",
+                    candidate.sequence,
                 )
-            )
 
-            candidate.add_note(
-                "Validated using AutoDock backend."
-            )
+                candidate.passed_tier_2 = False
+                candidate.vina_delta_g = None
+
+                candidate.add_note(
+                    "Tier-2 eligibility reached, but "
+                    "validation was skipped because no "
+                    "structure was available."
+                )
+
+            else:
+
+                try:
+
+                    candidate.vina_delta_g = (
+                        self.vina_backend.score_fragment(
+                            candidate.best_fragment,
+                            candidate.structure_path,
+                        )
+                    )
+
+                    candidate.passed_tier_2 = True
+
+                    candidate.add_note(
+                        "Tier-2 structure-based validation completed."
+                    )
+
+                except Exception as exc:
+
+                    logger.warning(
+                        "Tier-2 validation failed for %s: %s",
+                        candidate.sequence,
+                        exc,
+                    )
+
+                    candidate.passed_tier_2 = False
+                    candidate.vina_delta_g = None
 
         else:
 
@@ -255,18 +359,16 @@ class PeptideDockingScorer:
             candidate.vina_delta_g = None
 
         logger.info(
-            (
-                "Docking complete | "
-                "Best %.2f | "
-                "Mean %.2f | "
-                "Consensus %.2f"
-            ),
-            candidate.strongest_anchor_delta_g,
-            candidate.mean_delta_g,
-            candidate.metadata[
-                "consensus_docking"
-            ],
-        )
+    (
+        "Docking complete | "
+        "Best %.2f | "
+        "Mean %.2f | "
+        "Consensus %.2f"
+    ),
+    candidate.strongest_anchor_delta_g,
+    candidate.mean_delta_g,
+    consensus_score,
+)
 
         return candidate
 

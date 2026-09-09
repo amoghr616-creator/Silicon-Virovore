@@ -12,10 +12,10 @@ those positions while preserving diversity.
 from __future__ import annotations
 
 import logging
-import random
 
 from c.bridge import (
     generate_c_population,
+    generate_adaptive_population,
     process_candidate_peptide,
 )
 
@@ -33,100 +33,166 @@ logger = logging.getLogger(__name__)
 # ARISE
 # ==========================================================
 
-
 class ARISEEngine:
     """
     Adaptive Recursive Intelligent Selection Engine.
 
-    Learns positional importance from successful peptides.
+    Estimates position-specific importance from the relationship
+    between residue identity and candidate performance.
     """
 
     def __init__(self):
-
+        # Running raw importance accumulated across generations.
         self.position_scores: dict[int, float] = {}
+
+        # Current normalized importance values.
+        self._importance: dict[int, float] = {}
 
     def observe_generation(
         self,
         ranked_candidates: list[Candidate],
     ) -> None:
         """
-        Learn from the best candidates in the generation.
+        Estimate positional importance from score differences
+        associated with residue identity.
+
+        A position receives stronger importance when different
+        residues at that position are associated with meaningfully
+        different candidate scores.
         """
 
         if not ranked_candidates:
             return
 
-        top = ranked_candidates[:10]
+        sequence_length = len(ranked_candidates[0].sequence)
 
-        for candidate in top:
+        for position in range(sequence_length):
 
-            score = candidate.overall_score
+            residue_scores: dict[str, list[float]] = {}
 
-            for i, residue in enumerate(candidate.sequence):
+            for candidate in ranked_candidates:
 
-                self.position_scores.setdefault(i, 0.0)
+                if position >= len(candidate.sequence):
+                    continue
 
-                self.position_scores[i] += score
+                residue = candidate.sequence[position]
+
+                residue_scores.setdefault(
+                    residue,
+                    [],
+                )
+
+                residue_scores[residue].append(
+                    float(candidate.overall_score)
+                )
+
+            # Need at least two distinct residue groups
+            # to estimate a positional effect.
+            if len(residue_scores) < 2:
+                continue
+
+            total_observations = sum(
+                len(scores)
+                for scores in residue_scores.values()
+            )
+
+            if total_observations < 5:
+                continue
+
+            residue_means = []
+
+            for scores in residue_scores.values():
+
+                if not scores:
+                    continue
+
+                residue_means.append(
+                    sum(scores) / len(scores)
+                )
+
+            if len(residue_means) < 2:
+                continue
+
+            positional_signal = (
+                max(residue_means)
+                - min(residue_means)
+            )
+
+            self.position_scores[position] = (
+                0.7 * self.position_scores.get(
+                    position,
+                    0.0,
+                )
+                + 0.3 * positional_signal
+            )
 
     def update_importance(self) -> None:
         """
-        Normalize importance values.
+        Normalize accumulated positional signals to [0, 1].
         """
 
         if not self.position_scores:
             return
 
-        maximum = max(self.position_scores.values())
+        values = list(
+            self.position_scores.values()
+        )
 
-        if maximum <= 0:
+        minimum = min(values)
+        maximum = max(values)
+
+        if abs(maximum - minimum) < 1e-12:
+
+            self._importance = {
+                position: 0.5
+                for position in self.position_scores
+            }
+
             return
 
-        for position in self.position_scores:
-
-            self.position_scores[position] /= maximum
-
-    def importance_map(self) -> dict[int, float]:
-
-        return {
-            k: round(v, 3)
-            for k, v in sorted(self.position_scores.items())
+        self._importance = {
+            position: (
+                (value - minimum)
+                / (maximum - minimum)
+            )
+            for position, value
+            in self.position_scores.items()
         }
 
-    def bias_sequence(
-        self,
-        sequence: str,
-    ) -> str:
+    def importance_map(self) -> dict[int, float]:
         """
-        Preserve residues at positions ARISE believes
-        are highly important.
+        Return normalized position importance.
         """
 
-        if not self.position_scores:
-            return sequence
-
-        seq = list(sequence)
-
-        amino_acids = "ACDEFGHIKLMNPQRSTVWY"
-
-        for i in range(len(seq)):
-
-            importance = self.position_scores.get(i, 0)
-
-            # Highly important positions mutate less often.
-            mutation_probability = max(
-                0.05,
-                1.0 - importance,
+        return {
+            position: round(
+                value,
+                3,
             )
+            for position, value
+            in sorted(
+                self._importance.items()
+            )
+        }
 
-            if random.random() < mutation_probability:
+    def get_importance_array(
+        self,
+        length: int,
+    ) -> list[float]:
+        """
+        Return importance values in sequence-position order.
+        """
 
-                seq[i] = random.choice(amino_acids)
-
-        return "".join(seq)
+        return [
+            self._importance.get(
+                position,
+                0.5,
+            )
+            for position in range(length)
+        ]
 
 
 ARISE_ENGINE = ARISEEngine()
-
 
 # ==========================================================
 # Population generation
@@ -139,30 +205,56 @@ def generate_candidates(
     mutation_rate: float = MUTATION_RATE,
 ) -> list[Candidate]:
     """
-    Generate peptide candidates.
+    Generate candidate peptides.
 
-    The native C backend performs the primary mutation.
+    Generation 1 uses the standard native C mutation engine.
 
-    Afterwards ARISE lightly biases candidates according to
-    learned positional importance.
+    Later generations use ARISE-derived positional importance
+    through the native adaptive population generator.
+
+    ARISE therefore changes the mutation distribution without
+    performing a second Python-side mutation pass.
     """
 
     logger.info("Generating peptide candidates...")
 
-    sequences = generate_c_population(
-        seed_sequence,
-        pop_size=population_size,
-        mutation_rate=mutation_rate,
+    importance_map = ARISE_ENGINE.get_importance_array(
+        len(seed_sequence)
     )
+
+    has_learned_importance = bool(
+        ARISE_ENGINE._importance
+    )
+    logger.info(
+    "ARISE mode enabled | importance=%s",
+    [
+        round(x, 3)
+        for x in importance_map
+    ],
+)
+    if has_learned_importance:
+
+        sequences = generate_adaptive_population(
+            seed_sequence,
+            importance_map,
+            pop_size=population_size,
+        )
+
+    else:
+
+        sequences = generate_c_population(
+            seed_sequence,
+            pop_size=population_size,
+            mutation_rate=mutation_rate,
+        )
 
     candidates: list[Candidate] = []
 
     for sequence in sequences:
 
-        # Apply ARISE bias after native mutation
-        sequence = ARISE_ENGINE.bias_sequence(sequence)
-
-        candidate = process_candidate_peptide(sequence)
+        candidate = process_candidate_peptide(
+            sequence
+        )
 
         if candidate is None:
             continue
@@ -175,8 +267,6 @@ def generate_candidates(
     )
 
     return candidates
-
-
 # ==========================================================
 # Debug
 # ==========================================================

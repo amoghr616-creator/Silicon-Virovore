@@ -11,6 +11,8 @@ import platform
 from pathlib import Path
 import sys
 
+from sympy import sequence
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -113,7 +115,9 @@ def process_candidate_peptide(sequence: str) -> Candidate:
     score = lib.c_check_sequence_fitness(
         sequence.encode("utf-8")
     )
-
+    '''print(
+        f"[C FITNESS] {sequence} -> {score:.6f}"
+    )'''
     fragments = [
         sequence[i:i + FRAGMENT_SIZE]
         for i in range(len(sequence) - FRAGMENT_SIZE + 1)

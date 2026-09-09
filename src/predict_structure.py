@@ -12,6 +12,7 @@ from pathlib import Path
 
 import torch
 
+from src import candidate
 from src.config import STRUCTURE_DIR
 from src.models import Candidate
 
@@ -105,6 +106,9 @@ class StructurePredictor:
         if pdb_path.exists():
 
             candidate.structure_path = pdb_path
+            candidate.metadata["structure_available"] = True
+            candidate.metadata["structure_backend"] = "ESMFold"
+            candidate.metadata["structure_status"] = "cached"
 
             try:
                 pdb_string = pdb_path.read_text()
@@ -137,6 +141,10 @@ class StructurePredictor:
 
             candidate.structure_path = pdb_path
 
+            candidate.metadata["structure_available"] = True
+            candidate.metadata["structure_backend"] = "ESMFold"
+            candidate.metadata["structure_status"] = "success"
+
             candidate.structure_confidence = (
                 self._extract_mean_plddt(
                     pdb_string
@@ -153,13 +161,17 @@ class StructurePredictor:
 
         except Exception as exc:
 
-            logger.exception(
-                "Structure prediction failed for %s",
+            logger.warning(
+                "Structure prediction failed for %s: %s",
                 candidate.sequence,
+                exc,
             )
 
             candidate.structure_path = None
             candidate.structure_confidence = None
+
+            candidate.metadata["structure_available"] = False
+            candidate.metadata["structure_status"] = "failed"
 
         return candidate
 
@@ -167,10 +179,67 @@ class StructurePredictor:
 def predict_population_structures(
     candidates: list[Candidate],
 ) -> list[Candidate]:
+    """
+    Predict structures for a population when the ESMFold
+    environment is available.
 
-    predictor = StructurePredictor()
+    If ESMFold/OpenFold is unavailable, explicitly mark the
+    structural stage as unavailable and return candidates
+    without fabricated structural metrics.
+    """
 
-    return [
-        predictor.predict(candidate)
-        for candidate in candidates
-    ]
+    try:
+        predictor = StructurePredictor()
+
+    except ImportError as exc:
+
+        logger.warning(
+            "ESMFold unavailable: required dependency missing (%s). "
+            "Structural prediction disabled for this run.",
+            exc,
+        )
+
+        for candidate in candidates:
+            candidate.structure_path = None
+            candidate.structure_confidence = None
+            candidate.metadata["structure_available"] = False
+            candidate.metadata["structure_backend"] = "ESMFold"
+            candidate.metadata["structure_status"] = "unavailable"
+
+        return candidates
+
+    except Exception as exc:
+
+        logger.warning(
+            "ESMFold initialization failed: %s. "
+            "Structural prediction disabled for this run.",
+            exc,
+        )
+
+        for candidate in candidates:
+            candidate.structure_path = None
+            candidate.structure_confidence = None
+            candidate.metadata["structure_available"] = False
+            candidate.metadata["structure_backend"] = "ESMFold"
+            candidate.metadata["structure_status"] = "failed"
+
+        return candidates
+
+    predicted = []
+
+    for candidate in candidates:
+
+        candidate = predictor.predict(candidate)
+
+        candidate.metadata["structure_backend"] = "ESMFold"
+
+        if candidate.structure_path is not None:
+            candidate.metadata["structure_available"] = True
+            candidate.metadata["structure_status"] = "success"
+        else:
+            candidate.metadata["structure_available"] = False
+            candidate.metadata["structure_status"] = "failed"
+
+        predicted.append(candidate)
+
+    return predicted

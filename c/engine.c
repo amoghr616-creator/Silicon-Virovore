@@ -168,7 +168,49 @@ double calculate_alignment_score(const char *variant, const char *profile) {
  * Maximizes target alignment, alpha-helix conformation, and hydrophobic moment.
  * Minimizes solvation energy and exponentially penalizes decoy binding (Albumin & NCAM1).
  */
-void evaluate_fitness(
+
+static double clamp01(double x)
+{
+    if (x < 0.0) return 0.0;
+    if (x > 1.0) return 1.0;
+    return x;
+}
+
+/*
+ * Converts a value from [min_value, max_value] into [0, 1].
+ * Returns 0.5 when the range is invalid.
+ */
+static double normalize_range(double value,
+                              double min_value,
+                              double max_value)
+{
+    if (max_value <= min_value)
+        return 0.5;
+
+    return clamp01(
+        (value - min_value) /
+        (max_value - min_value)
+    );
+}
+
+/*
+ * Bounded penalty for values far from a neutral reference.
+ * The farther the metric moves from the reference, the larger
+ * the penalty, but the result is always in [0, 1].
+ */
+static double deviation_penalty(double value,
+                                double reference,
+                                double scale)
+{
+    if (scale <= 0.0)
+        return 0.0;
+
+    double d = fabs(value - reference) / scale;
+
+    return d / (1.0 + d);
+}
+
+ void evaluate_fitness(
     Variant *v,
     const char *target,
     const char *decoy1,
@@ -182,7 +224,7 @@ void evaluate_fitness(
     (void)params;
 
     /* ---------------------------------------------------------
-     * Native Biophysical Metrics
+     * Native metrics
      * --------------------------------------------------------- */
 
     v->helix_propensity =
@@ -195,7 +237,7 @@ void evaluate_fitness(
         calculate_eisenberg_moment(v->sequence);
 
     /* ---------------------------------------------------------
-     * Sequence Alignment
+     * Sequence similarity metrics
      * --------------------------------------------------------- */
 
     double target_score =
@@ -217,7 +259,7 @@ void evaluate_fitness(
         );
 
     /* ---------------------------------------------------------
-     * Charge Profile
+     * Charge
      * --------------------------------------------------------- */
 
     charge_summary charge_smry;
@@ -229,7 +271,7 @@ void evaluate_fitness(
     );
 
     /* ---------------------------------------------------------
-     * Decoy Penalty
+     * Decoy penalty
      * --------------------------------------------------------- */
 
     double decoy_penalty =
@@ -237,33 +279,103 @@ void evaluate_fitness(
         + exp(decoy2_score * 1.5);
 
     /* ---------------------------------------------------------
-     * Save Metrics
+     * Store raw metrics
      * --------------------------------------------------------- */
 
     v->target_alignment = target_score;
-
     v->decoy_penalty = decoy_penalty;
-
     v->charge_penalty = charge_smry.penalty;
-
     v->charge_density = charge_smry.max_patch_density;
 
     /* ---------------------------------------------------------
-     * Overall Fitness
+     * Bounded components
+     *
+     * Important:
+     * Do NOT combine raw heterogeneous quantities directly.
+     * --------------------------------------------------------- */
+
+    /*
+     * Target alignment is already [0,1].
+     */
+    double target_component =
+        clamp01(target_score);
+
+    /*
+     * Chou-Fasman values in this implementation span
+     * approximately 0.50 -> 1.42.
+     */
+    double helix_component =
+        normalize_range(
+            v->helix_propensity,
+            0.50,
+            1.42
+        );
+
+    /*
+     * Hydrophobic moment is retained as a diagnostic metric,
+     * but is NOT directly rewarded.
+     *
+     * This is intentional for the current debugging pass:
+     * it prevents the optimizer from selecting increasingly
+     * hydrophobic sequences simply because the moment increases.
+     */
+    double hydrophobic_penalty =
+        deviation_penalty(
+            v->hydrophobic_moment,
+            0.35,
+            0.35
+        );
+
+    /*
+     * Solvation is also treated as a bounded developability
+     * regularizer rather than blindly rewarding increasingly
+     * negative values.
+     */
+    double solvation_penalty =
+        deviation_penalty(
+            v->solvation_energy,
+            0.0,
+            20.0
+        );
+
+    /*
+     * Charge penalty is converted to a bounded quantity.
+     */
+    double charge_component =
+        clamp01(
+            charge_smry.penalty / 10.0
+        );
+
+    /*
+     * Bound the decoy term so it cannot explode and dominate
+     * the entire evolutionary objective.
+     */
+    double decoy_component =
+        clamp01(
+            decoy_penalty / 10.0
+        );
+
+    /* ---------------------------------------------------------
+     * Balanced composite fitness
+     *
+     * All components are now approximately [0,1].
      * --------------------------------------------------------- */
 
     double fitness =
-        (target_score * 12.0)
-        + (v->hydrophobic_moment * 8.0)
-        + (v->helix_propensity * 6.0)
-        - charge_smry.penalty
-        - decoy_penalty;
+          (0.40 * target_component)
+        + (0.25 * helix_component)
+        + (0.15 * (1.0 - solvation_penalty))
+        + (0.10 * (1.0 - charge_component))
+        + (0.10 * (1.0 - decoy_component))
+        - (0.10 * hydrophobic_penalty);
 
-    if (fitness < 0.0)
-        fitness = 0.0001;
-
-    v->fitness_score = fitness;
+    /*
+     * Final safety clamp.
+     */
+    v->fitness_score =
+        clamp01(fitness);
 }
+
 /* ============================================================================
  * DATA STRUCTURE LINKING INTERFACES
  * ============================================================================

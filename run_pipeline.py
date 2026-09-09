@@ -27,7 +27,6 @@ from src.config import (
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 logger = logging.getLogger(__name__)
@@ -45,6 +44,12 @@ def run_pipeline():
     best_scores = []
     final_ranked = []
 
+    run_status = {
+        "structure_prediction": "not_started",
+        "docking_backend": None,
+        "validated_docking_count": 0,
+        "surrogate_docking_count": 0,
+    }
     scorer = PeptideDockingScorer()
     ranker = CandidateRanker()
 
@@ -72,6 +77,26 @@ def run_pipeline():
         ####################################################
         candidates = predict_population_structures(candidates)
 
+        structure_count = sum(
+            1
+            for candidate in candidates
+            if candidate.structure_path is not None
+        )
+
+        if structure_count == len(candidates):
+            run_status["structure_prediction"] = "complete"
+        elif structure_count > 0:
+            run_status["structure_prediction"] = "partial"
+        else:
+            run_status["structure_prediction"] = "unavailable"
+
+        logger.info(
+            "Structure prediction status: %s | %d/%d candidates have structures",
+            run_status["structure_prediction"],
+            structure_count,
+            len(candidates),
+        )
+
         ####################################################
         # Docking
         ####################################################
@@ -79,6 +104,30 @@ def run_pipeline():
             scorer.evaluate_candidate(candidate)
             for candidate in candidates
         ]
+
+        run_status["surrogate_docking_count"] = sum(
+            1
+            for candidate in docked
+            if candidate.metadata.get(
+                "docking_is_surrogate",
+                False,
+            )
+        )
+
+        run_status["validated_docking_count"] = sum(
+            1
+            for candidate in docked
+            if candidate.metadata.get(
+                "docking_validated",
+                False,
+            )
+        )
+
+        logger.info(
+            "Docking status | surrogate=%d | validated=%d",
+            run_status["surrogate_docking_count"],
+            run_status["validated_docking_count"],
+        )
 
         ####################################################
         # Ranking
@@ -148,6 +197,12 @@ def run_pipeline():
     ########################################################
     # Finish
     ########################################################
+    logger.info(
+        "Evidence summary | structure=%s | surrogate docking=%d | validated docking=%d",
+        run_status["structure_prediction"],
+        run_status["surrogate_docking_count"],
+        run_status["validated_docking_count"],
+    )
     logger.info("=" * 50)
     logger.info("Pipeline Complete")
     logger.info("Generations: %d", len(best_scores))
