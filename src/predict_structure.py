@@ -1,8 +1,8 @@
 """
 predict_structure.py
 
-Predict peptide structures with ESMFold and attach the
-generated PDB path to Candidate objects.
+Predict peptide structures using ESMFold and attach structural
+metadata to Candidate objects.
 """
 
 from __future__ import annotations
@@ -22,32 +22,74 @@ STRUCTURE_DIR.mkdir(parents=True, exist_ok=True)
 
 class StructurePredictor:
     """
-    Uses ESMFold to predict peptide structures.
+    Predicts peptide structures using ESMFold.
 
-    Structures are cached on disk so they are only
-    generated once.
+    Features
+    --------
+    • Loads the model only once.
+    • Caches predicted PDB files.
+    • Extracts mean pLDDT confidence.
+    • Attaches structural metadata to Candidate.
     """
+
+    _model = None
+    _device = None
 
     def __init__(self):
 
-        logger.info("Loading ESMFold model...")
+        if StructurePredictor._model is None:
 
-        self.device = (
-            "cuda"
-            if torch.cuda.is_available()
-            else "cpu"
-        )
+            logger.info("Loading ESMFold model...")
 
-        import esm
+            import esm
 
-        self.model = esm.pretrained.esmfold_v1()
+            device = (
+                "cuda"
+                if torch.cuda.is_available()
+                else "cpu"
+            )
 
-        self.model = self.model.eval().to(self.device)
+            model = esm.pretrained.esmfold_v1()
 
-        logger.info(
-            "ESMFold loaded on %s",
-            self.device,
-        )
+            model = model.eval().to(device)
+
+            StructurePredictor._model = model
+            StructurePredictor._device = device
+
+            logger.info(
+                "ESMFold loaded on %s",
+                device,
+            )
+
+        self.model = StructurePredictor._model
+        self.device = StructurePredictor._device
+
+    @staticmethod
+    def _extract_mean_plddt(
+        pdb_string: str,
+    ) -> float | None:
+        """
+        Extract mean pLDDT from the B-factor column
+        of the generated PDB.
+        """
+
+        values = []
+
+        for line in pdb_string.splitlines():
+
+            if line.startswith("ATOM"):
+
+                try:
+                    values.append(
+                        float(line[60:66])
+                    )
+                except ValueError:
+                    continue
+
+        if not values:
+            return None
+
+        return sum(values) / len(values)
 
     def predict(
         self,
@@ -56,25 +98,68 @@ class StructurePredictor:
 
         pdb_path = STRUCTURE_DIR / f"{candidate.sequence}.pdb"
 
-        # Already predicted
+        #######################################################
+        # Cached structure
+        #######################################################
+
         if pdb_path.exists():
+
             candidate.structure_path = pdb_path
+
+            try:
+                pdb_string = pdb_path.read_text()
+
+                candidate.structure_confidence = (
+                    self._extract_mean_plddt(
+                        pdb_string
+                    )
+                )
+
+            except Exception:
+
+                pass
+
             return candidate
 
-        with torch.no_grad():
+        #######################################################
+        # Run ESMFold
+        #######################################################
 
-            pdb_string = self.model.infer_pdb(
-                candidate.sequence
+        try:
+
+            with torch.inference_mode():
+
+                pdb_string = self.model.infer_pdb(
+                    candidate.sequence
+                )
+
+            pdb_path.write_text(pdb_string)
+
+            candidate.structure_path = pdb_path
+
+            candidate.structure_confidence = (
+                self._extract_mean_plddt(
+                    pdb_string
+                )
             )
 
-        pdb_path.write_text(pdb_string)
+            logger.info(
+                "Predicted structure for %s (mean pLDDT %.2f)",
+                candidate.sequence,
+                candidate.structure_confidence
+                if candidate.structure_confidence
+                else -1.0,
+            )
 
-        candidate.structure_path = pdb_path
+        except Exception as exc:
 
-        logger.info(
-            "Predicted structure for %s",
-            candidate.sequence,
-        )
+            logger.exception(
+                "Structure prediction failed for %s",
+                candidate.sequence,
+            )
+
+            candidate.structure_path = None
+            candidate.structure_confidence = None
 
         return candidate
 
@@ -85,11 +170,7 @@ def predict_population_structures(
 
     predictor = StructurePredictor()
 
-    results = []
-
-    for candidate in candidates:
-        results.append(
-            predictor.predict(candidate)
-        )
-
-    return results
+    return [
+        predictor.predict(candidate)
+        for candidate in candidates
+    ]
