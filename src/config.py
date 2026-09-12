@@ -42,13 +42,15 @@ PEPTIDE_DIR = DATA_DIR / "peptides"
 
 RECEPTOR_PDB = RECEPTOR_DIR / "herv_k_env.pdb"
 
+RECEPTOR_PDBQT = RECEPTOR_DIR / "receptor.pdbqt"
+
 CLEAN_RECEPTOR = RESULTS_DIR / "receptor" / "clean_env.pdb"
 
 # ============================================================
 # Initial Peptide
 # ============================================================
 
-DEFAULT_SEED_SEQUENCE = "ACDEFGHIKLMNPQRSTVWYA"
+DEFAULT_SEED_SEQUENCE = "MKLAVFALLVFFAGSSDLIRR"
 
 PEPTIDE_LENGTH = 21
 
@@ -60,24 +62,46 @@ AMINO_ACIDS = (
 # Evolutionary Algorithm
 # ============================================================
 
-POPULATION_SIZE = 100
+POPULATION_SIZE = 20
 
-GENERATIONS = 25
+GENERATIONS = 10
 
 MUTATION_RATE = 0.05
 
 ELITE_COUNT = 10
 
-RANDOM_SEED = 42
+RANDOM_SEED = 616
 
 
 # ============================================================
 # Docking
 # ============================================================
 
+ESMFOLD_API_URL = "https://api.esmatlas.com/foldSequence/v1/pdb/"
+
+ESMFOLD_TIMEOUT_SECONDS = 45
+
+ESMFOLD_MAX_ATTEMPTS = 2
+
+ESMFOLD_RETRY_BACKOFF_SECONDS = 2
+
+ESMFOLD_MAX_CONSECUTIVE_FAILURES = 3
+
 PEPTIDE_FRAGMENT_SIZE = 9
 
-TIER2_DOCKING_THRESHOLD = -7.0
+TIER2_DOCKING_THRESHOLD = -6.0
+
+VINA_EXECUTABLE = ROOT / "vina_1.2.7_mac_aarch64"
+
+VINA_EXHAUSTIVENESS = 1
+
+VINA_NUM_MODES = 1
+
+VINA_MAX_EVALS = 5000
+
+VINA_CPU = 1
+
+VINA_BOX_PADDING = 4.0
 
 USE_ML_SURROGATE = True
 

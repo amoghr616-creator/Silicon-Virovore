@@ -103,7 +103,7 @@ void run_evolutionary_loop(int generations, int pop_size, double mutation_rate, 
     printf("    - Population Size: %d | Target Generations: %d\n", pop_size, generations);
     
     // Seed random number generator
-    srand((unsigned int)time(NULL));
+    srand((unsigned int)time(0));
 
     // Initialize population
     Population pop;

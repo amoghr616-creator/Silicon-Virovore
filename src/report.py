@@ -65,11 +65,16 @@ class ReportGenerator:
 
             writer.writerow([
                 "Rank",
+                "Generation",
                 "Sequence",
                 "Overall Score",
                 "Native Fitness",
                 "Docking ΔG",
                 "Mean ΔG",
+                "Consensus ΔG",
+                "Vina ΔG",
+                "Tier 2 Validated",
+                "pLDDT",
                 "Hydrophobic Moment",
                 "Helix",
                 "Solvation",
@@ -82,11 +87,16 @@ class ReportGenerator:
 
                 writer.writerow([
                     rc.rank,
+                    c.metadata.get("generation"),
                     c.sequence,
                     rc.overall_score,
                     c.c_score,
                     c.strongest_anchor_delta_g,
                     c.mean_delta_g,
+                    c.metadata.get("consensus_docking"),
+                    c.vina_delta_g,
+                    c.passed_tier_2,
+                    c.structure_confidence,
                     c.hydrophobic_moment,
                     c.helix_propensity,
                     c.solvation_energy,
@@ -114,7 +124,7 @@ class ReportGenerator:
         )
 
         lines.append(
-            f"Top Candidates: {len(report.top_candidates)}\n"
+            f"Candidates Across Full Run: {len(report.top_candidates)}\n"
         )
 
         lines.append("\n---\n")
@@ -132,6 +142,10 @@ class ReportGenerator:
             )
 
             lines.append(
+                f"- Generation: {c.metadata.get('generation', 'unknown')}\n"
+            )
+
+            lines.append(
                 f"- Overall Score: {rc.overall_score:.4f}\n"
             )
 
@@ -145,6 +159,22 @@ class ReportGenerator:
 
             lines.append(
                 f"- Mean ΔG: {c.mean_delta_g}\n"
+            )
+
+            lines.append(
+                f"- Consensus ΔG: {c.metadata.get('consensus_docking')}\n"
+            )
+
+            lines.append(
+                f"- Vina ΔG: {c.vina_delta_g}\n"
+            )
+
+            lines.append(
+                f"- Tier 2 Validated: {c.passed_tier_2}\n"
+            )
+
+            lines.append(
+                f"- pLDDT: {c.structure_confidence}\n"
             )
 
             lines.append(
