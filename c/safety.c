@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <time.h>
 #include "virovore.h"
 
 // Forward declaration from engine.c
@@ -50,17 +49,15 @@ double c_check_sequence_fitness(const char* sequence) {
     return score;
 }
 
+void c_seed_random(unsigned int seed) {
+    srand(seed);
+}
+
 /**
  * C dynamic population generator
  */
 void c_generate_mutated_population(const char* seed_sequence, char output_population[][SEQ_LEN + 1], int pop_size, double mutation_rate) {
     if (seed_sequence == NULL || strlen(seed_sequence) != SEQ_LEN) return;
-
-    static int rand_seeded = 0;
-    if (!rand_seeded) {
-        srand((unsigned int)time(NULL));
-        rand_seeded = 1;
-    }
 
     for (int p = 0; p < pop_size; p++) {
         for (int i = 0; i < SEQ_LEN; i++) {
@@ -82,12 +79,6 @@ void c_generate_adaptive_population(
     int pop_size)
 {
     if (seed == NULL || strlen(seed) != SEQ_LEN) return;
-
-    static int rand_seeded = 0;
-    if (!rand_seeded) {
-        srand((unsigned int)time(NULL));
-        rand_seeded = 1;
-    }
 
     for (int p = 0; p < pop_size; p++) {
         strcpy(output[p], seed);

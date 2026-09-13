@@ -32,29 +32,34 @@ class CorrelationAnalyzer:
         if len(x) != len(y):
             raise ValueError("Vectors must have equal length.")
 
-        n = len(x)
+        pairs = [
+            (a, b)
+            for a, b in zip(x, y)
+            if a is not None and b is not None
+        ]
+        n = len(pairs)
 
         if n < 2:
-            return 0.0
+            return None
 
-        mean_x = sum(x) / n
-        mean_y = sum(y) / n
+        mean_x = sum(a for a, _ in pairs) / n
+        mean_y = sum(b for _, b in pairs) / n
 
         numerator = sum(
             (a - mean_x) * (b - mean_y)
-            for a, b in zip(x, y)
+            for a, b in pairs
         )
 
         denominator_x = sqrt(
-            sum((a - mean_x) ** 2 for a in x)
+            sum((a - mean_x) ** 2 for a, _ in pairs)
         )
 
         denominator_y = sqrt(
-            sum((b - mean_y) ** 2 for b in y)
+            sum((b - mean_y) ** 2 for _, b in pairs)
         )
 
         if denominator_x == 0 or denominator_y == 0:
-            return 0.0
+            return None
 
         return numerator / (denominator_x * denominator_y)
 
@@ -117,7 +122,7 @@ class CorrelationAnalyzer:
                 metrics[b],
             )
 
-            matrix[f"{a} vs {b}"] = round(r, 4)
+            matrix[f"{a} vs {b}"] = None if r is None else round(r, 4)
 
         return matrix
 
@@ -133,7 +138,7 @@ class CorrelationAnalyzer:
 
             corr.items(),
 
-            key=lambda x: abs(x[1]),
+            key=lambda x: abs(x[1]) if x[1] is not None else -1.0,
 
             reverse=True,
 

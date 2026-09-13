@@ -18,6 +18,9 @@ Future phases will add:
     • Realism estimation
 """
 
+# The executable pipeline uses ARISEEngine from population_runner.py. This
+# standalone class is retained for compatibility with older experiments.
+
 from __future__ import annotations
 
 from collections import defaultdict

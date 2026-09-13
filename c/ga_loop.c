@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <time.h>
 #include "virovore.h"
 
 // --- LOCALISED BACKUP MACROS (Ensures compilation if header paths are unsynced) ---
@@ -98,12 +97,18 @@ int tournament_selection(const Population *pop, int tournament_size) {
 // -------------------------------------------------------------------------
 // MASTER EVOLUTIONARY LOOP EXECUTION PIPELINE
 // -------------------------------------------------------------------------
-void run_evolutionary_loop(int generations, int pop_size, double mutation_rate, int tournament_size) {
+void run_evolutionary_loop(
+    int generations,
+    int pop_size,
+    double mutation_rate,
+    int tournament_size,
+    unsigned int random_seed
+) {
     printf("[*] Instantiating Silicon Virovore population vectors...\n");
     printf("    - Population Size: %d | Target Generations: %d\n", pop_size, generations);
     
     // Seed random number generator
-    srand((unsigned int)time(0));
+    srand(random_seed);
 
     // Initialize population
     Population pop;

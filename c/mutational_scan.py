@@ -6,9 +6,15 @@ AA_POOL = "ACDEFGHIKLMNPQRSTVWY"
 CHAMPION = "MKLAVFALLVFFAGSSDLIRR"
 
 def calculate_composite_fitness(c_score: float, anchor_dg: float) -> float:
+    """Combine native fitness with negative-ΔG docking strength.
+
+    AutoDock Vina energies are negative; a positive value is not treated as
+    stronger binding merely because its magnitude is large.
+    """
     if c_score <= 0.01:
         return 0.0
-    return round(c_score * (1.0 + (abs(anchor_dg) * 0.2)), 4)
+    docking_strength = max(0.0, -anchor_dg)
+    return round(c_score * (1.0 + (docking_strength * 0.2)), 4)
 
 def run_mutational_scan(base_seq: str):
     print(f"[*] Running Exhaustive Mutational Scan for: {base_seq}")

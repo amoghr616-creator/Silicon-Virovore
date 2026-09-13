@@ -121,6 +121,37 @@ class Candidate:
     def add_note(self, text: str) -> None:
         """Append a pipeline note."""
         self.notes.append(text)
+
+
+def candidate_has_valid_structure(candidate: Candidate) -> bool:
+    """Return whether a candidate has verified structural evidence."""
+
+    path = candidate.structure_path
+
+    return bool(
+        candidate.metadata.get("structure_available") is True
+        and path is not None
+        and Path(path).is_file()
+        and candidate.structure_confidence is not None
+    )
+
+
+def mark_structure_unavailable(
+    candidate: Candidate,
+    status: str = "unavailable",
+    error: str | None = None,
+) -> None:
+    """Clear structural evidence without fabricating replacement values."""
+
+    candidate.structure_path = None
+    candidate.structure_confidence = None
+    candidate.metadata["structure_available"] = False
+    candidate.metadata["structure_status"] = status
+
+    if error:
+        candidate.metadata["structure_error"] = error
+    else:
+        candidate.metadata.pop("structure_error", None)
 # ============================================================
 # Ranked Candidate
 # ============================================================
@@ -245,6 +276,8 @@ class PipelineReport:
 
     timestamp: str = ""
 
+    audit: dict[str, Any] = field(default_factory=dict)
+
 
 # ============================================================
 # Pipeline Configuration
@@ -259,6 +292,8 @@ class PipelineConfig:
 
     mutation_rate: float = 0.05
 
+    elite_count: int = 10
+
     tier2_threshold: float = -7.0
 
     bootstrap_iterations: int = 100
@@ -268,6 +303,11 @@ class PipelineConfig:
     receptor_path: Path | None = None
 
     output_directory: Path | None = None
+
+    def __post_init__(self) -> None:
+        from src.config import validate_configuration
+
+        validate_configuration(self)
 
 @dataclass(slots=True)
 class PositionStatistics:

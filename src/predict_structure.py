@@ -1,9 +1,4 @@
-"""
-predict_structure.py
-
-Predict peptide structures using ESMFold and attach structural
-metadata to Candidate objects.
-"""
+"""Remote ESMFold prediction with verified caching and per-candidate isolation."""
 
 from __future__ import annotations
 
@@ -16,59 +11,56 @@ import time
 from src.config import (
     ESMFOLD_API_URL,
     ESMFOLD_MAX_ATTEMPTS,
-    ESMFOLD_MAX_CONSECUTIVE_FAILURES,
+    ESMFOLD_MAX_RETRY_DELAY_SECONDS,
     ESMFOLD_RETRY_BACKOFF_SECONDS,
     ESMFOLD_TIMEOUT_SECONDS,
     STRUCTURE_DIR,
 )
-from src.models import Candidate
+from src.models import (
+    Candidate,
+    candidate_has_valid_structure,
+    mark_structure_unavailable,
+)
 
 logger = logging.getLogger(__name__)
-
 STRUCTURE_DIR.mkdir(parents=True, exist_ok=True)
 
-RETRYABLE_STATUS_CODES = frozenset({
-    429,
-    500,
-    502,
-    503,
-    504,
-})
+RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 
 
 class StructureServiceUnavailable(RuntimeError):
     """Raised when the remote structure service cannot be reached."""
 
 
+class PermanentStructurePredictionError(RuntimeError):
+    """Raised for an input or response error that should not be retried."""
+
+
 def _is_dns_failure(error: Exception) -> bool:
     """Identify host-resolution failures wrapped by requests/urllib3."""
 
     current: BaseException | None = error
-
     while current is not None:
         if isinstance(current, socket.gaierror):
             return True
-
         current = current.__cause__ or current.__context__
 
     message = str(error)
-    return (
-        "NameResolutionError" in message
-        or "Failed to resolve" in message
-        or "Could not resolve host" in message
+    return any(
+        marker in message
+        for marker in (
+            "NameResolutionError",
+            "Failed to resolve",
+            "Could not resolve host",
+        )
     )
 
 
 class StructurePredictor:
-    """
-    Predicts peptide structures using the remote ESMFold API.
+    """Predict peptide structures through the remote ESMFold API.
 
-    Features
-    --------
-    • Uses the remote ESMFold API.
-    • Caches predicted PDB files.
-    • Extracts mean pLDDT confidence.
-    • Attaches structural metadata to Candidate.
+    Each candidate is independent: a failed request is recorded as missing
+    evidence and does not stop the remainder of the population.
     """
 
     def __init__(
@@ -90,11 +82,8 @@ class StructurePredictor:
         )
         self.timeout = timeout
 
-    def _request_pdb(
-        self,
-        sequence: str,
-    ) -> str:
-        """Request one structure with bounded retry handling."""
+    def _request_pdb(self, sequence: str) -> str:
+        """Request one PDB with bounded retries and backoff."""
 
         headers = {
             "Content-Type": "text/plain",
@@ -111,14 +100,19 @@ class StructurePredictor:
                     timeout=self.timeout,
                 )
 
-                if response.status_code in RETRYABLE_STATUS_CODES:
+                if response.status_code >= 400:
+                    if response.status_code not in RETRYABLE_STATUS_CODES:
+                        raise PermanentStructurePredictionError(
+                            f"ESMFold API returned HTTP {response.status_code}"
+                        )
+
                     last_error = RuntimeError(
                         f"ESMFold API returned HTTP {response.status_code}"
                     )
-
                     if attempt < ESMFOLD_MAX_ATTEMPTS:
-                        delay = ESMFOLD_RETRY_BACKOFF_SECONDS * (
-                            2 ** (attempt - 1)
+                        delay = min(
+                            ESMFOLD_MAX_RETRY_DELAY_SECONDS,
+                            ESMFOLD_RETRY_BACKOFF_SECONDS * 2 ** (attempt - 1),
                         )
                         logger.warning(
                             "ESMFold request %d/%d failed with HTTP %d; "
@@ -131,24 +125,21 @@ class StructurePredictor:
                         time.sleep(delay)
                         continue
 
-                response.raise_for_status()
+                    raise StructureServiceUnavailable(str(last_error))
+
                 return response.text
 
+            except PermanentStructurePredictionError:
+                raise
             except self._requests.RequestException as exc:
                 last_error = exc
-
-                if _is_dns_failure(exc):
-                    raise StructureServiceUnavailable(
-                        f"Could not resolve ESMFold host: {self.api_url}"
-                    ) from exc
-
                 if attempt < ESMFOLD_MAX_ATTEMPTS:
-                    delay = ESMFOLD_RETRY_BACKOFF_SECONDS * (
-                        2 ** (attempt - 1)
+                    delay = min(
+                        ESMFOLD_MAX_RETRY_DELAY_SECONDS,
+                        ESMFOLD_RETRY_BACKOFF_SECONDS * 2 ** (attempt - 1),
                     )
                     logger.warning(
-                        "ESMFold request %d/%d failed: %s; "
-                        "retrying in %ss.",
+                        "ESMFold request %d/%d failed: %s; retrying in %ss.",
                         attempt,
                         ESMFOLD_MAX_ATTEMPTS,
                         exc,
@@ -157,31 +148,25 @@ class StructurePredictor:
                     time.sleep(delay)
                     continue
 
-                raise
+                if _is_dns_failure(exc):
+                    raise StructureServiceUnavailable(
+                        f"Could not resolve ESMFold host: {self.api_url}"
+                    ) from exc
+                raise StructureServiceUnavailable(str(exc)) from exc
 
-        raise RuntimeError(
+        raise StructureServiceUnavailable(
             "ESMFold request failed after all attempts."
         ) from last_error
 
     @staticmethod
-    def _extract_mean_plddt(
-        pdb_string: str,
-    ) -> float | None:
-        """
-        Extract mean pLDDT from the B-factor column
-        of the generated PDB.
-        """
+    def _extract_mean_plddt(pdb_string: str) -> float | None:
+        """Extract and normalize mean pLDDT from PDB B-factors."""
 
         values = []
-
         for line in pdb_string.splitlines():
-
             if line.startswith("ATOM"):
-
                 try:
-                    values.append(
-                        float(line[60:66])
-                    )
+                    values.append(float(line[60:66]))
                 except ValueError:
                     continue
 
@@ -189,238 +174,165 @@ class StructurePredictor:
             return None
 
         mean_plddt = sum(values) / len(values)
-
-        # ESM Atlas responses commonly store pLDDT in [0, 1], while
-        # the rest of this project uses the conventional [0, 100] scale.
         if 0 < mean_plddt <= 1:
             mean_plddt *= 100
-
         return round(mean_plddt, 2)
 
-    def predict(
-        self,
+    @staticmethod
+    def _valid_pdb(pdb_string: str) -> bool:
+        return any(
+            line.startswith(("ATOM  ", "HETATM"))
+            for line in pdb_string.splitlines()
+        )
+
+    @classmethod
+    def _set_success(
+        cls,
         candidate: Candidate,
-    ) -> Candidate:
+        pdb_path: Path,
+        pdb_string: str,
+        status: str,
+    ) -> None:
+        if not cls._valid_pdb(pdb_string):
+            raise ValueError("PDB contains no atom records.")
+
+        confidence = cls._extract_mean_plddt(pdb_string)
+        if confidence is None:
+            raise ValueError("PDB contains no usable pLDDT values.")
+
+        candidate.structure_path = pdb_path
+        candidate.structure_confidence = confidence
+        candidate.metadata["structure_available"] = True
+        candidate.metadata["structure_backend"] = "ESMFold"
+        candidate.metadata["structure_status"] = status
+        candidate.metadata.pop("structure_error", None)
+
+        if not candidate_has_valid_structure(candidate):
+            raise ValueError("Structure state failed validation.")
+
+    def predict(self, candidate: Candidate) -> Candidate:
+        """Predict one candidate without affecting other candidates."""
 
         pdb_path = STRUCTURE_DIR / f"{candidate.sequence}.pdb"
+        candidate.structure_path = None
+        candidate.structure_confidence = None
+        candidate.metadata["structure_available"] = False
+        candidate.metadata["structure_backend"] = "ESMFold"
+        candidate.metadata["structure_status"] = "pending"
+        candidate.metadata.pop("structure_error", None)
 
-        #######################################################
-        # Cached structure
-        #######################################################
-
-        if pdb_path.exists():
-
-            candidate.structure_path = pdb_path
-            candidate.metadata["structure_available"] = True
-            candidate.metadata["structure_backend"] = "ESMFold"
-            candidate.metadata["structure_status"] = "cached"
-
+        if pdb_path.is_file():
             try:
-                pdb_string = pdb_path.read_text()
-
-                candidate.structure_confidence = (
-                    self._extract_mean_plddt(
-                        pdb_string
-                    )
+                self._set_success(
+                    candidate,
+                    pdb_path,
+                    pdb_path.read_text(),
+                    "cached",
                 )
-
-            except Exception:
-
-                pass
-
-            return candidate
-
-        #######################################################
-        # Run ESMFold
-        #######################################################
+                logger.info(
+                    "ESMFold cached | sequence=%s | pLDDT=%.2f",
+                    candidate.sequence,
+                    candidate.structure_confidence,
+                )
+                return candidate
+            except Exception as exc:
+                logger.warning(
+                    "ESMFold cache invalid | sequence=%s | reason=%s",
+                    candidate.sequence,
+                    exc,
+                )
 
         try:
-
-            pdb_string = self._request_pdb(
-                candidate.sequence,
-            )
-
-            if "ATOM" not in pdb_string:
-                raise RuntimeError(
-                    "ESMFold API returned no ATOM records."
-                )
-
+            pdb_string = self._request_pdb(candidate.sequence)
             pdb_path.write_text(pdb_string)
-
-            candidate.structure_path = pdb_path
-
-            candidate.metadata["structure_available"] = True
-            candidate.metadata["structure_backend"] = "ESMFold"
-            candidate.metadata["structure_status"] = "success"
-
-            candidate.structure_confidence = (
-                self._extract_mean_plddt(
-                    pdb_string
-                )
-            )
-
+            self._set_success(candidate, pdb_path, pdb_string, "success")
             logger.info(
-                "Predicted structure for %s (mean pLDDT %.2f)",
+                "ESMFold success | sequence=%s | pLDDT=%.2f",
                 candidate.sequence,
-                candidate.structure_confidence
-                if candidate.structure_confidence is not None
-                else -1.0,
+                candidate.structure_confidence,
             )
-
         except StructureServiceUnavailable as exc:
-
-            logger.error(
-                "ESMFold service unavailable for %s: %s",
-                candidate.sequence,
-                exc,
+            mark_structure_unavailable(
+                candidate,
+                status="unavailable",
+                error=str(exc),
             )
-
-            candidate.structure_path = None
-            candidate.structure_confidence = None
-            candidate.metadata["structure_available"] = False
-            candidate.metadata["structure_status"] = "unavailable"
-
-        except Exception as exc:
-
+            candidate.metadata["structure_backend"] = "ESMFold"
             logger.warning(
-                "Structure prediction failed for %s: %s",
+                "ESMFold failure | sequence=%s | attempt=%d/%d | reason=%s",
                 candidate.sequence,
+                ESMFOLD_MAX_ATTEMPTS,
+                ESMFOLD_MAX_ATTEMPTS,
                 exc,
             )
-
-            candidate.structure_path = None
-            candidate.structure_confidence = None
-
-            candidate.metadata["structure_available"] = False
-            candidate.metadata["structure_status"] = "failed"
+        except Exception as exc:
+            mark_structure_unavailable(
+                candidate,
+                status="failed",
+                error=str(exc),
+            )
+            candidate.metadata["structure_backend"] = "ESMFold"
+            logger.warning(
+                "ESMFold failure | sequence=%s | attempt=%d/%d | reason=%s",
+                candidate.sequence,
+                ESMFOLD_MAX_ATTEMPTS,
+                ESMFOLD_MAX_ATTEMPTS,
+                exc,
+            )
 
         return candidate
+
+
+def _mark_population_unavailable(
+    candidates: list[Candidate],
+    error: str,
+) -> None:
+    for candidate in candidates:
+        mark_structure_unavailable(
+            candidate,
+            status="unavailable",
+            error=error,
+        )
+        candidate.metadata["structure_backend"] = "ESMFold"
 
 
 def predict_population_structures(
     candidates: list[Candidate],
 ) -> list[Candidate]:
-    """
-    Predict structures for a population through the remote ESMFold API.
-
-    If the API client or remote service is unavailable, explicitly mark the
-    structural stage as unavailable and return candidates
-    without fabricated structural metrics.
-    """
+    """Predict each candidate independently and report evidence counts."""
 
     try:
         predictor = StructurePredictor()
-
     except ImportError as exc:
-
-        logger.warning(
-            "ESMFold unavailable: required dependency missing (%s). "
-            "Structural prediction disabled for this run.",
-            exc,
-        )
-
-        for candidate in candidates:
-            candidate.structure_path = None
-            candidate.structure_confidence = None
-            candidate.metadata["structure_available"] = False
-            candidate.metadata["structure_backend"] = "ESMFold"
-            candidate.metadata["structure_status"] = "unavailable"
-
+        logger.warning("ESMFold unavailable: %s", exc)
+        _mark_population_unavailable(candidates, str(exc))
         return candidates
-
     except Exception as exc:
-
-        logger.warning(
-            "ESMFold initialization failed: %s. "
-            "Structural prediction disabled for this run.",
-            exc,
-        )
-
-        for candidate in candidates:
-            candidate.structure_path = None
-            candidate.structure_confidence = None
-            candidate.metadata["structure_available"] = False
-            candidate.metadata["structure_backend"] = "ESMFold"
-            candidate.metadata["structure_status"] = "failed"
-
+        logger.warning("ESMFold initialization failed: %s", exc)
+        _mark_population_unavailable(candidates, str(exc))
         return candidates
 
-    predicted = []
-    consecutive_failures = 0
+    counts = {"success": 0, "cached": 0, "failed": 0, "unavailable": 0}
     total = len(candidates)
 
     for index, candidate in enumerate(candidates, start=1):
-
         logger.info(
             "ESMFold progress: %d/%d | %s",
             index,
             total,
             candidate.sequence,
         )
+        predictor.predict(candidate)
+        status = candidate.metadata.get("structure_status", "failed")
+        counts[status] = counts.get(status, 0) + 1
 
-        candidate = predictor.predict(candidate)
-
-        candidate.metadata["structure_backend"] = "ESMFold"
-
-        if candidate.structure_path is not None:
-            candidate.metadata["structure_available"] = True
-            candidate.metadata["structure_status"] = "success"
-            consecutive_failures = 0
-        elif candidate.metadata.get("structure_status") == "unavailable":
-            predicted.append(candidate)
-
-            remaining = candidates[index:]
-            logger.warning(
-                "Stopping ESMFold requests because the service is "
-                "unavailable; %d candidates marked unavailable.",
-                len(remaining),
-            )
-
-            for remaining_candidate in remaining:
-                remaining_candidate.structure_path = None
-                remaining_candidate.structure_confidence = None
-                remaining_candidate.metadata[
-                    "structure_available"
-                ] = False
-                remaining_candidate.metadata[
-                    "structure_backend"
-                ] = "ESMFold"
-                remaining_candidate.metadata[
-                    "structure_status"
-                ] = "unavailable"
-
-            predicted.extend(remaining)
-            break
-        else:
-            candidate.metadata["structure_available"] = False
-            candidate.metadata["structure_status"] = "failed"
-            consecutive_failures += 1
-
-        predicted.append(candidate)
-
-        if consecutive_failures >= ESMFOLD_MAX_CONSECUTIVE_FAILURES:
-            remaining = candidates[index:]
-            logger.warning(
-                "Stopping ESMFold requests after %d consecutive failures; "
-                "%d candidates marked unavailable.",
-                consecutive_failures,
-                len(remaining),
-            )
-
-            for remaining_candidate in remaining:
-                remaining_candidate.structure_path = None
-                remaining_candidate.structure_confidence = None
-                remaining_candidate.metadata[
-                    "structure_available"
-                ] = False
-                remaining_candidate.metadata[
-                    "structure_backend"
-                ] = "ESMFold"
-                remaining_candidate.metadata[
-                    "structure_status"
-                ] = "unavailable"
-
-            predicted.extend(remaining)
-            break
-
-    return predicted
+    logger.info(
+        "Structure prediction status: successful=%d | unavailable=%d | "
+        "cached=%d | failed=%d | total=%d",
+        counts.get("success", 0),
+        counts.get("unavailable", 0),
+        counts.get("cached", 0),
+        counts.get("failed", 0),
+        total,
+    )
+    return candidates

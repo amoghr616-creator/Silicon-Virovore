@@ -73,7 +73,13 @@ class ReportGenerator:
                 "Mean ΔG",
                 "Consensus ΔG",
                 "Vina ΔG",
+                "Vina Status",
+                "Tier 2 Eligible",
+                "Tier 2 Attempted",
                 "Tier 2 Validated",
+                "Tier 2 Status",
+                "Docking Status",
+                "Structure Status",
                 "pLDDT",
                 "Hydrophobic Moment",
                 "Helix",
@@ -95,7 +101,13 @@ class ReportGenerator:
                     c.mean_delta_g,
                     c.metadata.get("consensus_docking"),
                     c.vina_delta_g,
+                    c.metadata.get("vina_status"),
+                    c.metadata.get("tier2_eligible", False),
+                    c.metadata.get("tier2_attempted", False),
                     c.passed_tier_2,
+                    c.metadata.get("tier2_status"),
+                    c.metadata.get("docking_status"),
+                    c.metadata.get("structure_status"),
                     c.structure_confidence,
                     c.hydrophobic_moment,
                     c.helix_propensity,
@@ -126,6 +138,17 @@ class ReportGenerator:
         lines.append(
             f"Candidates Across Full Run: {len(report.top_candidates)}\n"
         )
+
+        if report.audit:
+            execution = report.audit.get("execution", {})
+            lines.append(
+                "Evidence totals: "
+                f"structures={execution.get('structure_available_count', 0)}; "
+                f"surrogate={execution.get('surrogate_docking_count', 0)}; "
+                f"tier2 eligible={execution.get('tier2_eligible_count', 0)}; "
+                f"tier2 validated={execution.get('tier2_validated_count', 0)}; "
+                f"candidate-record counts={report.audit.get('evidence', {}).get('candidate_record_counts', {})}\n"
+            )
 
         lines.append("\n---\n")
 
@@ -170,7 +193,31 @@ class ReportGenerator:
             )
 
             lines.append(
+                f"- Vina Status: {c.metadata.get('vina_status')}\n"
+            )
+
+            lines.append(
+                f"- Tier 2 Eligible: {c.metadata.get('tier2_eligible', False)}\n"
+            )
+
+            lines.append(
+                f"- Tier 2 Attempted: {c.metadata.get('tier2_attempted', False)}\n"
+            )
+
+            lines.append(
                 f"- Tier 2 Validated: {c.passed_tier_2}\n"
+            )
+
+            lines.append(
+                f"- Tier 2 Status: {c.metadata.get('tier2_status')}\n"
+            )
+
+            lines.append(
+                f"- Docking Status: {c.metadata.get('docking_status')}\n"
+            )
+
+            lines.append(
+                f"- Structure Status: {c.metadata.get('structure_status')}\n"
             )
 
             lines.append(

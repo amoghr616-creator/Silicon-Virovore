@@ -7,13 +7,20 @@ Combines every computational stage into one overall score.
 """
 
 from __future__ import annotations
-from asyncio.log import logger
-
-from src.models import Candidate
 import logging
+
+from src.models import Candidate, candidate_has_valid_structure
+
 logger = logging.getLogger(__name__)
 
 class CandidateRanker:
+    """Rank candidates with an explicit missing-evidence policy.
+
+    Missing weighted metrics are excluded from the candidate's denominator;
+    they are never converted into a favorable numeric measurement. The
+    candidate remains eligible for ranking on the metrics that were actually
+    computed, while ``ranking_missing_evidence`` records what was absent.
+    """
 
     def __init__(
         self,
@@ -128,7 +135,10 @@ class CandidateRanker:
 
         confidence = 0.0
 
-        if candidate.structure_confidence is not None:
+        if (
+            candidate_has_valid_structure(candidate)
+            and candidate.structure_confidence is not None
+        ):
 
             confidence += (
                 candidate.structure_confidence / 100.0
@@ -169,13 +179,12 @@ class CandidateRanker:
         ]
 
         docking = [
-            self._metadata(
-                c,
-                "consensus_docking",
-                self._safe(
-                    c.strongest_anchor_delta_g
-                ),
-            )
+            c.metadata.get("consensus_docking")
+            if c.metadata.get("docking_status") in {
+                "complete",
+                "incomplete",
+            }
+            else None
             for c in candidates
         ]
 
@@ -189,8 +198,9 @@ class CandidateRanker:
         ]
 
         structure = [
-        
             c.structure_confidence
+            if candidate_has_valid_structure(c)
+            else None
             for c in candidates
         ]
 
@@ -236,7 +246,8 @@ class CandidateRanker:
         )
 
         docking_norm = self.normalize(
-            docking
+            docking,
+            reverse=True,
         )
 
         structure_norm = self.normalize(
@@ -284,7 +295,7 @@ class CandidateRanker:
                 weight,
             ):
                 if normalized_value is None:
-                    return 0.0
+                    return None
                 return normalized_value * weight
 
             breakdown["fitness"] = weighted_component(
@@ -327,17 +338,28 @@ class CandidateRanker:
                 self.weights["safety"],
             )
 
-            candidate.ranking_breakdown = breakdown
+            candidate.ranking_breakdown = {
+                key: value
+                for key, value in breakdown.items()
+                if value is not None
+            }
 
             candidate.metadata["ranking_total"] = round(
-                sum(breakdown.values()),
+                sum(value for value in breakdown.values() if value is not None),
                 6,
             )
 
             candidate.metadata["ranking_components"] = {
                 key: round(value, 6)
                 for key, value in breakdown.items()
+                if value is not None
             }
+
+            candidate.metadata["ranking_missing_evidence"] = [
+                key
+                for key, value in breakdown.items()
+                if value is None and self.weights[key] > 0.0
+            ]
 
             available_weight = 0.0
             weighted_total = 0.0
@@ -361,14 +383,11 @@ class CandidateRanker:
                     6,
                 )
                 logger.debug(
-    "RANK %s | score=%.4f | breakdown=%s",
-    candidate.sequence,
-    candidate.overall_score,
-    {
-        k: round(v, 4)
-        for k, v in breakdown.items()
-    },
-)
+                    "RANK %s | score=%.4f | breakdown=%s",
+                    candidate.sequence,
+                    candidate.overall_score,
+                    candidate.metadata["ranking_components"],
+                )
             else:
                 candidate.overall_score = 0.0
 

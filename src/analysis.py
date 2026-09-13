@@ -17,6 +17,7 @@ from src.models import (
     PipelineReport,
     RankedCandidate,
 )
+from src.config import STRUCTURE_DIR
 
 from src.diversity import DiversityAnalyzer
 from src.correlation import CorrelationAnalyzer
@@ -33,7 +34,8 @@ class AnalysisEngine:
         self,
         candidates: list[Candidate],
         runtime_seconds: float,
-        structure_directory: str | Path = "structures",
+        structure_directory: str | Path = STRUCTURE_DIR,
+        audit: dict | None = None,
     ) -> PipelineReport:
 
         if not candidates:
@@ -123,6 +125,7 @@ class AnalysisEngine:
             validation=validation,
             runtime_seconds=runtime_seconds,
             timestamp=datetime.now().isoformat(),
+            audit=audit or {},
         )
 
         logger.info("Analysis complete.")

@@ -7,11 +7,7 @@ Python interface to the Silicon Virovore native C backend.
 from pathlib import Path
 import ctypes
 import platform
-
-from pathlib import Path
 import sys
-
-from sympy import sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -70,23 +66,20 @@ lib.c_check_sequence_fitness.argtypes = [
 ]
 lib.c_check_sequence_fitness.restype = ctypes.c_double
 
-PopulationArray = (
-    (ctypes.c_char * (SEQ_LEN + 1))
-)
+lib.c_seed_random.argtypes = [ctypes.c_uint]
+lib.c_seed_random.restype = None
+
+PopulationRow = ctypes.c_char * (SEQ_LEN + 1)
+PopulationPointer = ctypes.POINTER(PopulationRow)
 
 lib.c_generate_mutated_population.restype = None
 
 ImportanceArray = ctypes.c_double * SEQ_LEN
 
-PopulationType = (
-    (ctypes.c_char * (SEQ_LEN + 1))
-    * POPULATION_SIZE
-)
-
 lib.c_generate_adaptive_population.argtypes = [
     ctypes.c_char_p,
     ImportanceArray,
-    PopulationType,
+    PopulationPointer,
     ctypes.c_int,
 ]
 
@@ -94,6 +87,11 @@ lib.c_generate_adaptive_population.restype = None
 # ==========================================================
 # Python Wrappers
 # ==========================================================
+
+def seed_native_random(seed: int) -> None:
+    """Seed the native C RNG used by both population generators."""
+
+    lib.c_seed_random(ctypes.c_uint(seed))
 
 def process_candidate_peptide(sequence: str) -> Candidate:
     """
@@ -146,7 +144,7 @@ def generate_c_population(
         )
 
     PopulationType = (
-        (ctypes.c_char * (SEQ_LEN + 1))
+        PopulationRow
         * pop_size
     )
 
@@ -180,7 +178,7 @@ def generate_adaptive_population(
     seed_sequence = seed_sequence.upper()
 
     PopulationType = (
-        (ctypes.c_char * (SEQ_LEN + 1))
+        PopulationRow
         * pop_size
     )
 

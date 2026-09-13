@@ -58,6 +58,8 @@ void c_generate_adaptive_population(
     int pop_size
 );
 
+void c_seed_random(unsigned int seed);
+
 
 // Advanced Physics Math Engines
 int compute_charge_profile(const char *sequence, int charge_threshold, charge_summary *summary_out);

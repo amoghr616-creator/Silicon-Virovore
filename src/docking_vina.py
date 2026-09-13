@@ -12,6 +12,7 @@ without changing the remainder of the pipeline.
 """
 
 import logging
+import math
 import os
 import re
 import shutil
@@ -32,7 +33,7 @@ from src.config import (
     VINA_MAX_EVALS,
     VINA_NUM_MODES,
 )
-from src.models import Candidate
+from src.models import Candidate, candidate_has_valid_structure
 
 logger = logging.getLogger(__name__)
 
@@ -56,14 +57,17 @@ class MLSurrogateBackend(DockingBackend):
     """
     Lightweight heuristic docking surrogate.
 
-    This backend must remain fast and must not invoke
-    AutoDock Vina. It is used for Tier-1 screening.
+    This backend is deterministic, local, and used only for Tier-1
+    computational screening. It is not an experimental affinity.
     """
 
     HYDROPHOBIC = set("AILMFWYV")
     CHARGED = set("RHKDE")
 
     def score_fragment(self, fragment: str) -> float:
+        if not fragment:
+            raise ValueError("Cannot score an empty fragment.")
+
         score = -5.0
 
         for aa in fragment:
@@ -426,149 +430,147 @@ class PeptideDockingScorer:
             candidate.sequence,
         )
 
-        fragments = self._fragments(
-            candidate.sequence
-        )
-
+        fragments = self._fragments(candidate.sequence)
         scores: list[float] = []
+        valid_fragments: list[str] = []
+        failed_fragments: dict[str, str] = {}
 
         candidate.fragment_scores.clear()
+        candidate.docking_scores = []
+        candidate.fragments = fragments
+        candidate.best_fragment = None
+        candidate.mean_delta_g = None
+        candidate.strongest_anchor_delta_g = None
+        candidate.vina_delta_g = None
+        candidate.passed_tier_2 = False
 
-        # ----------------------------------------------------
-        # Score every fragment
-        # ----------------------------------------------------
+        # Reset all evidence flags on every evaluation.
+        candidate.metadata.update({
+            "docking_backend": (
+                "MLSurrogate"
+                if isinstance(self.backend, MLSurrogateBackend)
+                else type(self.backend).__name__
+            ),
+            "docking_is_surrogate": isinstance(
+                self.backend,
+                MLSurrogateBackend,
+            ),
+            "docking_validated": False,
+            "docking_status": "pending",
+            "tier2_eligible": False,
+            "tier2_attempted": False,
+            "tier2_validated": False,
+            "tier2_status": "not_eligible",
+            "vina_status": "not_attempted",
+            "vina_score_available": False,
+        })
+        for key in (
+            "docking_error",
+            "docking_failed_fragments",
+            "tier2_error",
+            "tier2_backend",
+        ):
+            candidate.metadata.pop(key, None)
 
         for fragment in fragments:
-
-            delta_g = self.backend.score_fragment(
-                fragment
-            )
+            try:
+                delta_g = float(self.backend.score_fragment(fragment))
+                if not math.isfinite(delta_g):
+                    raise ValueError("backend returned a non-finite score")
+            except Exception as exc:
+                failed_fragments[fragment] = str(exc)
+                continue
 
             scores.append(delta_g)
+            valid_fragments.append(fragment)
+            candidate.fragment_scores[fragment] = delta_g
 
-            candidate.fragment_scores[
-                fragment
-            ] = delta_g
-
-        candidate.fragments = fragments
         candidate.docking_scores = scores
 
-        # ----------------------------------------------------
-        # Summary statistics
-        # ----------------------------------------------------
+        if failed_fragments:
+            candidate.metadata["docking_failed_fragments"] = failed_fragments
 
-        candidate.mean_delta_g = round(
-            sum(scores) / len(scores),
-            2,
-        )
+        if not scores:
+            candidate.metadata["docking_status"] = "unavailable"
+            candidate.metadata["docking_error"] = (
+                "No fragment produced a valid docking score."
+            )
+            candidate.metadata["ranking_observation_valid"] = False
+            logger.warning(
+                "Docking unavailable | sequence=%s | failed_fragments=%d",
+                candidate.sequence,
+                len(failed_fragments),
+            )
+            return candidate
 
+        candidate.mean_delta_g = round(sum(scores) / len(scores), 2)
         candidate.strongest_anchor_delta_g = min(scores)
-
-        best_index = scores.index(
+        candidate.best_fragment = valid_fragments[scores.index(
             candidate.strongest_anchor_delta_g
+        )]
+        candidate.metadata["docking_std"] = (
+            statistics.stdev(scores) if len(scores) > 1 else 0.0
         )
-
-        candidate.best_fragment = fragments[
-            best_index
-        ]
-
-        docking_std = (
-            statistics.stdev(scores)
-            if len(scores) > 1
-            else 0.0
-        )
-
-        candidate.metadata[
-            "docking_std"
-        ] = docking_std
-
         consensus_score = self._consensus_score(
             candidate.strongest_anchor_delta_g,
             candidate.mean_delta_g,
         )
-
-        candidate.metadata[
-            "consensus_docking"
-        ] = consensus_score
-
-        candidate.metadata[
-            "docking_backend"
-        ] = type(self.backend).__name__
-
-        candidate.metadata[
-            "docking_is_surrogate"
-        ] = isinstance(
-            self.backend,
-            MLSurrogateBackend,
+        candidate.metadata["consensus_docking"] = consensus_score
+        candidate.metadata["docking_status"] = (
+            "incomplete" if failed_fragments else "complete"
         )
+        candidate.metadata["ranking_observation_valid"] = not failed_fragments
 
-        candidate.metadata[
-            "docking_validated"
-        ] = False
+        # Tier 2 eligibility is a surrogate gate; it is not validation.
+        tier2_eligible = candidate.strongest_anchor_delta_g <= TIER2_THRESHOLD
+        candidate.metadata["tier2_eligible"] = tier2_eligible
 
-        # --------------------------------------------------------
-        # Tier-2 Validation
-        # --------------------------------------------------------
-
-        tier2_eligible = (
-            self.vina_backend is not None
-            and candidate.strongest_anchor_delta_g <= TIER2_THRESHOLD
-        )
-
-        if tier2_eligible and candidate.structure_path is not None:
-
-            logger.info(
-                "Tier-2 validation triggered."
+        if not tier2_eligible:
+            candidate.metadata["tier2_status"] = "not_eligible"
+        elif not candidate_has_valid_structure(candidate):
+            candidate.metadata["tier2_status"] = "eligible_no_structure"
+            candidate.add_note(
+                "Tier-2 eligibility reached, but validation was skipped "
+                "because no verified structure was available."
             )
-
+        elif self.vina_backend is None:
+            candidate.metadata["tier2_status"] = "unavailable"
+            candidate.metadata["vina_status"] = "unavailable"
+            candidate.add_note("Tier-2 validation unavailable.")
+        else:
+            candidate.metadata["tier2_attempted"] = True
+            candidate.metadata["vina_status"] = "attempted"
+            logger.info("Tier-2 validation triggered.")
             try:
+                vina_score = float(self.vina_backend.score_fragment(
+                    candidate.best_fragment,
+                    candidate.structure_path,
+                ))
+                if not math.isfinite(vina_score):
+                    raise ValueError("Vina returned a non-finite score")
 
-                candidate.vina_delta_g = (
-                    self.vina_backend.score_fragment(
-                        candidate.best_fragment,
-                        candidate.structure_path,
-                    )
-                )
-
+                candidate.vina_delta_g = vina_score
                 candidate.passed_tier_2 = True
+                candidate.metadata["tier2_validated"] = True
                 candidate.metadata["docking_validated"] = True
-                candidate.metadata["tier2_backend"] = "AutoDockVina"
-
+                candidate.metadata["tier2_status"] = "validated"
+                candidate.metadata["tier2_backend"] = "AutoDock Vina"
+                candidate.metadata["vina_status"] = "success"
+                candidate.metadata["vina_score_available"] = True
                 candidate.add_note(
                     "Tier-2 structure-based validation completed."
                 )
-
             except Exception as exc:
-
+                candidate.vina_delta_g = None
+                candidate.metadata["tier2_status"] = "failed"
+                candidate.metadata["tier2_error"] = str(exc)
+                candidate.metadata["vina_status"] = "failed"
+                candidate.add_note("Tier-2 validation failed.")
                 logger.warning(
                     "Tier-2 validation failed for %s: %s",
                     candidate.sequence,
                     exc,
                 )
-
-                candidate.passed_tier_2 = False
-                candidate.vina_delta_g = None
-
-        elif tier2_eligible:
-
-            logger.warning(
-                "Tier-2 eligibility reached for %s, but no structure "
-                "is available; validation skipped.",
-                candidate.sequence,
-            )
-
-            candidate.passed_tier_2 = False
-            candidate.vina_delta_g = None
-
-            candidate.add_note(
-                "Tier-2 eligibility reached, but validation was skipped "
-                "because no structure was available."
-            )
-
-        else:
-
-            candidate.passed_tier_2 = False
-            candidate.vina_delta_g = None
 
         logger.info(
             (

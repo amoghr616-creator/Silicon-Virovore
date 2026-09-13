@@ -63,6 +63,9 @@ class ParetoAnalyzer:
             solvation penalty
         """
 
+        if candidate.strongest_anchor_delta_g is None:
+            raise ValueError("Pareto analysis requires docking evidence.")
+
         return (
 
             candidate.c_score,
@@ -100,7 +103,11 @@ class ParetoAnalyzer:
     # --------------------------------------------------------
 
     def compute_front(self, candidates):
-
+        candidates = [
+            candidate
+            for candidate in candidates
+            if candidate.strongest_anchor_delta_g is not None
+        ]
         pareto = [
 
             ParetoCandidate(

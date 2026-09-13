@@ -22,6 +22,10 @@ from c.bridge import (
 from src.models import Candidate
 
 from src.config import (
+    ARISE_ENABLED,
+    ARISE_MIN_OBSERVATIONS,
+    DIVERSITY_REFILL_ATTEMPTS,
+    REMOVE_DUPLICATE_CANDIDATES,
     POPULATION_SIZE,
     MUTATION_RATE,
 )
@@ -47,6 +51,16 @@ class ARISEEngine:
 
         # Current normalized importance values.
         self._importance: dict[int, float] = {}
+        self.sequence_length = 0
+        self.position_observations: dict[int, int] = {}
+
+    def reset(self) -> None:
+        """Reset learning state at the beginning of an experiment."""
+
+        self.position_scores.clear()
+        self._importance.clear()
+        self.position_observations.clear()
+        self.sequence_length = 0
 
     def observe_generation(
         self,
@@ -61,16 +75,34 @@ class ARISEEngine:
         different candidate scores.
         """
 
-        if not ranked_candidates:
+        valid_candidates = [
+            candidate
+            for candidate in ranked_candidates
+            if candidate.metadata.get("ranking_observation_valid") is True
+        ]
+
+        if not valid_candidates:
             return
 
-        sequence_length = len(ranked_candidates[0].sequence)
+        for candidate in valid_candidates:
+            candidate.metadata["arise_observation_score"] = float(
+                candidate.overall_score
+            )
+            candidate.metadata["arise_observation_source"] = "overall_score"
+
+        logger.info(
+            "ARISE objective: overall_score | candidates=%d",
+            len(valid_candidates),
+        )
+
+        sequence_length = len(valid_candidates[0].sequence)
+        self.sequence_length = sequence_length
 
         for position in range(sequence_length):
 
             residue_scores: dict[str, list[float]] = {}
 
-            for candidate in ranked_candidates:
+            for candidate in valid_candidates:
 
                 if position >= len(candidate.sequence):
                     continue
@@ -86,17 +118,18 @@ class ARISEEngine:
                     float(candidate.overall_score)
                 )
 
+            total_observations = sum(
+                len(scores)
+                for scores in residue_scores.values()
+            )
+            self.position_observations[position] = total_observations
+
             # Need at least two distinct residue groups
             # to estimate a positional effect.
             if len(residue_scores) < 2:
                 continue
 
-            total_observations = sum(
-                len(scores)
-                for scores in residue_scores.values()
-            )
-
-            if total_observations < 5:
+            if total_observations < ARISE_MIN_OBSERVATIONS:
                 continue
 
             residue_means = []
@@ -161,18 +194,43 @@ class ARISEEngine:
 
     def importance_map(self) -> dict[int, float]:
         """
-        Return normalized position importance.
+        Return normalized importance for every residue position.
         """
 
         return {
-            position: round(
-                value,
-                3,
-            )
-            for position, value
-            in sorted(
-                self._importance.items()
-            )
+            position: round(self._importance.get(position, 0.5), 3)
+            for position in range(self.sequence_length)
+        }
+
+    def importance_observations(self) -> dict[int, int]:
+        """Return the number of valid observations used per position."""
+
+        return {
+            position: self.position_observations.get(position, 0)
+            for position in range(self.sequence_length)
+        }
+
+    def importance_statistics(self) -> dict[str, float | int]:
+        values = self.get_importance_array(self.sequence_length)
+        if not values:
+            return {
+                "mean": 0.0,
+                "nonuniformity": 0.0,
+                "observed_positions": 0,
+            }
+
+        mean = sum(values) / len(values)
+        return {
+            "mean": round(mean, 4),
+            "nonuniformity": round(
+                max(values) - min(values),
+                4,
+            ),
+            "observed_positions": sum(
+                1
+                for position in range(self.sequence_length)
+                if self.position_observations.get(position, 0) > 0
+            ),
         }
 
     def get_importance_array(
@@ -203,6 +261,7 @@ def generate_candidates(
     seed_sequence: str,
     population_size: int = POPULATION_SIZE,
     mutation_rate: float = MUTATION_RATE,
+    arise_enabled: bool = ARISE_ENABLED,
 ) -> list[Candidate]:
     """
     Generate candidate peptides.
@@ -218,35 +277,57 @@ def generate_candidates(
 
     logger.info("Generating peptide candidates...")
 
-    importance_map = ARISE_ENGINE.get_importance_array(
-        len(seed_sequence)
-    )
-
-    has_learned_importance = bool(
-        ARISE_ENGINE._importance
-    )
+    importance_map = ARISE_ENGINE.get_importance_array(len(seed_sequence))
+    has_learned_importance = bool(ARISE_ENGINE.position_scores)
     logger.info(
-    "ARISE mode enabled | importance=%s",
-    [
-        round(x, 3)
-        for x in importance_map
-    ],
-)
-    if has_learned_importance:
+        "ARISE mode %s | importance=%s | observations=%s",
+        "enabled" if arise_enabled else "disabled",
+        [round(x, 3) for x in importance_map],
+        ARISE_ENGINE.importance_observations(),
+    )
 
-        sequences = generate_adaptive_population(
+    def generate_batch(size: int) -> list[str]:
+        if arise_enabled and has_learned_importance:
+            return generate_adaptive_population(
+                seed_sequence,
+                importance_map,
+                pop_size=size,
+            )
+        return generate_c_population(
             seed_sequence,
-            importance_map,
-            pop_size=population_size,
-        )
-
-    else:
-
-        sequences = generate_c_population(
-            seed_sequence,
-            pop_size=population_size,
+            pop_size=size,
             mutation_rate=mutation_rate,
         )
+
+    sequences: list[str] = []
+    seen: set[str] = set()
+    attempts = 0
+    while len(sequences) < population_size:
+        batch = generate_batch(population_size - len(sequences))
+        if not REMOVE_DUPLICATE_CANDIDATES:
+            sequences.extend(batch)
+            break
+
+        before = len(sequences)
+        for sequence in batch:
+            if sequence not in seen:
+                seen.add(sequence)
+                sequences.append(sequence)
+                if len(sequences) >= population_size:
+                    break
+
+        attempts += 1
+        if len(sequences) >= population_size:
+            break
+        if attempts >= DIVERSITY_REFILL_ATTEMPTS:
+            logger.warning(
+                "Could only generate %d/%d unique candidates after %d attempts.",
+                len(sequences),
+                population_size,
+                attempts,
+            )
+            if before == len(sequences):
+                break
 
     candidates: list[Candidate] = []
 
@@ -259,11 +340,17 @@ def generate_candidates(
         if candidate is None:
             continue
 
+        candidate.metadata["mutation_count"] = sum(
+            old != new
+            for old, new in zip(seed_sequence, sequence)
+        )
+        candidate.metadata["is_duplicate"] = False
         candidates.append(candidate)
 
     logger.info(
-        "Generated %d candidates.",
+        "Generated %d candidates (%d unique).",
         len(candidates),
+        len({candidate.sequence for candidate in candidates}),
     )
 
     return candidates

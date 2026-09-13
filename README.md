@@ -169,6 +169,27 @@ Run the pipeline
 python run_pipeline.py
 ```
 
+The pipeline records a machine-readable audit at
+`results/experiment_audit.json`. Structure prediction may be unavailable on
+a per-candidate basis; missing structures remain missing evidence. The fast
+surrogate docking stage is separate from optional AutoDock Vina Tier-2
+validation, which requires a verified structure and a successful Vina run.
+
+`ARISE_ENABLED` in `src/config.py` controls the adaptive generation path. Set
+it to `False` for a baseline run with the same native population generator.
+The configured `RANDOM_SEED` seeds Python, NumPy when installed, and the
+native C population generator.
+
+The audit stores one generation summary per generation, including docking,
+pLDDT, diversity, mutation frequency, ARISE importance, and observation
+counts. Candidate provenance preserves both the score observed during its
+generation and the score assigned by the final full-run reranking.
+
+Vina evidence is represented separately with `tier2_eligible`,
+`tier2_attempted`, `tier2_validated`, `vina_delta_g`, and `vina_status`.
+`vina_delta_g: 0.0` is retained only when AutoDock Vina actually reports
+exactly zero; missing or failed Vina evidence remains `None` with a status.
+
 Launch the dashboard
 
 ```bash
@@ -207,6 +228,7 @@ results/
 - Cross-platform design
 - Integrated visualization tools
 - Hardware/software co-design
+- Novel learning algorithm
 
 ---
 
@@ -218,6 +240,16 @@ Docking scores and molecular dynamics simulations should not be interpreted as e
 
 Experimental validation, including biochemical binding assays and cell-based studies, is required to evaluate biological activity.
 
+ESMFold service failures and missing Tier-2 structures are reported as
+unavailable evidence rather than replaced with surrogate or fabricated
+values. A Tier-2 eligibility score means only that Vina was considered; it
+does not mean validation occurred.
+
+Raw docking energies retain the Vina convention that more-negative values are
+better. Ranking normalization preserves that ordering. ARISE currently learns
+from the generation-local overall ranking score, excluding candidates with
+invalid or incomplete docking observations.
+
 ---
 
 # Future Work
@@ -228,7 +260,6 @@ Planned improvements include
 - multi-objective evolutionary optimization
 - GPU acceleration
 - expanded structural databases
-- AlphaFold integration improvements
 - experimental validation
 - automated statistical benchmarking
 
