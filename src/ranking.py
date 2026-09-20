@@ -99,6 +99,69 @@ class CandidateRanker:
             ]
 
         return normalized
+
+    def score_raw_objective_records(
+        self,
+        raw_records: list[dict],
+    ) -> list[float]:
+        """Score raw objective records on one shared normalization scope.
+
+        This is used by ARISE when it pools candidates from multiple
+        generations.  The objective weights are the same as ``rank``; only
+        the normalization scope differs.
+        """
+
+        if not raw_records:
+            return []
+
+        names = tuple(self.weights)
+        raw_values = {
+            name: [
+                record.get(name)
+                if isinstance(record, dict)
+                else None
+                for record in raw_records
+            ]
+            for name in names
+        }
+        # Match rank(): these native metrics are defined for every candidate
+        # and use zero as their defensive fallback.
+        for name in ("fitness", "helix", "hydrophobicity", "solvation"):
+            raw_values[name] = [
+                0.0 if value is None else value
+                for value in raw_values[name]
+            ]
+
+        normalized = {
+            "fitness": self.normalize(raw_values["fitness"]),
+            "docking": self.normalize(raw_values["docking"], reverse=True),
+            "structure": self.normalize(raw_values["structure"]),
+            "helix": self.normalize(raw_values["helix"]),
+            "hydrophobicity": self.normalize(raw_values["hydrophobicity"]),
+            "solvation": self.normalize(
+                raw_values["solvation"],
+                reverse=True,
+            ),
+            "md": self.normalize(raw_values["md"]),
+            "safety": self.normalize(raw_values["safety"], reverse=True),
+        }
+
+        scores = []
+        for index in range(len(raw_records)):
+            weighted_total = 0.0
+            available_weight = 0.0
+            for name, weight in self.weights.items():
+                value = normalized[name][index]
+                if value is None or weight <= 0.0:
+                    continue
+                weighted_total += value * weight
+                available_weight += weight
+            scores.append(
+                round(weighted_total / available_weight, 6)
+                if available_weight
+                else 0.0
+            )
+        return scores
     # --------------------------------------------------------
 
     @staticmethod
@@ -164,6 +227,10 @@ class CandidateRanker:
     def rank(
         self,
         candidates: list[Candidate],
+        *,
+        score_field: str = "overall_score",
+        metadata_prefix: str = "",
+        normalization_scope: str = "current_candidate_set",
     ) -> list[Candidate]:
 
         if not candidates:
@@ -286,135 +353,110 @@ class CandidateRanker:
         # Candidate scoring
         # ----------------------------------------------------
 
-        for i, candidate in enumerate(candidates):
+        raw_objectives = {
+            "fitness": fitness,
+            "docking": docking,
+            "structure": structure,
+            "helix": helix,
+            "hydrophobicity": hydro,
+            "solvation": solvation,
+            "md": md,
+            "safety": safety,
+        }
+        normalized_objectives = {
+            "fitness": fitness_norm,
+            "docking": docking_norm,
+            "structure": structure_norm,
+            "helix": helix_norm,
+            "hydrophobicity": hydro_norm,
+            "solvation": solvation_norm,
+            "md": md_norm,
+            "safety": safety_norm,
+        }
+        computed_scores: dict[int, float] = {}
 
+        for i, candidate in enumerate(candidates):
             breakdown = {}
 
-            def weighted_component(
-                normalized_value,
-                weight,
-            ):
+            def weighted_component(normalized_value, weight):
                 if normalized_value is None:
                     return None
                 return normalized_value * weight
 
-            breakdown["fitness"] = weighted_component(
-                fitness_norm[i],
-                self.weights["fitness"],
-            )
+            breakdown["fitness"] = weighted_component(fitness_norm[i], self.weights["fitness"])
+            breakdown["docking"] = weighted_component(docking_norm[i], self.weights["docking"])
+            breakdown["structure"] = weighted_component(structure_norm[i], self.weights["structure"])
+            breakdown["helix"] = weighted_component(helix_norm[i], self.weights["helix"])
+            breakdown["hydrophobicity"] = weighted_component(hydro_norm[i], self.weights["hydrophobicity"])
+            breakdown["solvation"] = weighted_component(solvation_norm[i], self.weights["solvation"])
+            breakdown["md"] = weighted_component(md_norm[i], self.weights["md"])
+            breakdown["safety"] = weighted_component(safety_norm[i], self.weights["safety"])
 
-            breakdown["docking"] = weighted_component(
-                docking_norm[i],
-                self.weights["docking"],
-            )
+            available_weight = 0.0
+            weighted_total = 0.0
+            for key, value in breakdown.items():
+                if value is None or self.weights[key] <= 0.0:
+                    continue
+                weighted_total += value
+                available_weight += self.weights[key]
 
-            breakdown["structure"] = weighted_component(
-                structure_norm[i],
-                self.weights["structure"],
-            )
+            score = round(weighted_total / available_weight, 6) if available_weight else 0.0
+            computed_scores[id(candidate)] = score
+            candidate.confidence = self._confidence(candidate)
 
-            breakdown["helix"] = weighted_component(
-                helix_norm[i],
-                self.weights["helix"],
-            )
-
-            breakdown["hydrophobicity"] = weighted_component(
-                hydro_norm[i],
-                self.weights["hydrophobicity"],
-            )
-
-            breakdown["solvation"] = weighted_component(
-                solvation_norm[i],
-                self.weights["solvation"],
-            )
-
-            breakdown["md"] = weighted_component(
-                md_norm[i],
-                self.weights["md"],
-            )
-
-            breakdown["safety"] = weighted_component(
-                safety_norm[i],
-                self.weights["safety"],
-            )
-
-            candidate.ranking_breakdown = {
-                key: value
-                for key, value in breakdown.items()
-                if value is not None
+            prefix = f"{metadata_prefix}_" if metadata_prefix else ""
+            candidate.metadata[f"{prefix}raw_objectives"] = {
+                key: values[i] for key, values in raw_objectives.items()
             }
-
-            candidate.metadata["ranking_total"] = round(
+            candidate.metadata[f"{prefix}normalized_objectives"] = {
+                key: values[i] for key, values in normalized_objectives.items()
+            }
+            candidate.metadata[f"{prefix}ranking_total"] = round(
                 sum(value for value in breakdown.values() if value is not None),
                 6,
             )
-
-            candidate.metadata["ranking_components"] = {
+            candidate.metadata[f"{prefix}ranking_components"] = {
                 key: round(value, 6)
                 for key, value in breakdown.items()
                 if value is not None
             }
-
-            candidate.metadata["ranking_missing_evidence"] = [
+            candidate.metadata[f"{prefix}ranking_missing_evidence"] = [
                 key
                 for key, value in breakdown.items()
                 if value is None and self.weights[key] > 0.0
             ]
+            candidate.metadata[f"{prefix}available_weight"] = available_weight
+            candidate.metadata[f"{prefix}normalization_scope"] = normalization_scope
+            candidate.metadata[f"{prefix}score"] = score
 
-            available_weight = 0.0
-            weighted_total = 0.0
-
-            for key, value in breakdown.items():
-
-                if value is None:
-                    continue
-
-                weight = self.weights[key]
-
-                if weight <= 0.0:
-                    continue
-
-                weighted_total += value
-                available_weight += weight
-
-            if available_weight > 0.0:
-                candidate.overall_score = round(
-                    weighted_total / available_weight,
-                    6,
-                )
-                logger.debug(
-                    "RANK %s | score=%.4f | breakdown=%s",
-                    candidate.sequence,
-                    candidate.overall_score,
-                    candidate.metadata["ranking_components"],
-                )
+            setattr(candidate, score_field, score)
+            if metadata_prefix or score_field != "overall_score":
+                candidate.posthoc_recomputed_score = score
             else:
-                candidate.overall_score = 0.0
+                candidate.ranking_breakdown = {
+                    key: value
+                    for key, value in breakdown.items()
+                    if value is not None
+                }
 
-            candidate.confidence = self._confidence(candidate)
-
-        # --------------------------------------------------------
-        # Sort
-        # --------------------------------------------------------
+            logger.debug(
+                "RANK %s | scope=%s | score=%.4f | breakdown=%s",
+                candidate.sequence,
+                metadata_prefix or "generation",
+                score,
+                candidate.metadata[f"{prefix}ranking_components"],
+            )
 
         candidates.sort(
-            key=lambda c: (
-                c.overall_score,
-                c.confidence,
-            ),
+            key=lambda c: (computed_scores[id(c)], c.confidence),
             reverse=True,
         )
 
-        # --------------------------------------------------------
-        # Assign ranks
-        # --------------------------------------------------------
-
-        for rank, candidate in enumerate(
-            candidates,
-            start=1,
-        ):
-
-            candidate.rank = rank
+        for rank, candidate in enumerate(candidates, start=1):
+            if metadata_prefix:
+                candidate.metadata[f"{metadata_prefix}_rank"] = rank
+            else:
+                candidate.rank = rank
 
         return candidates
 if __name__ == "__main__":

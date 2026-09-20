@@ -1,6 +1,6 @@
 /*
  * ga_loop.c
- * Silicon Virovore Project — 10,000 Generation Master Sync Engine
+ * Silicon Virovore Project — configurable evolutionary engine
  */
 
 #include <stdio.h>
@@ -94,6 +94,19 @@ int tournament_selection(const Population *pop, int tournament_size) {
     return best_idx;
 }
 
+static void copy_variant_state(const Variant *source, Variant *destination) {
+    if (!source || !destination || !source->sequence || !destination->sequence) {
+        return;
+    }
+
+    strcpy(destination->sequence, source->sequence);
+    destination->length = source->length;
+    destination->fitness_score = source->fitness_score;
+    destination->solvation_energy = source->solvation_energy;
+    destination->hydrophobic_moment = source->hydrophobic_moment;
+    destination->helix_propensity = source->helix_propensity;
+}
+
 // -------------------------------------------------------------------------
 // MASTER EVOLUTIONARY LOOP EXECUTION PIPELINE
 // -------------------------------------------------------------------------
@@ -102,7 +115,9 @@ void run_evolutionary_loop(
     int pop_size,
     double mutation_rate,
     int tournament_size,
-    unsigned int random_seed
+    unsigned int random_seed,
+    int elite_count,
+    double final_mutation_rate
 ) {
     printf("[*] Instantiating Silicon Virovore population vectors...\n");
     printf("    - Population Size: %d | Target Generations: %d\n", pop_size, generations);
@@ -110,19 +125,35 @@ void run_evolutionary_loop(
     // Seed random number generator
     srand(random_seed);
 
-    // Initialize population
+    if (generations <= 0 || pop_size <= 0 || tournament_size <= 0) {
+        fprintf(stderr, "FATAL ERROR: Invalid evolutionary configuration.\n");
+        return;
+    }
+    if (elite_count < 0) elite_count = 0;
+    if (elite_count > pop_size) elite_count = pop_size;
+    if (final_mutation_rate < 0.0) final_mutation_rate = mutation_rate;
+
+    // Allocate two reusable population buffers. Only sequence contents and
+    // per-generation state are rewritten; the arrays are swapped each round.
     Population pop;
+    Population next_pop;
     pop.count = (size_t)pop_size;
     pop.capacity = (size_t)pop_size;
     pop.variants = (Variant *)malloc(pop_size * sizeof(Variant));
-    if (!pop.variants) {
+    next_pop.count = (size_t)pop_size;
+    next_pop.capacity = (size_t)pop_size;
+    next_pop.variants = (Variant *)malloc(pop_size * sizeof(Variant));
+    if (!pop.variants || !next_pop.variants) {
         fprintf(stderr, "FATAL ERROR: Failed to allocate memory for population array.\n");
+        free(pop.variants);
+        free(next_pop.variants);
         exit(EXIT_FAILURE);
     }
 
-    // Assign initial variant states safely
+    // Assign initial variant states safely, once per reusable buffer.
     for (int i = 0; i < pop_size; i++) {
         pop.variants[i] = init_variant(32); // Pre-allocate 32 bytes to prevent fragmentation
+        next_pop.variants[i] = init_variant(32);
         for (size_t j = 0; j < 21; j++) {
             pop.variants[i].sequence[j] = AA_POOL[rand() % 20];
         }
@@ -142,16 +173,18 @@ void run_evolutionary_loop(
     fprintf(metrics_file, "Generation,FitnessScore,SolvationEnergy,Eisenberg,HelixPropensity\n");
     fprintf(heatmap_file, "Generation,A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y\n");
 
-    // Pre-allocated structural buffer for offspring creation
+    // Pre-allocated structural buffer for offspring creation.
     Variant child = init_variant(32);
 
-    // 10,000 Generation Optimization Routine
+    // Configuration-driven evolutionary routine. Mutation scheduling is a
+    // separate native-loop option and is not ARISE/ALE adaptation.
     for (int gen = 0; gen < generations; gen++) {
         
         // --- STEP 1: DYNAMIC ADAPTIVE MUTATION RATE ---
         // Decays the exploration rate linearly from the user-defined base rate to 0.5%
         double progress = (double)gen / (double)generations;
-        double dynamic_mutation_rate = mutation_rate * (1.0 - progress) + 0.005 * progress;
+        double dynamic_mutation_rate = mutation_rate * (1.0 - progress)
+            + final_mutation_rate * progress;
 
         // Step 2: Calculate fitness for all active variants
         for (int i = 0; i < pop_size; i++) {
@@ -190,26 +223,9 @@ void run_evolutionary_loop(
                    gen, pop.variants[0].sequence, pop.variants[0].fitness_score, pop.variants[0].solvation_energy, dynamic_mutation_rate * 100.0);
         }
 
-        // Step 4: Breed next generation with safe pointer reallocations
-        Population next_pop;
-        next_pop.count = (size_t)pop_size;
-        next_pop.capacity = (size_t)pop_size;
-        next_pop.variants = (Variant *)malloc(pop_size * sizeof(Variant));
-        if (!next_pop.variants) {
-            fprintf(stderr, "FATAL ERROR: Memory allocation failure during generation breeding.\n");
-            exit(EXIT_FAILURE);
-        }
-
-        // Preserve top 10% elite candidates unchanged (Elitism)
-        int elite_count = pop_size / 10;
+        // Step 4: Breed the reusable next-generation buffer.
         for (int i = 0; i < elite_count; i++) {
-            next_pop.variants[i] = init_variant(32);
-            strcpy(next_pop.variants[i].sequence, pop.variants[i].sequence);
-            next_pop.variants[i].length = pop.variants[i].length;
-            next_pop.variants[i].fitness_score = pop.variants[i].fitness_score;
-            next_pop.variants[i].solvation_energy = pop.variants[i].solvation_energy;
-            next_pop.variants[i].hydrophobic_moment = pop.variants[i].hydrophobic_moment;
-            next_pop.variants[i].helix_propensity = pop.variants[i].helix_propensity;
+            copy_variant_state(&pop.variants[i], &next_pop.variants[i]);
         }
 
         // Fill remaining population with bred offspring using adaptive mutation
@@ -220,19 +236,14 @@ void run_evolutionary_loop(
             crossover(&pop.variants[p1_idx], &pop.variants[p2_idx], &child);
             mutate_variant(&child, dynamic_mutation_rate);
 
-            next_pop.variants[i] = init_variant(32);
             strcpy(next_pop.variants[i].sequence, child.sequence);
             next_pop.variants[i].length = child.length;
         }
 
-        // Deep free previous population allocation safely
-        for (int i = 0; i < pop_size; i++) {
-            free(pop.variants[i].sequence);
-        }
-        free(pop.variants);
-
-        // Advance to next generation
-        pop = next_pop;
+        // Advance to next generation without reallocating or freeing buffers.
+        Variant *buffer = pop.variants;
+        pop.variants = next_pop.variants;
+        next_pop.variants = buffer;
     }
 
     // Final file output flushes
@@ -261,7 +272,9 @@ void run_evolutionary_loop(
     // Final memory sanitation step (Leak profile: 0 bytes)
     for (int i = 0; i < pop_size; i++) {
         free(pop.variants[i].sequence);
+        free(next_pop.variants[i].sequence);
     }
     free(pop.variants);
+    free(next_pop.variants);
     printf("[CLEANUP] Memory sanitation complete. System stabilized.\n");
 }

@@ -4,9 +4,9 @@ population_runner.py
 Generates candidate peptides using the native C backend and
 implements the Adaptive Recursive Intelligent Selection Engine (ARISE).
 
-ARISE learns which residue positions consistently contribute to
-high-performing peptides and biases future generations toward
-those positions while preserving diversity.
+ARISE discovers local sequence windows associated with higher
+computational performance. ALE can then guide future mutation positions
+using a frozen hotspot model, without treating the association as causal.
 """
 
 from __future__ import annotations
@@ -16,9 +16,11 @@ import logging
 from c.bridge import (
     generate_c_population,
     generate_adaptive_population,
+    generate_policy_population,
     process_candidate_peptide,
 )
 
+from src.ale_policy import resolve_mutation_policy, mutation_positions
 from src.models import Candidate
 
 from src.config import (
@@ -262,17 +264,29 @@ def generate_candidates(
     population_size: int = POPULATION_SIZE,
     mutation_rate: float = MUTATION_RATE,
     arise_enabled: bool = ARISE_ENABLED,
+    cache_enabled: bool = True,
+    hotspot_model: dict | None = None,
+    hotspot_enabled: bool = False,
+    ale_enabled: bool = False,
+    mutation_guidance_mode: str = "legacy",
+    generation: int = 1,
+    run_id: str = "",
+    preserve_sequence: str | None = None,
 ) -> list[Candidate]:
     """
     Generate candidate peptides.
 
-    Generation 1 uses the standard native C mutation engine.
+    ``legacy`` preserves the historical native generator. Controlled
+    baseline/guided experiments use the policy generator so both conditions
+    receive the same fixed mutation-event budget.
 
-    Later generations use ARISE-derived positional importance
-    through the native adaptive population generator.
+    Controlled baseline/guided conditions use the policy generator with a
+    fixed mutation-event budget. The legacy positional-importance generator
+    remains available for compatibility when ``mutation_guidance_mode`` is
+    ``legacy``.
 
-    ARISE therefore changes the mutation distribution without
-    performing a second Python-side mutation pass.
+    ALE therefore changes only the mutation-position policy and does not
+    perform a second Python-side mutation pass.
     """
 
     logger.info("Generating peptide candidates...")
@@ -280,13 +294,39 @@ def generate_candidates(
     importance_map = ARISE_ENGINE.get_importance_array(len(seed_sequence))
     has_learned_importance = bool(ARISE_ENGINE.position_scores)
     logger.info(
-        "ARISE mode %s | importance=%s | observations=%s",
+        "ARISE legacy mode %s | importance=%s | observations=%s",
         "enabled" if arise_enabled else "disabled",
         [round(x, 3) for x in importance_map],
         ARISE_ENGINE.importance_observations(),
     )
 
+    policy = resolve_mutation_policy(
+        mutation_guidance_mode
+        if mutation_guidance_mode != "legacy"
+        else "uniform",
+        hotspot_model,
+        enabled=hotspot_enabled and ale_enabled,
+    )
+    if mutation_guidance_mode != "legacy":
+        logger.info(
+            "ALE policy | requested=%s | active=%s | guided=%s | hotspot=%s:%s",
+            policy["requested_mode"],
+            policy["mode"],
+            policy["guided"],
+            policy["hotspot_start"],
+            policy["hotspot_end"],
+        )
+
     def generate_batch(size: int) -> list[str]:
+        if mutation_guidance_mode != "legacy":
+            return generate_policy_population(
+                seed_sequence,
+                mutation_rate=mutation_rate,
+                guidance_mode=policy["mode"],
+                hotspot_start=policy["hotspot_start"],
+                hotspot_end=policy["hotspot_end"],
+                pop_size=size,
+            )
         if arise_enabled and has_learned_importance:
             return generate_adaptive_population(
                 seed_sequence,
@@ -329,22 +369,54 @@ def generate_candidates(
             if before == len(sequences):
                 break
 
+    preserved_elite = False
+    if preserve_sequence and preserve_sequence not in sequences and sequences:
+        sequences[-1] = preserve_sequence
+        preserved_elite = True
+
     candidates: list[Candidate] = []
 
     for sequence in sequences:
 
         candidate = process_candidate_peptide(
-            sequence
+            sequence,
+            cache_enabled=cache_enabled,
         )
 
         if candidate is None:
             continue
 
-        candidate.metadata["mutation_count"] = sum(
-            old != new
-            for old, new in zip(seed_sequence, sequence)
+        changed_positions = mutation_positions(
+            seed_sequence,
+            sequence,
         )
+        is_preserved = preserved_elite and sequence == preserve_sequence
+        candidate.metadata["changed_positions_count"] = len(changed_positions)
+        event_budget = 0 if is_preserved else round(
+            mutation_rate * len(seed_sequence)
+        )
+        candidate.metadata["mutation_event_budget"] = event_budget
+        candidate.metadata["mutation_count"] = (
+            event_budget if mutation_guidance_mode != "legacy" else len(changed_positions)
+        )
+        candidate.metadata["mutation_positions"] = changed_positions
+        candidate.metadata["parent_sequence"] = seed_sequence
+        candidate.metadata["run_id"] = run_id
+        candidate.metadata["generation"] = generation
+        candidate.metadata["hotspot_guided"] = policy["guided"]
+        candidate.metadata["mutation_guidance_mode"] = policy["mode"]
+        candidate.metadata["requested_mutation_guidance_mode"] = (
+            policy["requested_mode"]
+        )
+        candidate.metadata["hotspot_discovery_generation"] = policy[
+            "hotspot_discovery_generation"
+        ]
+        candidate.metadata["hotspot_start"] = policy["hotspot_start"]
+        candidate.metadata["hotspot_end"] = policy["hotspot_end"]
         candidate.metadata["is_duplicate"] = False
+        candidate.metadata["preserved_elite"] = (
+            is_preserved
+        )
         candidates.append(candidate)
 
     logger.info(

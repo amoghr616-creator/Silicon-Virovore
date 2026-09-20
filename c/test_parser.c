@@ -10,15 +10,17 @@ void run_evolutionary_loop(
     int pop_size,
     double mutation_rate,
     int tournament_size,
-    unsigned int random_seed
+    unsigned int random_seed,
+    int elite_count,
+    double final_mutation_rate
 );
 
 int main(void) {
     printf("[*] Starting Ultra-Fidelity Silicon Virovore engine via test_parser.c...\n");
     
-    // SCALE UP THE POPULATION: 
-    // Run the genetic algorithm: 10,000 generations, 2,000 population size, 8% base mutation, tournament size 7
-    run_evolutionary_loop(10000, 2000, 0.08, 7, 616);
+    // Explicit native-loop configuration; the mutation schedule is separate
+    // from Python ARISE/ALE adaptation.
+    run_evolutionary_loop(10000, 2000, 0.08, 7, 616, 200, 0.005);
     
     return 0;
 }

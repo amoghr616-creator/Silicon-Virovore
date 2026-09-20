@@ -68,6 +68,8 @@ class ReportGenerator:
                 "Generation",
                 "Sequence",
                 "Overall Score",
+                "Generation-local Score",
+                "Posthoc Run-normalized Score",
                 "Native Fitness",
                 "Docking ΔG",
                 "Mean ΔG",
@@ -96,6 +98,8 @@ class ReportGenerator:
                     c.metadata.get("generation"),
                     c.sequence,
                     rc.overall_score,
+                    c.metadata.get("generation_local_score", c.overall_score),
+                    c.posthoc_recomputed_score,
                     c.c_score,
                     c.strongest_anchor_delta_g,
                     c.mean_delta_g,
@@ -170,6 +174,14 @@ class ReportGenerator:
 
             lines.append(
                 f"- Overall Score: {rc.overall_score:.4f}\n"
+            )
+
+            lines.append(
+                f"- Generation-local Score: {c.metadata.get('generation_local_score', c.overall_score)}\n"
+            )
+
+            lines.append(
+                f"- Posthoc Run-normalized Score: {c.posthoc_recomputed_score}\n"
             )
 
             lines.append(

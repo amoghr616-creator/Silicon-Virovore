@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import socket
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from src.config import (
     ESMFOLD_API_URL,
@@ -67,13 +68,12 @@ class StructurePredictor:
         self,
         api_url: str | None = None,
         timeout: int = ESMFOLD_TIMEOUT_SECONDS,
+        structure_directory: str | Path = STRUCTURE_DIR,
     ):
         try:
             import requests
-        except ImportError as exc:
-            raise ImportError(
-                "The remote ESMFold backend requires the 'requests' package."
-            ) from exc
+        except ImportError:
+            requests = None
 
         self._requests = requests
         self.api_url = api_url or os.environ.get(
@@ -81,6 +81,19 @@ class StructurePredictor:
             ESMFOLD_API_URL,
         )
         self.timeout = timeout
+        self.structure_directory = Path(structure_directory)
+        self.structure_directory.mkdir(parents=True, exist_ok=True)
+
+    def _requests_client(self):
+        if self._requests is None:
+            try:
+                import requests
+            except ImportError as exc:
+                raise StructureServiceUnavailable(
+                    "The remote ESMFold backend requires the 'requests' package."
+                ) from exc
+            self._requests = requests
+        return self._requests
 
     def _request_pdb(self, sequence: str) -> str:
         """Request one PDB with bounded retries and backoff."""
@@ -90,6 +103,7 @@ class StructurePredictor:
             "User-Agent": "Silicon-Virovore/1.0",
         }
         last_error: Exception | None = None
+        requests = self._requests_client()
 
         for attempt in range(1, ESMFOLD_MAX_ATTEMPTS + 1):
             try:
@@ -131,7 +145,7 @@ class StructurePredictor:
 
             except PermanentStructurePredictionError:
                 raise
-            except self._requests.RequestException as exc:
+            except requests.RequestException as exc:
                 last_error = exc
                 if attempt < ESMFOLD_MAX_ATTEMPTS:
                     delay = min(
@@ -213,7 +227,7 @@ class StructurePredictor:
     def predict(self, candidate: Candidate) -> Candidate:
         """Predict one candidate without affecting other candidates."""
 
-        pdb_path = STRUCTURE_DIR / f"{candidate.sequence}.pdb"
+        pdb_path = self.structure_directory / f"{candidate.sequence}.pdb"
         candidate.structure_path = None
         candidate.structure_confidence = None
         candidate.metadata["structure_available"] = False
@@ -298,15 +312,14 @@ def _mark_population_unavailable(
 
 def predict_population_structures(
     candidates: list[Candidate],
+    structure_directory: str | Path | None = None,
+    workers: int = 1,
 ) -> list[Candidate]:
     """Predict each candidate independently and report evidence counts."""
 
+    structure_directory = structure_directory or STRUCTURE_DIR
     try:
-        predictor = StructurePredictor()
-    except ImportError as exc:
-        logger.warning("ESMFold unavailable: %s", exc)
-        _mark_population_unavailable(candidates, str(exc))
-        return candidates
+        predictor = StructurePredictor(structure_directory=structure_directory)
     except Exception as exc:
         logger.warning("ESMFold initialization failed: %s", exc)
         _mark_population_unavailable(candidates, str(exc))
@@ -315,14 +328,24 @@ def predict_population_structures(
     counts = {"success": 0, "cached": 0, "failed": 0, "unavailable": 0}
     total = len(candidates)
 
-    for index, candidate in enumerate(candidates, start=1):
+    def predict_one(indexed_candidate):
+        index, candidate = indexed_candidate
         logger.info(
             "ESMFold progress: %d/%d | %s",
             index,
             total,
             candidate.sequence,
         )
-        predictor.predict(candidate)
+        return predictor.predict(candidate)
+
+    indexed_candidates = list(enumerate(candidates, start=1))
+    if workers == 1:
+        predicted = [predict_one(item) for item in indexed_candidates]
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            predicted = list(executor.map(predict_one, indexed_candidates))
+
+    for candidate in predicted:
         status = candidate.metadata.get("structure_status", "failed")
         counts[status] = counts.get(status, 0) + 1
 

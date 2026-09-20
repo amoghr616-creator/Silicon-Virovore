@@ -6,6 +6,7 @@ Python interface to the Silicon Virovore native C backend.
 
 from pathlib import Path
 import ctypes
+import threading
 import platform
 import sys
 
@@ -56,6 +57,11 @@ print(f"[Bridge] Loaded native backend: {LIB_PATH.resolve()}")
 
 SEQ_LEN = 21
 FRAGMENT_SIZE = PEPTIDE_FRAGMENT_SIZE
+_C_ENGINE_CACHE_VERSION = "engine-v1"
+_fitness_cache: dict[tuple[str, int, str], float] = {}
+_fitness_cache_hits = 0
+_fitness_cache_misses = 0
+_fitness_cache_lock = threading.Lock()
 
 # ==========================================================
 # C Function Signatures
@@ -84,6 +90,17 @@ lib.c_generate_adaptive_population.argtypes = [
 ]
 
 lib.c_generate_adaptive_population.restype = None
+
+lib.c_generate_policy_population.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_double,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    PopulationPointer,
+    ctypes.c_int,
+]
+lib.c_generate_policy_population.restype = None
 # ==========================================================
 # Python Wrappers
 # ==========================================================
@@ -93,7 +110,30 @@ def seed_native_random(seed: int) -> None:
 
     lib.c_seed_random(ctypes.c_uint(seed))
 
-def process_candidate_peptide(sequence: str) -> Candidate:
+
+def clear_evaluation_cache() -> None:
+    """Clear deterministic native-evaluation cache and counters."""
+
+    global _fitness_cache_hits, _fitness_cache_misses
+    with _fitness_cache_lock:
+        _fitness_cache.clear()
+        _fitness_cache_hits = 0
+        _fitness_cache_misses = 0
+
+
+def evaluation_cache_stats() -> dict[str, int]:
+    with _fitness_cache_lock:
+        return {
+            "hits": _fitness_cache_hits,
+            "misses": _fitness_cache_misses,
+            "entries": len(_fitness_cache),
+        }
+
+
+def process_candidate_peptide(
+    sequence: str,
+    cache_enabled: bool = True,
+) -> Candidate:
     """
     Evaluate a peptide using the native C backend.
 
@@ -110,9 +150,27 @@ def process_candidate_peptide(sequence: str) -> Candidate:
             f"Sequence must be exactly {SEQ_LEN} amino acids."
         )
 
-    score = lib.c_check_sequence_fitness(
-        sequence.encode("utf-8")
-    )
+    global _fitness_cache_hits, _fitness_cache_misses
+    cache_key = (sequence, FRAGMENT_SIZE, _C_ENGINE_CACHE_VERSION)
+    cache_hit = False
+    if cache_enabled:
+        with _fitness_cache_lock:
+            score = _fitness_cache.get(cache_key)
+        if score is not None:
+            cache_hit = True
+            _fitness_cache_hits += 1
+        else:
+            _fitness_cache_misses += 1
+            score = lib.c_check_sequence_fitness(
+                sequence.encode("utf-8")
+            )
+            with _fitness_cache_lock:
+                _fitness_cache[cache_key] = score
+    else:
+        _fitness_cache_misses += 1
+        score = lib.c_check_sequence_fitness(
+            sequence.encode("utf-8")
+        )
     '''print(
         f"[C FITNESS] {sequence} -> {score:.6f}"
     )'''
@@ -121,11 +179,13 @@ def process_candidate_peptide(sequence: str) -> Candidate:
         for i in range(len(sequence) - FRAGMENT_SIZE + 1)
     ]
 
-    return Candidate(
+    candidate = Candidate(
         sequence=sequence,
         c_score=score,
         fragments=fragments,
     )
+    candidate.metadata["c_fitness_cache_hit"] = cache_hit
+    return candidate
 
 def generate_c_population(
     seed_sequence: str,
@@ -199,3 +259,43 @@ def generate_adaptive_population(
         population[i].value.decode("utf-8")
         for i in range(pop_size)
     ]
+
+
+def generate_policy_population(
+    seed_sequence: str,
+    mutation_rate: float,
+    guidance_mode: str = "uniform",
+    hotspot_start: int | None = None,
+    hotspot_end: int | None = None,
+    pop_size: int = POPULATION_SIZE,
+) -> list[str]:
+    """Generate baseline or frozen-hotspot-guided candidates.
+
+    The native implementation gives every candidate the same rounded number
+    of mutation events. This is separate from the legacy adaptive generator.
+    """
+
+    seed_sequence = seed_sequence.upper()
+    if len(seed_sequence) != SEQ_LEN:
+        raise ValueError(f"Seed sequence must be {SEQ_LEN} amino acids.")
+
+    mode_values = {
+        "uniform": 0,
+        "hotspot_only": 1,
+        "hotspot_biased": 2,
+    }
+    if guidance_mode not in mode_values:
+        raise ValueError("Unknown mutation guidance mode.")
+
+    PopulationType = PopulationRow * pop_size
+    population = PopulationType()
+    lib.c_generate_policy_population(
+        seed_sequence.encode("utf-8"),
+        mutation_rate,
+        -1 if hotspot_start is None else int(hotspot_start),
+        -1 if hotspot_end is None else int(hotspot_end),
+        mode_values[guidance_mode],
+        population,
+        pop_size,
+    )
+    return [population[i].value.decode("utf-8") for i in range(pop_size)]

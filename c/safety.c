@@ -103,3 +103,55 @@ void c_generate_adaptive_population(
         output[p][SEQ_LEN] = '\0';
     }
 }
+
+/*
+ * Generate a population with an identical per-candidate mutation-event
+ * budget across uniform and hotspot-guided modes. Positions are sampled with
+ * replacement so a short hotspot does not silently reduce the budget.
+ * guidance_mode: 0=uniform, 1=hotspot-only, 2=hotspot-biased.
+ */
+void c_generate_policy_population(
+    const char *seed,
+    double mutation_rate,
+    int hotspot_start,
+    int hotspot_end,
+    int guidance_mode,
+    char output[][SEQ_LEN + 1],
+    int pop_size)
+{
+    if (seed == NULL || strlen(seed) != SEQ_LEN || pop_size <= 0) return;
+
+    int hotspot_valid = (
+        hotspot_start >= 0
+        && hotspot_start < hotspot_end
+        && hotspot_end <= SEQ_LEN
+    );
+    if (!hotspot_valid || guidance_mode == 0) {
+        guidance_mode = 0;
+    }
+
+    int mutation_events = (int)(mutation_rate * SEQ_LEN + 0.5);
+    if (mutation_rate > 0.0 && mutation_events < 1) mutation_events = 1;
+
+    for (int p = 0; p < pop_size; p++) {
+        strcpy(output[p], seed);
+        for (int event = 0; event < mutation_events; event++) {
+            int position = rand() % SEQ_LEN;
+            if (guidance_mode == 1) {
+                position = hotspot_start + rand() % (hotspot_end - hotspot_start);
+            } else if (guidance_mode == 2) {
+                double hotspot_probability = 0.75;
+                if ((double)rand() / RAND_MAX < hotspot_probability) {
+                    position = hotspot_start + rand() % (hotspot_end - hotspot_start);
+                }
+            }
+
+            int residue_index = rand() % 19;
+            char replacement = AA_ALPHABET[residue_index];
+            char original = seed[position];
+            if (replacement >= original) replacement = AA_ALPHABET[residue_index + 1];
+            output[p][position] = replacement;
+        }
+        output[p][SEQ_LEN] = '\0';
+    }
+}

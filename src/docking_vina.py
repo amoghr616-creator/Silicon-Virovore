@@ -19,6 +19,8 @@ import shutil
 import statistics
 import subprocess
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from src.config import (
@@ -64,9 +66,20 @@ class MLSurrogateBackend(DockingBackend):
     HYDROPHOBIC = set("AILMFWYV")
     CHARGED = set("RHKDE")
 
+    def __init__(self, cache_enabled: bool = True):
+        self.cache_enabled = cache_enabled
+        self._cache: dict[str, float] = {}
+        self.cache_hits = 0
+        self.cache_misses = 0
+
     def score_fragment(self, fragment: str) -> float:
         if not fragment:
             raise ValueError("Cannot score an empty fragment.")
+        if self.cache_enabled and fragment in self._cache:
+            self.cache_hits += 1
+            return self._cache[fragment]
+
+        self.cache_misses += 1
 
         score = -5.0
 
@@ -76,7 +89,10 @@ class MLSurrogateBackend(DockingBackend):
             elif aa in self.CHARGED:
                 score += 0.10
 
-        return round(score, 2)
+        result = round(score, 2)
+        if self.cache_enabled:
+            self._cache[fragment] = result
+        return result
 
 
 class AutoDockBackend(DockingBackend):
@@ -87,7 +103,7 @@ class AutoDockBackend(DockingBackend):
     receptor, and candidate structure are available.
     """
 
-    def __init__(self):
+    def __init__(self, docking_directory: str | Path = DOCKING_DIR):
 
         self.vina = Path(
             os.environ.get(
@@ -123,10 +139,11 @@ class AutoDockBackend(DockingBackend):
                 f"Missing receptor: {self.receptor}"
             )
 
-        DOCKING_DIR.mkdir(parents=True, exist_ok=True)
+        self.docking_directory = Path(docking_directory)
+        self.docking_directory.mkdir(parents=True, exist_ok=True)
 
         self.receptor_clean = (
-            DOCKING_DIR / "receptor_clean.pdbqt"
+            self.docking_directory / "receptor_clean.pdbqt"
         )
 
         self._sanitize_pdbqt(
@@ -258,7 +275,7 @@ class AutoDockBackend(DockingBackend):
             temporary_directory = Path(temporary_directory)
             ligand_raw = temporary_directory / "ligand.pdbqt"
             ligand_clean = temporary_directory / "ligand_clean.pdbqt"
-            pose_path = DOCKING_DIR / f"{structure_path.stem}.pdbqt"
+            pose_path = self.docking_directory / f"{structure_path.stem}.pdbqt"
 
             conversion = subprocess.run(
                 [
@@ -361,13 +378,26 @@ class PeptideDockingScorer:
     def __init__(
         self,
         backend: DockingBackend | None = None,
+        docking_directory: str | Path = DOCKING_DIR,
+        workers: int = 1,
+        cache_enabled: bool = True,
+        tier2_threshold: float = TIER2_THRESHOLD,
     ):
 
-        self.backend = backend or MLSurrogateBackend()
+        self.backend = backend or MLSurrogateBackend(
+            cache_enabled=cache_enabled
+        )
+        self.workers = workers
+        self.cache_enabled = cache_enabled
+        self.tier2_threshold = tier2_threshold
+        self._vina_cache: dict[tuple, float] = {}
+        self._cache_lock = threading.Lock()
+        self.vina_cache_hits = 0
+        self.vina_cache_misses = 0
 
         try:
 
-            self.vina_backend = AutoDockBackend()
+            self.vina_backend = AutoDockBackend(docking_directory)
 
         except Exception as exc:
 
@@ -377,6 +407,57 @@ class PeptideDockingScorer:
             )
 
             self.vina_backend = None
+
+    def cache_stats(self) -> dict[str, int]:
+        """Return deterministic surrogate and Tier-2 cache counters."""
+
+        return {
+            "surrogate_hits": getattr(self.backend, "cache_hits", 0),
+            "surrogate_misses": getattr(self.backend, "cache_misses", 0),
+            "vina_hits": self.vina_cache_hits,
+            "vina_misses": self.vina_cache_misses,
+        }
+
+    def evaluate_candidates(self, candidates: list[Candidate]) -> list[Candidate]:
+        """Evaluate candidates serially or with bounded candidate-level workers."""
+
+        if self.workers == 1:
+            return [self.evaluate_candidate(candidate) for candidate in candidates]
+
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            return list(executor.map(self.evaluate_candidate, candidates))
+
+    def _score_vina(
+        self,
+        fragment: str,
+        structure_path: str | Path,
+    ) -> float:
+        if not self.cache_enabled or self.vina_backend is None:
+            return self.vina_backend.score_fragment(fragment, structure_path)
+
+        structure_path = Path(structure_path)
+        stat = structure_path.stat()
+        key = (
+            fragment,
+            str(structure_path.resolve()),
+            stat.st_mtime_ns,
+            VINA_EXHAUSTIVENESS,
+            VINA_NUM_MODES,
+            VINA_MAX_EVALS,
+            VINA_CPU,
+            VINA_BOX_PADDING,
+        )
+        with self._cache_lock:
+            cached = self._vina_cache.get(key)
+        if cached is not None:
+            self.vina_cache_hits += 1
+            return cached
+
+        self.vina_cache_misses += 1
+        score = float(self.vina_backend.score_fragment(fragment, structure_path))
+        with self._cache_lock:
+            self._vina_cache[key] = score
+        return score
 
     # --------------------------------------------------------
 
@@ -522,7 +603,9 @@ class PeptideDockingScorer:
         candidate.metadata["ranking_observation_valid"] = not failed_fragments
 
         # Tier 2 eligibility is a surrogate gate; it is not validation.
-        tier2_eligible = candidate.strongest_anchor_delta_g <= TIER2_THRESHOLD
+        tier2_eligible = (
+            candidate.strongest_anchor_delta_g <= self.tier2_threshold
+        )
         candidate.metadata["tier2_eligible"] = tier2_eligible
 
         if not tier2_eligible:
@@ -542,10 +625,10 @@ class PeptideDockingScorer:
             candidate.metadata["vina_status"] = "attempted"
             logger.info("Tier-2 validation triggered.")
             try:
-                vina_score = float(self.vina_backend.score_fragment(
+                vina_score = self._score_vina(
                     candidate.best_fragment,
                     candidate.structure_path,
-                ))
+                )
                 if not math.isfinite(vina_score):
                     raise ValueError("Vina returned a non-finite score")
 

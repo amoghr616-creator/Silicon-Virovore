@@ -57,6 +57,15 @@ void c_generate_adaptive_population(
     char output[][SEQ_LEN + 1],
     int pop_size
 );
+void c_generate_policy_population(
+    const char *seed,
+    double mutation_rate,
+    int hotspot_start,
+    int hotspot_end,
+    int guidance_mode,
+    char output[][SEQ_LEN + 1],
+    int pop_size
+);
 
 void c_seed_random(unsigned int seed);
 

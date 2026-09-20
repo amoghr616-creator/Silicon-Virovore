@@ -91,6 +91,7 @@ class Candidate:
 
     confidence: float = 1.0
     overall_score: float = 0.0
+    posthoc_recomputed_score: float | None = None
     rank: int = 0
 
     ranking_breakdown: dict[str, float] = field(default_factory=dict)
