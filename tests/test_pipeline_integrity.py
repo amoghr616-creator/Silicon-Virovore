@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 import sys
+from dataclasses import replace
 from unittest.mock import patch
 
 from c.bridge import (
@@ -17,7 +18,17 @@ from c.bridge import (
 from src.config import PipelineSettings
 from src.docking_vina import MLSurrogateBackend, PeptideDockingScorer
 from src.models import Candidate, candidate_has_valid_structure
-from src.hotspot import annotate_arise_scores, discover_hotspot_model
+from src.hotspot import (
+    annotate_arise_scores,
+    discover_hotspot_model,
+    derive_positional_signal,
+)
+from src.arise_memory import (
+    load_arise_memory,
+    save_arise_memory,
+    get_memory_history,
+    upsert_arise_run,
+)
 from src.population_runner import ARISEEngine
 from src.predict_structure import predict_population_structures
 from src.ranking import CandidateRanker
@@ -27,6 +38,7 @@ from run_pipeline import (
     _finalize_comparable_telemetry,
     _posthoc_rank_without_overwriting_generation_scores,
     evidence_summary,
+    resolve_experiment_seed,
 )
 from run_pipeline import parse_settings
 
@@ -51,6 +63,165 @@ class FakeRequests:
 
 
 class TestPipelineIntegrity(unittest.TestCase):
+    def test_derived_positional_signal_from_hotspot_model(self):
+        model = {
+            "hotspots": [
+                {
+                    "start_position": 14,
+                    "end_position": 16,
+                    "window_length": 2,
+                    "selection_score": 0.90,
+                },
+                {
+                    "start_position": 13,
+                    "end_position": 16,
+                    "window_length": 3,
+                    "selection_score": 0.60,
+                },
+            ]
+        }
+
+        signal = derive_positional_signal(
+            model,
+            sequence_length=21,
+        )
+
+        self.assertEqual(len(signal), 21)
+        self.assertLessEqual(max(signal), 1.0)
+        self.assertGreater(signal[14], 0.0)
+        self.assertGreater(signal[15], 0.0)
+        self.assertGreater(signal[14], signal[0])
+
+    def test_arise_memory_round_trip(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "arise_memory.json"
+
+        memory = load_arise_memory(path)
+
+        history = [
+            {
+                "run_id": "adaptive-101",
+                "generation": 1,
+                "sequence": "A" * 21,
+                "score": 0.8,
+            }
+        ]
+
+        upsert_arise_run(
+            memory,
+            run_id="adaptive-101",
+            condition="adaptive",
+            random_seed=101,
+            candidate_history=history,
+            hotspot_models=[],
+            derived_positional_signal=[0.0] * 21,
+        )
+
+        save_arise_memory(path, memory)
+
+        reloaded = load_arise_memory(path)
+
+        self.assertEqual(
+            len(get_memory_history(reloaded)),
+            1,
+        )
+
+        self.assertEqual(
+            reloaded["runs"][0]["run_id"],
+            "adaptive-101",
+        )
+
+    def test_arise_memory_replaces_duplicate_run(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "arise_memory.json"
+
+        memory = load_arise_memory(path)
+
+        first = [{
+            "run_id": "run-1",
+            "generation": 1,
+            "sequence": "A" * 21,
+            "score": 0.4,
+        }]
+
+        second = [{
+            "run_id": "run-1",
+            "generation": 1,
+            "sequence": "C" * 21,
+            "score": 0.9,
+        }]
+
+        upsert_arise_run(
+            memory,
+            run_id="run-1",
+            condition="adaptive",
+            random_seed=1,
+            candidate_history=first,
+            hotspot_models=[],
+            derived_positional_signal=[0.0] * 21,
+        )
+
+        upsert_arise_run(
+            memory,
+            run_id="run-1",
+            condition="adaptive",
+            random_seed=1,
+            candidate_history=second,
+            hotspot_models=[],
+            derived_positional_signal=[1.0] * 21,
+        )
+
+        records = get_memory_history(memory)
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["sequence"], "C" * 21)
+    
+    def test_explicit_pipeline_seed_is_preserved(self):
+        settings = PipelineSettings(random_seed=617)
+
+        self.assertEqual(settings.random_seed, 617)
+        self.assertEqual(resolve_experiment_seed(617), 617)
+
+    def test_auto_generated_seed_is_valid_uint32(self):
+        with patch(
+            "run_pipeline.secrets.randbelow",
+            return_value=123456,
+        ):
+            self.assertEqual(
+                resolve_experiment_seed(None),
+                123456,
+            )
+
+    def test_run_pipeline_does_not_mutate_settings_seed(self):
+        settings = PipelineSettings(
+            random_seed=None,
+            run_id="",
+        )
+
+        with patch(
+            "run_pipeline.resolve_experiment_seed",
+            return_value=123456,
+        ) as resolver:
+            copied = replace(
+                settings,
+                random_seed=resolver(settings.random_seed),
+                run_id="adaptive-seed123456",
+            )
+
+        self.assertIsNone(settings.random_seed)
+        self.assertEqual(copied.random_seed, 123456)
+        self.assertEqual(
+            copied.run_id,
+            "adaptive-seed123456",
+        )
+
+    def test_configuration_rejects_out_of_range_seed(self):
+        with self.assertRaises(ValueError):
+            PipelineSettings(random_seed=-1)
+
+        with self.assertRaises(ValueError):
+            PipelineSettings(random_seed=2**32)
+
     def test_consensus_preserves_negative_sign(self):
         scorer = object.__new__(PeptideDockingScorer)
         self.assertEqual(scorer._consensus_score(-7.0, -6.5), -6.8)

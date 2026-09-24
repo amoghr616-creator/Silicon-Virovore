@@ -80,30 +80,57 @@ def annotate_arise_scores(history: list[dict]) -> dict:
 def _valid_records(
     history: Iterable[dict],
     discovery_generation: int | None = None,
+    generation_limit_run_id: str | None = None,
 ) -> list[dict]:
+    """
+    Validate discovery records.
+
+    For the current run, only generations <= discovery_generation are used.
+
+    Historical records from previous runs are allowed to contribute their
+    complete history because their generation numbers are local to those runs.
+    """
+
     records = []
+
     for record in history:
         sequence = str(record.get("sequence", "")).upper()
+
         score = record.get(
             "arise_comparable_score",
             record.get("score"),
         )
+
         generation = record.get("generation")
+
         if not sequence or score is None:
             continue
+
         try:
             score = float(score)
             generation = int(generation)
         except (TypeError, ValueError):
             continue
+
         if not math.isfinite(score):
             continue
+
+        # Only constrain generations belonging to the current run.
+        # Older runs have their own generation numbering.
         if (
             discovery_generation is not None
+            and generation_limit_run_id is not None
+            and str(record.get("run_id")) == str(generation_limit_run_id)
             and generation > discovery_generation
         ):
             continue
-        records.append({**record, "sequence": sequence, "score": score})
+
+        records.append({
+            **record,
+            "sequence": sequence,
+            "score": score,
+        })
+
     return records
 
 
@@ -288,9 +315,10 @@ def discover_hotspot_model(
     score_source = annotation["score_source"]
     score_comparable = annotation["score_comparable_across_generations"]
     records = _valid_records(
-        annotation["records"],
-        discovery_generation,
-    )
+    annotation["records"],
+    discovery_generation,
+    generation_limit_run_id=run_id,
+)
     source_run_ids = sorted({
         str(record.get("run_id"))
         for record in records
@@ -427,3 +455,61 @@ def discover_hotspot_model(
         "arise_score_source": score_source,
         "arise_score_comparable_across_generations": score_comparable,
     }
+def derive_positional_signal(
+    hotspot_model: dict | None,
+    sequence_length: int,
+) -> list[float]:
+    """
+    Convert the ARISE hotspot model into a normalized positional signal.
+
+    This is an interpretability/reporting signal only.
+    It is NOT used by ALE for mutation.
+    """
+
+    signal = [0.0] * sequence_length
+
+    if not hotspot_model:
+        return signal
+
+    hotspots = hotspot_model.get("hotspots", [])
+
+    for hotspot in hotspots:
+        try:
+            start = int(hotspot["start_position"])
+            end = int(hotspot["end_position"])
+            weight = float(
+                hotspot.get(
+                    "selection_score",
+                    hotspot.get("hotspot_score", 0.0),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+
+        if weight <= 0.0 or end <= start:
+            continue
+
+        start = max(0, start)
+        end = min(sequence_length, end)
+        length = end - start
+
+        if length <= 0:
+            continue
+
+        # Divide by window length so longer windows do not receive
+        # a larger total contribution simply because they cover
+        # more positions.
+        per_position = weight / length
+
+        for position in range(start, end):
+            signal[position] += per_position
+
+    maximum = max(signal, default=0.0)
+
+    if maximum <= 0.0:
+        return signal
+
+    return [
+        round(value / maximum, 4)
+        for value in signal
+    ]

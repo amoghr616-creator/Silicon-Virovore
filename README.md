@@ -217,7 +217,14 @@ python scripts/benchmark_pipeline.py \
   --population-size 16 --generations 3 --seed 1001 \
   --output results/benchmark.json
 ```
+A run without `--seed` automatically receives a fresh operating-system-generated
+random seed and a separate run directory. The seed is printed in the run header,
+so the exact trajectory can be reproduced later with the same `--seed` value.
 
+For example:
+
+```bash
+python run_pipeline.py --seed 616 --run-id adaptive-seed616
 The pipeline records a machine-readable audit at
 `results/experiment_audit.json`. Structure prediction may be unavailable on
 a per-candidate basis; missing structures remain missing evidence. The fast

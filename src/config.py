@@ -82,7 +82,7 @@ ALE_ENABLED = True
 
 ADAPTIVE_ENABLED = True
 
-RANDOM_SEED = 616
+RANDOM_SEED: int | None = None
 
 EXPERIMENT_CONDITION = "adaptive"
 
@@ -101,6 +101,22 @@ CACHE_ENABLED = True
 HOTSPOT_ENABLED = True
 
 HOTSPOT_START = None
+
+# ============================================================
+# Persistent ARISE memory
+# ============================================================
+
+ARISE_MEMORY_ENABLED = True
+
+# Store previous runs, but do not automatically use them for
+# new discovery. Cross-run use must be explicitly requested.
+ARISE_MEMORY_USE_HISTORY = False
+
+ARISE_MEMORY_MAX_RECORDS = 5000
+
+ARISE_MEMORY_MAX_RUNS = 50
+
+ARISE_MEMORY_PATH = RESULTS_DIR / "arise_memory.json"
 
 HOTSPOT_END = None
 
@@ -246,6 +262,16 @@ class PipelineSettings:
 
     population_size: int = POPULATION_SIZE
 
+    arise_memory_enabled: bool = ARISE_MEMORY_ENABLED
+
+    arise_memory_use_history: bool = ARISE_MEMORY_USE_HISTORY
+
+    arise_memory_max_records: int = ARISE_MEMORY_MAX_RECORDS
+
+    arise_memory_max_runs: int = ARISE_MEMORY_MAX_RUNS
+
+    arise_memory_path: Path = ARISE_MEMORY_PATH
+
     generations: int = GENERATIONS
 
     mutation_rate: float = MUTATION_RATE
@@ -258,7 +284,7 @@ class PipelineSettings:
 
     bootstrap_iterations: int = BOOTSTRAP_ITERATIONS
 
-    random_seed: int = RANDOM_SEED
+    random_seed: int | None = RANDOM_SEED
 
     top_k: int = TOP_K
 
@@ -315,6 +341,26 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
 
     settings = settings or PipelineSettings.__new__(PipelineSettings)
 
+    arise_memory_max_records = getattr(
+        settings,
+        "arise_memory_max_records",
+        ARISE_MEMORY_MAX_RECORDS,
+    )
+
+    arise_memory_max_runs = getattr(
+        settings,
+        "arise_memory_max_runs",
+        ARISE_MEMORY_MAX_RUNS,
+    )
+    if arise_memory_max_records <= 0:
+        raise ValueError(
+            "arise_memory_max_records must be greater than zero."
+        )
+
+    if arise_memory_max_runs <= 0:
+        raise ValueError(
+            "arise_memory_max_runs must be greater than zero."
+        )
     population_size = getattr(settings, "population_size", POPULATION_SIZE)
     generations = getattr(settings, "generations", GENERATIONS)
     mutation_rate = getattr(settings, "mutation_rate", MUTATION_RATE)
@@ -393,8 +439,11 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
         raise ValueError("seed_sequence has the wrong length.")
     if any(residue not in AMINO_ACIDS for residue in seed_sequence):
         raise ValueError("seed_sequence contains an invalid residue.")
-    if random_seed is not None and not isinstance(random_seed, int):
-        raise ValueError("random_seed must be an integer or None.")
+    if random_seed is not None:
+        if not isinstance(random_seed, int):
+            raise ValueError("random_seed must be an integer or None.")
+        if not 0 <= random_seed <= 0xFFFFFFFF:
+            raise ValueError("random_seed must be between 0 and 2**32 - 1.")
     if condition not in {"baseline", "adaptive", "pilot"}:
         raise ValueError(
             "condition must be one of: baseline, adaptive, pilot."

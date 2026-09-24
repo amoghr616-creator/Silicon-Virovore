@@ -4,13 +4,22 @@ from __future__ import annotations
 
 import argparse
 import copy
+from html import parser
 import json
 import logging
 import random
+import secrets
 import statistics
 import time
+from dataclasses import replace
 from pathlib import Path
-
+from src.arise_memory import (
+    load_arise_memory,
+    save_arise_memory,
+    get_memory_history,
+    upsert_arise_run,
+    aggregate_memory_positional_signal,
+)
 from c.bridge import (
     clear_evaluation_cache,
     evaluation_cache_stats,
@@ -26,7 +35,10 @@ from src.config import (
 )
 from src.diversity import DiversityAnalyzer
 from src.docking_vina import PeptideDockingScorer
-from src.hotspot import discover_hotspot_model
+from src.hotspot import (
+    discover_hotspot_model,
+    derive_positional_signal,
+)
 from src.models import (
     Candidate,
     candidate_has_valid_structure,
@@ -43,6 +55,15 @@ from src.report import ReportGenerator
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def resolve_experiment_seed(seed: int | None) -> int:
+    """Return an explicit seed, generating one when the user did not supply it."""
+
+    if seed is not None:
+        return int(seed)
+
+    # Fresh OS-generated seed for a new stochastic run.
+    # The generated value is logged so the run can be reproduced later.
+    return secrets.randbelow(2**32)
 
 def seed_experiment(seed: int | None) -> None:
     """Seed Python, optional NumPy, and native C stochastic components."""
@@ -197,7 +218,7 @@ def _candidate_provenance(
         "score_scope": candidate.metadata.get("score_scope", "generation_local"),
         "historical_occurrences": _historical_occurrences(
             candidate.sequence,
-            candidate_history,
+            candidate_history or [],
         ),
         "confidence": candidate.confidence,
         "generation_overall_score": candidate.metadata.get(
@@ -626,6 +647,23 @@ def _run_directory(settings: PipelineSettings) -> Path:
 
 def run_pipeline(settings: PipelineSettings | None = None):
     settings = settings or PipelineSettings()
+
+    # Explicit seed = deterministic/reproducible run.
+    # No seed = fresh stochastic run.
+    effective_seed = resolve_experiment_seed(settings.random_seed)
+
+    effective_run_id = (
+        settings.run_id
+        or f"{settings.condition}-seed{effective_seed}"
+    )
+
+    # Do not mutate the caller's PipelineSettings object.
+    settings = replace(
+        settings,
+        random_seed=effective_seed,
+        run_id=effective_run_id,
+    )
+
     validate_configuration(settings)
     output_directory = _run_directory(settings)
     structure_directory = output_directory / "structures"
@@ -683,6 +721,25 @@ def run_pipeline(settings: PipelineSettings | None = None):
         tier2_threshold=settings.docking_threshold,
     )
     ranker = CandidateRanker()
+
+    arise_memory = load_arise_memory(
+        settings.arise_memory_path,
+        max_records=settings.arise_memory_max_records,
+        max_runs=settings.arise_memory_max_runs,
+    )
+    prior_memory_history = get_memory_history(arise_memory)
+    use_prior_memory = (
+        settings.arise_memory_enabled
+        and settings.arise_memory_use_history
+    )
+
+    logger.info(
+        "ARISE memory | enabled=%s | use_history=%s | prior_runs=%d | prior_records=%d",
+        settings.arise_memory_enabled,
+        use_prior_memory,
+        len(arise_memory.get("runs", [])),
+        len(prior_memory_history),
+    )
 
     for generation in range(1, settings.generations + 1):
         generation_start = time.perf_counter()
@@ -819,8 +876,14 @@ def run_pipeline(settings: PipelineSettings | None = None):
             and settings.arise_enabled
             and generation % settings.hotspot_update_interval == 0
         ):
+            discovery_history = (
+                prior_memory_history + candidate_history
+                if use_prior_memory
+                else candidate_history
+            )
+
             hotspot_model = discover_hotspot_model(
-                candidate_history,
+                discovery_history,
                 discovery_generation=generation,
                 run_id=settings.run_id,
                 top_quantile=settings.hotspot_top_quantile,
@@ -830,6 +893,26 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 random_seed=(settings.random_seed or 0) + generation,
                 hotspot_start=settings.hotspot_start,
                 hotspot_end=settings.hotspot_end,
+            )
+            hotspot_model["derived_positional_signal"] = derive_positional_signal(
+                hotspot_model,
+                len(seed_sequence),
+            )
+            hotspot_model["derived_signal_source"] = (
+                "arise-hotspot-v2.selection_score"
+            )
+            hotspot_model["derived_signal_used_for_mutation"] = False
+            hotspot_model["memory_used"] = use_prior_memory
+            hotspot_model["memory_prior_run_count"] = len(
+                arise_memory.get("runs", [])
+            )
+            hotspot_model["memory_prior_record_count"] = len(
+                prior_memory_history
+            )
+            logger.info(
+                "ARISE positional signal | values=%s | used_for_mutation=%s",
+                hotspot_model["derived_positional_signal"],
+                hotspot_model["derived_signal_used_for_mutation"],
             )
             hotspot_models.append(hotspot_model)
             logger.info(
@@ -859,6 +942,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
                     generation,
                     hotspot_model.get("status"),
                 )
+
         summary = _generation_summary(
             generation,
             ranked,
@@ -938,6 +1022,47 @@ def run_pipeline(settings: PipelineSettings | None = None):
         all_candidates,
         candidate_history,
         settings.score_threshold,
+    )
+    if settings.arise_memory_enabled:
+        final_signal = (
+        derive_positional_signal(
+            hotspot_model,
+            len(settings.seed_sequence),
+        )
+        if hotspot_model is not None
+        else [0.0] * len(settings.seed_sequence)
+    )
+
+    upsert_arise_run(
+        arise_memory,
+        run_id=settings.run_id or f"run-{settings.random_seed}",
+        condition=settings.condition,
+        random_seed=settings.random_seed,
+        candidate_history=candidate_history,
+        hotspot_models=hotspot_models,
+        derived_positional_signal=final_signal,
+        max_records=settings.arise_memory_max_records,
+        max_runs=settings.arise_memory_max_runs,
+    )
+
+    save_arise_memory(
+        settings.arise_memory_path,
+        arise_memory,
+    )
+
+    aggregate_signal = (
+        aggregate_memory_positional_signal(
+            arise_memory,
+            len(settings.seed_sequence),
+        )
+    )
+
+    logger.info(
+        "ARISE memory saved | runs=%d | records=%d | "
+        "aggregate_signal=%s",
+        aggregate_signal["run_count"],
+        len(arise_memory.get("candidate_history", [])),
+        aggregate_signal["mean_signal"],
     )
     best_scores = [
         summary["generation_best_score"]
@@ -1240,7 +1365,11 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
     parser.add_argument("--mutation-rate", type=float)
     parser.add_argument("--elite-count", type=int)
     parser.add_argument("--tournament-size", type=int)
-    parser.add_argument("--seed", type=int)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Explicit RNG seed. Omit for a fresh randomly generated seed.",
+    )
     parser.add_argument("--seed-sequence")
     parser.add_argument(
         "--condition",
@@ -1262,6 +1391,24 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         "--ale-enabled",
         action=argparse.BooleanOptionalAction,
         default=None,
+    )
+    parser.add_argument(
+        "--arise-memory-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--arise-memory-use-history",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--arise-memory-max-records",
+        type=int,
+    )
+    parser.add_argument(
+        "--arise-memory-max-runs",
+        type=int,
     )
     parser.add_argument("--structure-workers", type=int)
     parser.add_argument("--docking-workers", type=int)
@@ -1299,7 +1446,7 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
     )
     args = parser.parse_args(argv)
 
-    values = {}
+    values: dict[str, object] = {}
     for field_name, argument_name in (
         ("population_size", "population_size"),
         ("generations", "generations"),
@@ -1321,6 +1468,8 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         ("hotspot_bootstrap_iterations", "hotspot_bootstrap_iterations"),
         ("mutation_guidance_mode", "mutation_guidance_mode"),
         ("score_threshold", "score_threshold"),
+        ("arise_memory_max_records", "arise_memory_max_records"),
+        ("arise_memory_max_runs", "arise_memory_max_runs"),
     ):
         value = getattr(args, argument_name)
         if value is not None:
@@ -1334,6 +1483,10 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         values["arise_enabled"] = args.arise_enabled
     if args.ale_enabled is not None:
         values["ale_enabled"] = args.ale_enabled
+    if args.arise_memory_enabled is not None:
+        values["arise_memory_enabled"] = args.arise_memory_enabled
+    if args.arise_memory_use_history is not None:
+        values["arise_memory_use_history"] = args.arise_memory_use_history
     if args.cache_enabled is not None:
         values["cache_enabled"] = args.cache_enabled
     if args.generate_plots is not None:
