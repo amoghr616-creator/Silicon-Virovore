@@ -44,6 +44,21 @@ typedef struct {
     float solvation_penalty;   
 } hydropathy_summary;
 
+typedef struct {
+    double fitness_score;
+    double solvation_energy;
+    double hydrophobic_moment;
+    double helix_propensity;
+    double target_alignment;
+    double decoy_penalty;
+    double charge_penalty;
+    double charge_density;
+} FitnessMetrics;
+
+int c_evaluate_sequence(
+    const char *sequence,
+    FitnessMetrics *out
+);
 // Lookup Table Sizes
 #define CHOU_FASMAN_SIZE 256
 
@@ -65,6 +80,10 @@ void c_generate_policy_population(
     int guidance_mode,
     char output[][SEQ_LEN + 1],
     int pop_size
+);
+int c_evaluate_sequence(
+    const char *sequence,
+    FitnessMetrics *out
 );
 
 void c_seed_random(unsigned int seed);

@@ -423,10 +423,20 @@ def discover_hotspot_model(
         ),
     )
     ranked = sorted(
-        candidates,
-        key=lambda item: item["selection_score"],
-        reverse=True,
-    )
+    candidates,
+    key=lambda item: (
+        item["selection_score"],
+        item["hotspot_score"],
+        -item["window_length"],
+        -item["start_position"],
+    ),
+    reverse=True,
+)
+
+    for rank, fragment in enumerate(ranked, start=1):
+        fragment["fragment_rank"] = rank
+
+    selected = dict(selected)
     selected = dict(selected)
     selected.update({
         "discovery_generation": discovery_generation,
@@ -446,8 +456,10 @@ def discover_hotspot_model(
         "window_max": window_max,
         "bootstrap_iterations": bootstrap_iterations,
         "correlation_length": selected["window_length"],
+        # Preserve the complete fragment landscape for analysis.
         "hotspots": ranked[:10],
-        "selected_hotspot": selected,
+        "fragment_scores": ranked,
+        "selected_hotspot": selected,   
         "method": "JS divergence over residue and adjacent-pair distributions",
         "causal_interpretation": False,
         "selection_uses_heldout": False,

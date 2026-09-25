@@ -21,32 +21,57 @@ static int is_valid_amino_acid(char c) {
 /**
  * Executes full biophysical evaluation from engine.c on the given candidate.
  */
-double c_check_sequence_fitness(const char* sequence) {
-    if (sequence == NULL) return -999.0;
-    
+int c_evaluate_sequence(
+    const char *sequence,
+    FitnessMetrics *out
+) {
+    if (sequence == NULL || out == NULL) {
+        return -1;
+    }
+
     int len = strlen(sequence);
-    if (len < 9) return -1.0;
-    
+    if (len < 9) {
+        return -2;
+    }
+
     for (int i = 0; i < len; i++) {
         if (!is_valid_amino_acid(sequence[i])) {
-            return -1.0;
+            return -3;
         }
     }
-    
-    // Instantiate temporary Variant structure
+
     Variant v = init_variant(len + 1);
     strcpy(v.sequence, sequence);
     v.length = len;
 
-    // Call full biophysical evaluator in engine.c
-    evaluate_fitness(&v, HERV_K_ENV, ALBUMIN, NCAM1, NULL);
+    /*
+     * Target alignment is currently not a biologically valid
+     * peptide-Env interaction metric. Keep it neutral until a
+     * proper target-specific objective is implemented.
+     */
+    evaluate_fitness(&v, NULL, ALBUMIN, NCAM1, NULL);
 
-    double score = v.fitness_score;
+    out->fitness_score = v.fitness_score;
+    out->solvation_energy = v.solvation_energy;
+    out->hydrophobic_moment = v.hydrophobic_moment;
+    out->helix_propensity = v.helix_propensity;
+    out->target_alignment = v.target_alignment;
+    out->decoy_penalty = v.decoy_penalty;
+    out->charge_penalty = v.charge_penalty;
+    out->charge_density = v.charge_density;
 
-    // Clean up temporary variant buffer memory
     free(v.sequence);
+    return 0;
+}
 
-    return score;
+double c_check_sequence_fitness(const char *sequence) {
+    FitnessMetrics metrics;
+
+    if (c_evaluate_sequence(sequence, &metrics) != 0) {
+        return -1.0;
+    }
+
+    return metrics.fitness_score;
 }
 
 void c_seed_random(unsigned int seed) {

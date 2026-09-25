@@ -13,6 +13,7 @@ import statistics
 import time
 from dataclasses import replace
 from pathlib import Path
+from src import config
 from src.arise_memory import (
     load_arise_memory,
     save_arise_memory,
@@ -720,7 +721,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
         cache_enabled=settings.cache_enabled,
         tier2_threshold=settings.docking_threshold,
     )
-    ranker = CandidateRanker()
+    ranker = CandidateRanker(
+    fitness_weight=config.FITNESS_WEIGHT,
+    docking_weight=config.DOCKING_WEIGHT,
+    helix_weight=config.HELIX_WEIGHT,
+    solvation_weight=config.SOLVATION_WEIGHT,
+)
 
     arise_memory = load_arise_memory(
         settings.arise_memory_path,
