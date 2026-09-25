@@ -106,7 +106,7 @@ HOTSPOT_START = None
 # Persistent ARISE memory
 # ============================================================
 
-ARISE_MEMORY_ENABLED = True
+ARISE_MEMORY_ENABLED = False
 
 # Store previous runs, but do not automatically use them for
 # new discovery. Cross-run use must be explicitly requested.
@@ -153,7 +153,7 @@ ESMFOLD_MAX_RETRY_DELAY_SECONDS = 8
 
 PEPTIDE_FRAGMENT_SIZE = 9
 
-TIER2_DOCKING_THRESHOLD = -6.0
+TIER2_DOCKING_THRESHOLD = -7.0
 
 VINA_EXECUTABLE = ROOT / "vina_1.2.7_mac_aarch64"
 
