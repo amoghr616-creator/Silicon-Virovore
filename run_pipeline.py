@@ -746,14 +746,14 @@ def run_pipeline(settings: PipelineSettings | None = None):
         len(arise_memory.get("runs", [])),
         len(prior_memory_history),
     )
-
+    final_signal = [0.0] * len(seed_sequence)
     for generation in range(1, settings.generations + 1):
         generation_start = time.perf_counter()
         logger.info("-" * 50)
         logger.info("Generation %d / %d", generation, settings.generations)
         logger.info("Seed: %s", seed_sequence)
         logger.info("-" * 50)
-
+      
         candidates = generate_candidates(
             seed_sequence,
             population_size=settings.population_size,
@@ -904,6 +904,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 hotspot_model,
                 len(seed_sequence),
             )
+            final_signal = hotspot_model["derived_positional_signal"]
             hotspot_model["derived_signal_source"] = (
                 "arise-hotspot-v2.selection_score"
             )
