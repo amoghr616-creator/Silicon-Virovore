@@ -339,7 +339,15 @@ class AutoDockBackend(DockingBackend):
                 text=True,
                 check=False,
             )
+            raw_dir = self.docking_directory / "vina_raw"
+            raw_dir.mkdir(parents=True, exist_ok=True)
 
+            (raw_dir / f"{structure_path.stem}_stdout.txt").write_text(
+            docking.stdout
+)
+            (raw_dir / f"{structure_path.stem}_stderr.txt").write_text(
+            docking.stderr
+)
             if docking.returncode != 0:
                 raise RuntimeError(
                     "AutoDock Vina failed: "
