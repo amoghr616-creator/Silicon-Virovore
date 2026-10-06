@@ -1,0 +1,25 @@
+{
+  "receptor_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA.pdb",
+  "peptide_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/results/ablation-baseline-619/structures/MKQAVNALLVFFAGSSDAIRR.pdb",
+  "sequence": "MKQAVNALLVFFAGSSDAIRR",
+  "box_center_angstrom": [
+    -8.404863660985773,
+    -5.822863557121971,
+    1.5229090990667993
+  ],
+  "box_size_angstrom": [
+    20.0,
+    20.0,
+    20.0
+  ],
+  "anchor_residues": [
+    "A:ARG:203",
+    "A:ARG:205"
+  ],
+  "exhaustiveness": 32,
+  "num_modes": 9,
+  "cpu": 0,
+  "seed": 619,
+  "energy_range": 3.0,
+  "rigid": true
+}
