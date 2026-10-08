@@ -1,0 +1,22 @@
+{
+  "receptor_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/mdm2_chainA.pdb",
+  "peptide_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/results/structures/ETFSDLWKLLPEN.pdb",
+  "sequence": "ETFSDLWKLLPEN",
+  "box_center_angstrom": [
+    25.421,
+    -25.135,
+    -7.921
+  ],
+  "box_size_angstrom": [
+    20.0,
+    20.0,
+    20.0
+  ],
+  "anchor_residues": [],
+  "exhaustiveness": 2,
+  "num_modes": 3,
+  "cpu": 0,
+  "seed": 619,
+  "energy_range": 3.0,
+  "rigid": false
+}

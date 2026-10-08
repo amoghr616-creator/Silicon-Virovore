@@ -235,7 +235,6 @@ def make_rigid_pdbqt(source: Path, destination: Path) -> int:
         *atom_lines,
         "ENDROOT",
         "TORSDOF 0",
-        "END",
     ]
     destination.write_text("\n".join(out) + "\n", encoding="utf-8")
     return len(atom_lines)
@@ -516,7 +515,6 @@ def main() -> int:
         "--energy_range", f"{args.energy_range:.3f}",
         "--cpu", str(args.cpu),
         "--out", str(pose_pdbqt),
-        "--log", str(vina_log),
     ]
     if args.seed is not None:
         command.extend(["--seed", str(args.seed)])

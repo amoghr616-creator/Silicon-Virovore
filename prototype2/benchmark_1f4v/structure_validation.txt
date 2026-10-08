@@ -1,0 +1,5 @@
+PDB=1F4V
+experimental_chain=D
+predicted_sequence=MGDSILSQAEIDALLN
+n_residues=16
+ca_rmsd_angstrom=1.804935

@@ -1,0 +1,129 @@
+HEADER    
+TITLE     MDANALYSIS FRAME 0: Created by PDBWriter
+REMARK     285 UNITARY VALUES FOR THE UNIT CELL AUTOMATICALLY SET
+REMARK     285 BY MDANALYSIS PDBWRITER BECAUSE UNIT CELL INFORMATION
+REMARK     285 WAS MISSING.
+REMARK     285 PROTEIN DATA BANK CONVENTIONS REQUIRE THAT
+REMARK     285 CRYST1 RECORD IS INCLUDED, BUT THE VALUES ON
+REMARK     285 THIS RECORD ARE MEANINGLESS.
+CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1           1
+REMARK     285 UNITARY VALUES FOR THE UNIT CELL AUTOMATICALLY SET
+REMARK     285 BY MDANALYSIS PDBWRITER BECAUSE UNIT CELL INFORMATION
+REMARK     285 WAS MISSING.
+REMARK     285 PROTEIN DATA BANK CONVENTIONS REQUIRE THAT
+REMARK     285 CRYST1 RECORD IS INCLUDED, BUT THE VALUES ON
+REMARK     285 THIS RECORD ARE MEANINGLESS.
+ATOM      1  N   GLU A   1      36.761 -35.014  -9.473  1.00  0.00      A    N  
+ATOM      2  CA  GLU A   1      36.605 -33.606  -9.823  1.00  0.00      A    C  
+ATOM      3  C   GLU A   1      35.251 -33.345 -10.461  1.00  0.00      A    C  
+ATOM      4  O   GLU A   1      34.986 -33.798 -11.574  1.00  0.00      A    O  
+ATOM      5  CB  GLU A   1      37.706 -33.158 -10.770  1.00  0.00      A    C  
+ATOM      6  CG  GLU A   1      37.857 -31.648 -10.867  1.00  0.00      A    C  
+ATOM      7  CD  GLU A   1      39.283 -31.202 -11.139  1.00  0.00      A    C  
+ATOM      8  OE1 GLU A   1      39.755 -30.246 -10.486  1.00  0.00      A    O  
+ATOM      9  OE2 GLU A   1      39.935 -31.814 -12.012  1.00  0.00      A    O  
+ATOM     10  N   THR A   2      34.391 -32.615  -9.757  1.00  0.00      A    N  
+ATOM     11  CA  THR A   2      33.013 -32.426 -10.199  1.00  0.00      A    C  
+ATOM     12  C   THR A   2      32.960 -31.518 -11.419  1.00  0.00      A    C  
+ATOM     13  O   THR A   2      33.811 -30.646 -11.585  1.00  0.00      A    O  
+ATOM     14  CB  THR A   2      32.152 -31.838  -9.093  1.00  0.00      A    C  
+ATOM     15  OG1 THR A   2      32.829 -30.718  -8.515  1.00  0.00      A    O  
+ATOM     16  CG2 THR A   2      31.878 -32.873  -8.001  1.00  0.00      A    C  
+ATOM     17  N   PHE A   3      31.961 -31.723 -12.271  1.00  0.00      A    N  
+ATOM     18  CA  PHE A   3      31.444 -30.646 -13.111  1.00  0.00      A    C  
+ATOM     19  C   PHE A   3      30.868 -29.527 -12.258  1.00  0.00      A    C  
+ATOM     20  O   PHE A   3      30.063 -29.776 -11.362  1.00  0.00      A    O  
+ATOM     21  CB  PHE A   3      30.376 -31.162 -14.060  1.00  0.00      A    C  
+ATOM     22  CG  PHE A   3      29.773 -30.100 -14.930  1.00  0.00      A    C  
+ATOM     23  CD1 PHE A   3      30.574 -29.392 -15.819  1.00  0.00      A    C  
+ATOM     24  CE1 PHE A   3      30.015 -28.407 -16.625  1.00  0.00      A    C  
+ATOM     25  CD2 PHE A   3      28.413 -29.823 -14.849  1.00  0.00      A    C  
+ATOM     26  CE2 PHE A   3      27.854 -28.838 -15.655  1.00  0.00      A    C  
+ATOM     27  CZ  PHE A   3      28.656 -28.131 -16.544  1.00  0.00      A    C  
+ATOM     28  N   SER A   4      31.280 -28.293 -12.536  1.00  0.00      A    N  
+ATOM     29  CA  SER A   4      30.480 -27.125 -12.178  1.00  0.00      A    C  
+ATOM     30  C   SER A   4      29.343 -26.913 -13.164  1.00  0.00      A    C  
+ATOM     31  O   SER A   4      29.175 -25.818 -13.698  1.00  0.00      A    O  
+ATOM     32  CB  SER A   4      31.346 -25.878 -12.124  1.00  0.00      A    C  
+ATOM     33  OG  SER A   4      31.387 -25.239 -13.387  1.00  0.00      A    O  
+ATOM     34  N   ASP A   5      28.562 -27.963 -13.409  1.00  0.00      A    N  
+ATOM     35  CA  ASP A   5      27.110 -27.832 -13.471  1.00  0.00      A    C  
+ATOM     36  C   ASP A   5      26.495 -27.923 -12.083  1.00  0.00      A    C  
+ATOM     37  O   ASP A   5      25.422 -27.372 -11.840  1.00  0.00      A    O  
+ATOM     38  CB  ASP A   5      26.505 -28.903 -14.364  1.00  0.00      A    C  
+ATOM     39  CG  ASP A   5      27.168 -28.981 -15.730  1.00  0.00      A    C  
+ATOM     40  OD1 ASP A   5      27.284 -27.941 -16.414  1.00  0.00      A    O  
+ATOM     41  OD2 ASP A   5      27.579 -30.094 -16.125  1.00  0.00      A    O  
+ATOM     42  N   LEU A   6      27.173 -28.617 -11.175  1.00  0.00      A    N  
+ATOM     43  CA  LEU A   6      26.496 -29.281 -10.065  1.00  0.00      A    C  
+ATOM     44  C   LEU A   6      26.153 -28.287  -8.967  1.00  0.00      A    C  
+ATOM     45  O   LEU A   6      25.241 -28.521  -8.175  1.00  0.00      A    O  
+ATOM     46  CB  LEU A   6      27.363 -30.391  -9.491  1.00  0.00      A    C  
+ATOM     47  CG  LEU A   6      26.810 -31.811  -9.621  1.00  0.00      A    C  
+ATOM     48  CD1 LEU A   6      25.433 -31.903  -8.972  1.00  0.00      A    C  
+ATOM     49  CD2 LEU A   6      27.564 -32.767  -8.703  1.00  0.00      A    C  
+ATOM     50  N   TRP A   7      26.882 -27.176  -8.919  1.00  0.00      A    N  
+ATOM     51  CA  TRP A   7      26.642 -26.152  -7.908  1.00  0.00      A    C  
+ATOM     52  C   TRP A   7      25.411 -25.327  -8.253  1.00  0.00      A    C  
+ATOM     53  O   TRP A   7      24.796 -24.726  -7.374  1.00  0.00      A    O  
+ATOM     54  CB  TRP A   7      27.845 -25.233  -7.770  1.00  0.00      A    C  
+ATOM     55  CG  TRP A   7      29.122 -25.815  -8.299  1.00  0.00      A    C  
+ATOM     56  CD1 TRP A   7      29.814 -26.885  -7.795  1.00  0.00      A    C  
+ATOM     57  CD2 TRP A   7      29.862 -25.359  -9.434  1.00  0.00      A    C  
+ATOM     58  NE1 TRP A   7      30.933 -27.090  -8.577  1.00  0.00      A    N  
+ATOM     59  CE2 TRP A   7      30.991 -26.173  -9.587  1.00  0.00      A    C  
+ATOM     60  CE3 TRP A   7      29.680 -24.322 -10.358  1.00  0.00      A    C  
+ATOM     61  CZ2 TRP A   7      31.888 -25.937 -10.634  1.00  0.00      A    C  
+ATOM     62  CZ3 TRP A   7      30.609 -24.129 -11.386  1.00  0.00      A    C  
+ATOM     63  CH2 TRP A   7      31.660 -24.886 -11.529  1.00  0.00      A    C  
+ATOM     64  N   LYS A   8      25.052 -25.299  -9.533  1.00  0.00      A    N  
+ATOM     65  CA  LYS A   8      24.305 -24.174 -10.088  1.00  0.00      A    C  
+ATOM     66  C   LYS A   8      22.865 -24.183  -9.605  1.00  0.00      A    C  
+ATOM     67  O   LYS A   8      22.172 -23.170  -9.693  1.00  0.00      A    O  
+ATOM     68  CB  LYS A   8      24.332 -24.206 -11.608  1.00  0.00      A    C  
+ATOM     69  CG  LYS A   8      24.162 -22.841 -12.254  1.00  0.00      A    C  
+ATOM     70  CD  LYS A   8      24.390 -22.894 -13.755  1.00  0.00      A    C  
+ATOM     71  CE  LYS A   8      23.652 -21.844 -14.452  1.00  0.00      A    C  
+ATOM     72  NZ  LYS A   8      23.856 -21.484 -15.715  1.00  0.00      A    N  
+ATOM     73  N   LEU A   9      22.413 -25.325  -9.096  1.00  0.00      A    N  
+ATOM     74  CA  LEU A   9      21.048 -25.781  -9.344  1.00  0.00      A    C  
+ATOM     75  C   LEU A   9      20.096 -25.239  -8.291  1.00  0.00      A    C  
+ATOM     76  O   LEU A   9      18.881 -25.375  -8.421  1.00  0.00      A    O  
+ATOM     77  CB  LEU A   9      20.982 -27.300  -9.355  1.00  0.00      A    C  
+ATOM     78  CG  LEU A   9      21.439 -27.984 -10.645  1.00  0.00      A    C  
+ATOM     79  CD1 LEU A   9      20.551 -29.186 -10.949  1.00  0.00      A    C  
+ATOM     80  CD2 LEU A   9      22.756 -28.720 -10.423  1.00  0.00      A    C  
+ATOM     81  N   LEU A  10      20.647 -24.624  -7.249  1.00  0.00      A    N  
+ATOM     82  CA  LEU A  10      20.007 -24.629  -5.937  1.00  0.00      A    C  
+ATOM     83  C   LEU A  10      18.746 -23.780  -5.946  1.00  0.00      A    C  
+ATOM     84  O   LEU A  10      18.774 -22.632  -6.385  1.00  0.00      A    O  
+ATOM     85  CB  LEU A  10      20.960 -24.112  -4.871  1.00  0.00      A    C  
+ATOM     86  CG  LEU A  10      22.083 -25.063  -4.453  1.00  0.00      A    C  
+ATOM     87  CD1 LEU A  10      22.496 -24.790  -3.012  1.00  0.00      A    C  
+ATOM     88  CD2 LEU A  10      23.388 -24.688  -5.146  1.00  0.00      A    C  
+ATOM     89  N   PRO A  11      17.643 -24.346  -5.464  1.00  0.00      A    N  
+ATOM     90  CA  PRO A  11      16.745 -23.620  -4.570  1.00  0.00      A    C  
+ATOM     91  C   PRO A  11      17.445 -23.106  -3.322  1.00  0.00      A    C  
+ATOM     92  O   PRO A  11      18.380 -23.733  -2.829  1.00  0.00      A    O  
+ATOM     93  CB  PRO A  11      15.701 -24.652  -4.178  1.00  0.00      A    C  
+ATOM     94  CG  PRO A  11      16.430 -25.950  -4.236  1.00  0.00      A    C  
+ATOM     95  CD  PRO A  11      17.397 -25.802  -5.374  1.00  0.00      A    C  
+ATOM     96  N   GLU A  12      16.993 -21.964  -2.812  1.00  0.00      A    N  
+ATOM     97  CA  GLU A  12      17.831 -21.129  -1.957  1.00  0.00      A    C  
+ATOM     98  C   GLU A  12      17.794 -21.608  -0.515  1.00  0.00      A    C  
+ATOM     99  O   GLU A  12      18.678 -21.281   0.274  1.00  0.00      A    O  
+ATOM    100  CB  GLU A  12      17.390 -19.676  -2.020  1.00  0.00      A    C  
+ATOM    101  CG  GLU A  12      17.750 -18.981  -3.323  1.00  0.00      A    C  
+ATOM    102  CD  GLU A  12      17.422 -17.497  -3.324  1.00  0.00      A    C  
+ATOM    103  OE1 GLU A  12      16.226 -17.140  -3.260  1.00  0.00      A    O  
+ATOM    104  OE2 GLU A  12      18.370 -16.685  -3.390  1.00  0.00      A    O  
+ATOM    105  N   ASN A  13      16.771 -22.385  -0.171  1.00  0.00      A    N  
+ATOM    106  CA  ASN A  13      16.256 -22.405   1.195  1.00  0.00      A    C  
+ATOM    107  C   ASN A  13      16.731 -23.637   1.950  1.00  0.00      A    C  
+ATOM    108  O   ASN A  13      17.024 -24.666   1.343  1.00  0.00      A    O  
+ATOM    109  CB  ASN A  13      14.737 -22.359   1.206  1.00  0.00      A    C  
+ATOM    110  CG  ASN A  13      14.197 -20.942   1.319  1.00  0.00      A    C  
+ATOM    111  OD1 ASN A  13      14.828 -20.073   1.918  1.00  0.00      A    O  
+ATOM    112  ND2 ASN A  13      13.022 -20.707   0.741  1.00  0.00      A    N  
+ATOM    113  OXT ASN A  13      16.827 -23.618   3.176  1.00  0.00      A    O  
+END

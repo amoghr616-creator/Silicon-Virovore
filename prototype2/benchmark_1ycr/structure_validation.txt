@@ -1,0 +1,7 @@
+PDB=1YCR
+experimental_chain=B
+predicted_sequence=ETFSDLWKLLPEN
+predicted_backend=ESMFold
+plddt=72.96
+n_residues=13
+ca_rmsd_angstrom=1.796567

@@ -1,0 +1,8 @@
+Benchmark: 1YCR MDM2-p53
+Peptide: ETFSDLWKLLPEN
+Docking pose C-alpha RMSD: 11.526 A
+Vina score: -4.684 kcal/mol
+Exhaustiveness: 2
+Box: 20 x 20 x 20 A
+Seed: 619
+RMSD type: direct pose RMSD; no superposition

@@ -1,0 +1,3 @@
+cluster_id,n_poses,mean_hybrid_score,std_hybrid_score,ci95_lower,ci95_upper,best_pose_idx
+0,18,-17.6760595,1.5123257838451611,-18.428121419172793,-16.92399758082721,7
+1,1,-16.5068835,0.0,-16.5068835,-16.5068835,14

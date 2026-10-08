@@ -1,0 +1,47 @@
+{
+  "sequence": "ETFSDLWKLLPEN",
+  "receptor": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/mdm2_chainA.pdb",
+  "peptide_structure": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/p53_experimental.pdb",
+  "vina_affinity_kcal_mol": -5.02,
+  "vina_affinity_from_pdbqt_remark_kcal_mol": -5.02,
+  "vina_stdout_affinity_kcal_mol": -5.02,
+  "modes": [
+    {
+      "mode": 1.0,
+      "affinity_kcal_mol": -5.02,
+      "rmsd_lb": 0.0,
+      "rmsd_ub": 0.0
+    },
+    {
+      "mode": 2.0,
+      "affinity_kcal_mol": -4.638,
+      "rmsd_lb": 2.707,
+      "rmsd_ub": 5.988
+    },
+    {
+      "mode": 3.0,
+      "affinity_kcal_mol": -4.457,
+      "rmsd_lb": 2.377,
+      "rmsd_ub": 4.758
+    }
+  ],
+  "exhaustiveness": 2,
+  "num_modes": 3,
+  "cpu": 0,
+  "seed": 619,
+  "box_center_angstrom": [
+    25.421,
+    -25.135,
+    -7.921
+  ],
+  "box_size_angstrom": [
+    20.0,
+    20.0,
+    20.0
+  ],
+  "rigid_ligand": false,
+  "receptor_pdbqt": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/vina_exp/receptor.pdbqt",
+  "ligand_pdbqt": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/vina_exp/peptide_prepared.pdbqt",
+  "pose_pdbqt": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/vina_exp/vina_out.pdbqt",
+  "complex_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/docking/vina_exp/docked_complex_mode1.pdb"
+}

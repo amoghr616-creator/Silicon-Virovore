@@ -1,0 +1,21 @@
+HETATM    1  V   BOX X   1      12.421 -38.135 -20.921  1.00  0.00          C
+HETATM    2  V   BOX X   1      38.421 -38.135 -20.921  1.00  0.00          C
+HETATM    3  V   BOX X   1      38.421 -12.135 -20.921  1.00  0.00          C
+HETATM    4  V   BOX X   1      12.421 -12.135 -20.921  1.00  0.00          C
+HETATM    5  V   BOX X   1      12.421 -38.135   5.079  1.00  0.00          C
+HETATM    6  V   BOX X   1      38.421 -38.135   5.079  1.00  0.00          C
+HETATM    7  V   BOX X   1      38.421 -12.135   5.079  1.00  0.00          C
+HETATM    8  V   BOX X   1      12.421 -12.135   5.079  1.00  0.00          C
+CONECT    1    2
+CONECT    2    3
+CONECT    3    4
+CONECT    4    1
+CONECT    5    6
+CONECT    6    7
+CONECT    7    8
+CONECT    8    5
+CONECT    1    5
+CONECT    2    6
+CONECT    3    7
+CONECT    4    8
+END

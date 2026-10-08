@@ -1,5 +1,5 @@
 {
-  "receptor_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA.pdb",
+  "receptor_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_final.pdb",
   "peptide_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/results/ablation-baseline-619/structures/MKQAVNALLVFFAGSSDAIRR.pdb",
   "sequence": "MKQAVNALLVFFAGSSDAIRR",
   "box_center_angstrom": [
@@ -21,5 +21,5 @@
   "cpu": 0,
   "seed": 619,
   "energy_range": 3.0,
-  "rigid": true
+  "rigid": false
 }

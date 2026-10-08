@@ -1,0 +1,50 @@
+{
+  "status": "complete",
+  "timestamp_start": "2026-10-08T00:59:08.849869+00:00",
+  "poses_requested": 20,
+  "seed": null,
+  "cli_args": {
+    "peptide_sequence": "MGDSILSQAEIDALLN",
+    "receptor_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1f4v/chey_chainA.pdb",
+    "site_coords": [
+      14.597,
+      56.506,
+      128.254
+    ],
+    "box_size": 52.0,
+    "n_samples": 20,
+    "seed": null,
+    "scoring": [
+      "vina"
+    ],
+    "output_dir": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1f4v/rapidock_20",
+    "run_id": "1791421147_6eef6648",
+    "verbosity": 0,
+    "minimize_poses": true,
+    "refine_topk": null,
+    "ultra": 0,
+    "ultra_charged": false,
+    "compute_ensemble": false,
+    "ensemble_calibration": null,
+    "compute_free_entropy": false,
+    "mmgbsa_cpu_only": false,
+    "mmgbsa_include_ie": false,
+    "mmgbsa_3traj": false,
+    "mmgbsa_solute_dielectric": 1.0,
+    "blind": false,
+    "pocket_search": false,
+    "n_pocket_search": 300,
+    "n_pockets": 3,
+    "n_per_pocket": 150,
+    "long_checkpoint_threshold": 13
+  },
+  "git_sha": "25c221123fbbdccba4c2bb6c42a478fbcadb46d4",
+  "rapidock_commit_sha": "unknown",
+  "receptor_sha256": "be4b4d69f001612f5a5f52996010ec0260364dd27c03b7f86d374ebf0302d54e",
+  "peptide_sequence_hash": "e2e9c8b5fca92c0513983be5577af09e501c982f2e29dcd420924a30bae05f53",
+  "vina_version": "1.2.7",
+  "openmm_version": "8.6.1",
+  "cuda_version": null,
+  "timestamp_end": "2026-10-08T01:02:19.076016+00:00",
+  "poses_generated": 20
+}
