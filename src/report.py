@@ -71,15 +71,15 @@ class ReportGenerator:
                 "Generation-local Score",
                 "Posthoc Run-normalized Score",
                 "Native Fitness",
-                "Docking ΔG",
-                "Mean ΔG",
-                "Consensus ΔG",
-                "Vina ΔG",
+                "Surrogate score (arbitrary units; not ΔG)",
+                "Mean surrogate score (arbitrary units)",
+                "Consensus surrogate score (arbitrary units)",
+                "AutoDock Vina score (diagnostic; not validation)",
                 "Vina Status",
-                "Tier 2 Eligible",
-                "Tier 2 Attempted",
-                "Tier 2 Validated",
-                "Tier 2 Status",
+                "Vina diagnostic eligible by heuristic",
+                "Vina diagnostic attempted",
+                "Experimental binding validation (not performed)",
+                "Vina diagnostic status",
                 "Docking Status",
                 "Structure Status",
                 "pLDDT",
@@ -149,8 +149,9 @@ class ReportGenerator:
                 "Evidence totals: "
                 f"structures={execution.get('structure_available_count', 0)}; "
                 f"surrogate={execution.get('surrogate_docking_count', 0)}; "
-                f"tier2 eligible={execution.get('tier2_eligible_count', 0)}; "
-                f"tier2 validated={execution.get('tier2_validated_count', 0)}; "
+                f"Vina diagnostic eligible={execution.get('tier2_eligible_count', 0)}; "
+                f"Vina diagnostic attempted={execution.get('tier2_attempted_count', 0)}; "
+                "experimental binding validation=not performed; "
                 f"candidate-record counts={report.audit.get('evidence', {}).get('candidate_record_counts', {})}\n"
             )
 
@@ -189,19 +190,19 @@ class ReportGenerator:
             )
 
             lines.append(
-                f"- Best ΔG: {c.strongest_anchor_delta_g}\n"
+                f"- Best surrogate score (arbitrary units; not ΔG): {c.strongest_anchor_delta_g}\n"
             )
 
             lines.append(
-                f"- Mean ΔG: {c.mean_delta_g}\n"
+                f"- Mean surrogate score (arbitrary units): {c.mean_delta_g}\n"
             )
 
             lines.append(
-                f"- Consensus ΔG: {c.metadata.get('consensus_docking')}\n"
+                f"- Consensus surrogate score (arbitrary units): {c.metadata.get('consensus_docking')}\n"
             )
 
             lines.append(
-                f"- Vina ΔG: {c.vina_delta_g}\n"
+                f"- AutoDock Vina score (diagnostic; not validation): {c.vina_delta_g}\n"
             )
 
             lines.append(
@@ -217,7 +218,8 @@ class ReportGenerator:
             )
 
             lines.append(
-                f"- Tier 2 Validated: {c.passed_tier_2}\n"
+                f"- Experimental binding validated: False (no wet-lab binding assay was performed)\n"
+                f"- Vina computational score available: {c.metadata.get('vina_score_available', False)}\n"
             )
 
             lines.append(

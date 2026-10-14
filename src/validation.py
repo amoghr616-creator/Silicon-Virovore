@@ -62,7 +62,7 @@ class Validator:
             vina_status = candidate.metadata.get("vina_status")
             if validated and vina_status != "success":
                 self.errors.append(
-                    f"Tier-2 validated without successful Vina status: {candidate.sequence}"
+                    f"Vina diagnostic marked as validation despite no successful status: {candidate.sequence}"
                 )
             if vina_status == "success" and candidate.vina_delta_g is None:
                 self.errors.append(
@@ -74,7 +74,7 @@ class Validator:
                 )
             if validated and not candidate_has_valid_structure(candidate):
                 self.errors.append(
-                    f"Tier-2 passed without valid structure: {candidate.sequence}"
+                    f"Vina diagnostic marked as validation without a valid structure: {candidate.sequence}"
                 )
 
             structure_available = candidate.metadata.get("structure_available")

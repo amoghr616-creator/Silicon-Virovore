@@ -44,9 +44,11 @@ class AblationResult:
 
 class AblationStudy:
 
-    def __init__(self):
+    def __init__(self, ranker: CandidateRanker | None = None):
 
         self.benchmark = BenchmarkRunner()
+        self.ranker = ranker or CandidateRanker()
+        self.skipped_components: list[tuple[str, str]] = []
 
     # --------------------------------------------------------
 
@@ -94,7 +96,7 @@ class AblationStudy:
         benchmark: list[BenchmarkSample],
     ) -> list[AblationResult]:
 
-        ranker = CandidateRanker()
+        ranker = self.ranker
 
         baseline_candidates = ranker.rank(
             deepcopy(candidates)
@@ -111,24 +113,29 @@ class AblationStudy:
 
         baseline_top1 = baseline["top1"]
 
-        components = [
-
+        candidate_components = [
             "fitness",
-
             "docking",
-
             "structure",
-
             "helix",
-
             "hydrophobicity",
-
             "solvation",
-
             "md",
-
             "safety",
         ]
+        components = []
+        self.skipped_components = []
+        for component in candidate_components:
+            if ranker.weights.get(component, 0.0) <= 0.0:
+                self.skipped_components.append((component, "zero weight in primary ranker"))
+                continue
+            if component == "docking" and not any(
+                c.metadata.get("docking_score_is_target_specific") is True
+                for c in candidates
+            ):
+                self.skipped_components.append((component, "no target-specific binding score"))
+                continue
+            components.append(component)
 
         results = []
 
@@ -233,6 +240,11 @@ class AblationStudy:
         print("="*60)
 
         print()
+        if self.skipped_components:
+            print("Not tested (not active in the ranking objective):")
+            for name, reason in self.skipped_components:
+                print(f"  - {name}: {reason}")
+            print()
 
         for r in sorted(
             results,

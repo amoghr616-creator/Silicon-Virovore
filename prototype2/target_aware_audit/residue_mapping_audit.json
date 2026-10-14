@@ -1,0 +1,1134 @@
+{
+  "all_representations_valid": true,
+  "chain": "A",
+  "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+  "representations": [
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 324,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 648,
+      "source_metadata": {
+        "header": "HEADER    VIRAL PROTEIN                           10-OCT-25   9SYA",
+        "structure_id": "9SYA",
+        "title": [
+          "CRYSTAL STRUCTURE OF HERV-K ENVELOPE GLYCOPROTEIN SURFACE SUBUNIT WITH",
+          "CHOLATES AND SULFATES BOUND"
+        ]
+      },
+      "structure_identifier": "9SYA",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "structure_sha256": "92007db8c20dc8afa638d60bed13bf527cfb0321999ca227838a8c417b5fd865",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 201,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 202,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 99,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 203,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 206,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 207,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 101,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 205,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    },
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 324,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 648,
+      "source_metadata": {
+        "header": null,
+        "structure_id": null,
+        "title": []
+      },
+      "structure_identifier": "9SYA_chainA",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA.pdb",
+      "structure_sha256": "1ee51e8d902998262a5612c5fa5432b69b1323d17bfa5c7e9a9eb497538a69ba",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 201,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 202,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 99,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 203,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 206,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 207,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 101,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 205,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    },
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 319,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 628,
+      "source_metadata": {
+        "header": null,
+        "structure_id": null,
+        "title": []
+      },
+      "structure_identifier": "9SYA_chainA_final",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_final.pdb",
+      "structure_sha256": "5081d8c699bdeff7613acb97b3a3d489d870bb6d69b5fe832b55f5de3b14f911",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 201,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 202,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 97,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 203,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 206,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 207,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 99,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 205,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    },
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 318,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 624,
+      "source_metadata": {
+        "header": null,
+        "structure_id": null,
+        "title": []
+      },
+      "structure_identifier": "9SYA_chainA_meeko_clean",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_meeko_clean.pdb",
+      "structure_sha256": "529bfb40f0e26895cea1cf984b8add4f44f72f146b73edaacf57f33026b23e90",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 201,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 202,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 96,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 203,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 206,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 207,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 98,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 205,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    },
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 319,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 628,
+      "source_metadata": {
+        "header": null,
+        "structure_id": null,
+        "title": []
+      },
+      "structure_identifier": "9SYA_chainA_docking",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_docking.pdb",
+      "structure_sha256": "65d341a25b28361754625890b17b46942ea18c74629667bceb3e2e70ae4e9f60",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 201,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 202,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 97,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 203,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 206,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 207,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 99,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 205,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    },
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 319,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 628,
+      "source_metadata": {
+        "header": null,
+        "structure_id": null,
+        "title": []
+      },
+      "structure_identifier": "9SYA_chainA_repaired",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+      "structure_sha256": "3e02af67c1b1c0902da992b2cea3072d46536d214851a78d9069814adccdb8fd",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 201,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 202,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 97,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 203,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 203,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 204,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 205,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 206,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 207,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 99,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 205,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    },
+    {
+      "author_numbering_is_observed_numbering": false,
+      "chain": "A",
+      "failure_reasons": [],
+      "mapping_valid": true,
+      "mmcif_path": null,
+      "observed_residue_count": 318,
+      "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+      "sequence_alignment_score": 624,
+      "source_metadata": {
+        "header": null,
+        "structure_id": null,
+        "title": []
+      },
+      "structure_identifier": "receptor_for_rapidock_full",
+      "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/p2_rapidock/P2-01-clean/receptor_for_rapidock_full.pdb",
+      "structure_sha256": "416c1dfb724b9db7135196e3fcf628c97594776a0b1616e28c680507f182a23f",
+      "target_residues": [
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 95,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "S",
+              "residue_name": "SER"
+            },
+            {
+              "author_residue_number": 96,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "L",
+              "residue_name": "LEU"
+            },
+            {
+              "author_residue_number": 97,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 98,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 99,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 96,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 97,
+          "present": true,
+          "reference_author_residue_number": 203,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 99,
+          "requested_author_residue_number": 203,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        },
+        {
+          "atom_names": [
+            "C",
+            "CA",
+            "CB",
+            "CD",
+            "CG",
+            "CZ",
+            "N",
+            "NE",
+            "NH1",
+            "NH2",
+            "O"
+          ],
+          "chain": "A",
+          "coordinates_valid": true,
+          "is_arginine": true,
+          "local_sequence_context": [
+            {
+              "author_residue_number": 97,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 98,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "P",
+              "residue_name": "PRO"
+            },
+            {
+              "author_residue_number": 99,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "R",
+              "residue_name": "ARG"
+            },
+            {
+              "author_residue_number": 100,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "V",
+              "residue_name": "VAL"
+            },
+            {
+              "author_residue_number": 101,
+              "chain": "A",
+              "insertion_code": "",
+              "one_letter": "N",
+              "residue_name": "ASN"
+            }
+          ],
+          "mapping_status": "mapped",
+          "missing_arginine_side_chain_atoms": [],
+          "mmcif_label_residue_number": null,
+          "observed_sequence_index": 98,
+          "one_letter": "R",
+          "pdb_author_insertion_code": "",
+          "pdb_author_residue_number": 99,
+          "present": true,
+          "reference_author_residue_number": 205,
+          "reference_residue_name": "ARG",
+          "reference_sequence_index": 101,
+          "requested_author_residue_number": 205,
+          "required_arginine_side_chain_atoms_present": true,
+          "residue_name": "ARG",
+          "sequence_alignment_identity": true
+        }
+      ]
+    }
+  ],
+  "target_author_residues": [
+    203,
+    205
+  ]
+}

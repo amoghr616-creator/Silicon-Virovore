@@ -130,9 +130,12 @@ HOTSPOT_TOP_QUANTILE = 0.25
 
 HOTSPOT_BOOTSTRAP_ITERATIONS = 100
 
-MUTATION_GUIDANCE_MODE = "hotspot_biased"
+MUTATION_GUIDANCE_MODE = "hotspot_biased_annealed"
 
-PRESERVE_BEST = False
+# Same elitism safeguard applies to baseline and adaptive conditions. With a
+# fixed objective this prevents losing the best-so-far sequence; it does not
+# imply adaptive must outperform the baseline on external docking evaluation.
+PRESERVE_BEST = True
 
 SCORE_THRESHOLD = None
 
@@ -169,20 +172,37 @@ VINA_BOX_PADDING = 4.0
 
 USE_ML_SURROGATE = True
 
+# Standalone AutoDock Vina scoring is opt-in and never part of the primary
+# optimization objective. Prototype 2 target-specific evaluation is external.
+ENABLE_VINA_TIER2 = False
+
 
 # ============================================================
 # Ranking Weights
 # ============================================================
 
-FITNESS_WEIGHT = 0.35
+# The primary search objective is the bounded C sequence-level fitness prior.
+# The prior is NOT a target-specific HERV-K binding predictor: c_evaluate_sequence
+# invokes evaluate_fitness with target=NULL. Do not mix a composition heuristic,
+# isolated-peptide pLDDT, or overlapping native features into this objective.
+FITNESS_WEIGHT = 1.0
 
-DOCKING_WEIGHT = 0.35
+DOCKING_WEIGHT = 0.0
 
-HELIX_WEIGHT = 0.10
+STRUCTURE_WEIGHT = 0.0
 
-SOLVATION_WEIGHT = 0.10
+HELIX_WEIGHT = 0.0
 
-CONFIDENCE_WEIGHT = 0.10
+HYDRO_WEIGHT = 0.0
+
+SOLVATION_WEIGHT = 0.0
+
+MD_WEIGHT = 0.0
+
+SAFETY_WEIGHT = 0.0
+
+# Deprecated diagnostic placeholder; confidence is never a ranking/tie-break weight.
+CONFIDENCE_WEIGHT = 0.0
 
 
 # ============================================================
@@ -307,6 +327,8 @@ class PipelineSettings:
     docking_workers: int = DOCKING_WORKERS
 
     cache_enabled: bool = CACHE_ENABLED
+
+    enable_vina_tier2: bool = ENABLE_VINA_TIER2
 
     generate_plots: bool = GENERATE_PLOTS
 
@@ -473,10 +495,11 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
         "uniform",
         "hotspot_only",
         "hotspot_biased",
+        "hotspot_biased_annealed",
     }:
         raise ValueError(
             "mutation_guidance_mode must be uniform, hotspot_only, "
-            "or hotspot_biased."
+            "hotspot_biased, or hotspot_biased_annealed."
         )
     if score_threshold is not None and not math.isfinite(float(score_threshold)):
         raise ValueError("score_threshold must be finite when configured.")

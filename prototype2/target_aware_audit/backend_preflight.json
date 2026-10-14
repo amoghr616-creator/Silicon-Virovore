@@ -1,0 +1,31 @@
+{
+  "auto_box_behavior": {
+    "maximum_edge_A": 100.0,
+    "safety_margin_A": 4.0,
+    "user_box_is_minimum": true
+  },
+  "backend_command_on_path": null,
+  "backend_source": "/Users/centurion616/Desktop/Silicon-Virovore/hybridock-pep",
+  "backend_source_present": true,
+  "declared_box_size_A": 52.0,
+  "effective_box_size_recorded_by_archived_metadata": false,
+  "long_checkpoint_expected": true,
+  "long_checkpoint_present": false,
+  "long_checkpoint_threshold": 13,
+  "n_samples": 20,
+  "off_pocket_filter": {
+    "cutoff_A": 35.0,
+    "metric": "C-alpha centroid distance to site"
+  },
+  "peptide_length": 21,
+  "rapidock_local_checkpoint_present": true,
+  "selected_checkpoint_fallback": "rapidock_local.pt",
+  "selected_checkpoint_if_run": "/Users/centurion616/Desktop/Silicon-Virovore/hybridock-pep/weights/rapidock_local.pt",
+  "site_center_A": [
+    -8.405,
+    -5.823,
+    1.523
+  ],
+  "site_constrains_stage_1_sampling": false,
+  "stage_1_sampling_scope": "receptor-wide RAPiDock sampling"
+}

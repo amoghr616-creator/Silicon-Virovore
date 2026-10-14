@@ -210,22 +210,18 @@ static double deviation_penalty(double value,
     return d / (1.0 + d);
 }
 
- void evaluate_fitness(
+void evaluate_fitness(
     Variant *v,
     const char *target,
     const char *decoy1,
     const char *decoy2,
     void *params
-)
-{
-    if (!v || !v->sequence)
+) {
+    if (v == NULL || v->sequence == NULL) {
         return;
+    }
 
     (void)params;
-
-    /* ---------------------------------------------------------
-     * Native metrics
-     * --------------------------------------------------------- */
 
     v->helix_propensity =
         calculate_chou_fasman(v->sequence);
@@ -236,144 +232,70 @@ static double deviation_penalty(double value,
     v->hydrophobic_moment =
         calculate_eisenberg_moment(v->sequence);
 
-    /* ---------------------------------------------------------
-     * Sequence similarity metrics
-     * --------------------------------------------------------- */
-
+    /* Sequence identity is diagnostic, not binding evidence. */
     double target_score =
-        calculate_alignment_score(
-            v->sequence,
-            target
-        );
+        (target != NULL && target[0] != '\0')
+        ? calculate_alignment_score(v->sequence, target)
+        : -1.0;
 
     double decoy1_score =
-        calculate_alignment_score(
-            v->sequence,
-            decoy1
-        );
+        (decoy1 != NULL && decoy1[0] != '\0')
+        ? calculate_alignment_score(v->sequence, decoy1)
+        : -1.0;
 
     double decoy2_score =
-        calculate_alignment_score(
-            v->sequence,
-            decoy2
-        );
+        (decoy2 != NULL && decoy2[0] != '\0')
+        ? calculate_alignment_score(v->sequence, decoy2)
+        : -1.0;
 
-    /* ---------------------------------------------------------
-     * Charge
-     * --------------------------------------------------------- */
+    charge_summary charge_smry = {0};
 
-    charge_summary charge_smry;
+    if (compute_charge_profile(
+            v->sequence, 2, &charge_smry
+        ) != 0) {
 
-    compute_charge_profile(
-        v->sequence,
-        2,
-        &charge_smry
-    );
-
-    /* ---------------------------------------------------------
-     * Decoy penalty
-     * --------------------------------------------------------- */
+        v->fitness_score = -1.0;
+        v->target_alignment = target_score;
+        v->decoy_penalty = -1.0;
+        v->charge_penalty = -1.0;
+        v->charge_density = -1.0;
+        return;
+    }
 
     double decoy_penalty =
-        exp(decoy1_score * 1.5)
-        + exp(decoy2_score * 1.5);
-
-    /* ---------------------------------------------------------
-     * Store raw metrics
-     * --------------------------------------------------------- */
+        (decoy1_score >= 0.0 && decoy2_score >= 0.0)
+        ? exp(1.5 * decoy1_score)
+          + exp(1.5 * decoy2_score)
+        : -1.0;
 
     v->target_alignment = target_score;
     v->decoy_penalty = decoy_penalty;
     v->charge_penalty = charge_smry.penalty;
     v->charge_density = charge_smry.max_patch_density;
 
-    /* ---------------------------------------------------------
-     * Bounded components
-     *
-     * Important:
-     * Do NOT combine raw heterogeneous quantities directly.
-     * --------------------------------------------------------- */
+    double helix_component = normalize_range(
+        v->helix_propensity, 0.50, 1.42
+    );
 
-    /*
-     * Target alignment is already [0,1].
-     */
-    double target_component =
-        clamp01(target_score);
+    double hydrophobic_penalty = deviation_penalty(
+        v->hydrophobic_moment, 0.35, 0.35
+    );
 
-    /*
-     * Chou-Fasman values in this implementation span
-     * approximately 0.50 -> 1.42.
-     */
-    double helix_component =
-        normalize_range(
-            v->helix_propensity,
-            0.50,
-            1.42
-        );
+    double solvation_penalty = deviation_penalty(
+        v->solvation_energy, 0.0, 20.0
+    );
 
-    /*
-     * Hydrophobic moment is retained as a diagnostic metric,
-     * but is NOT directly rewarded.
-     *
-     * This is intentional for the current debugging pass:
-     * it prevents the optimizer from selecting increasingly
-     * hydrophobic sequences simply because the moment increases.
-     */
-    double hydrophobic_penalty =
-        deviation_penalty(
-            v->hydrophobic_moment,
-            0.35,
-            0.35
-        );
-
-    /*
-     * Solvation is also treated as a bounded developability
-     * regularizer rather than blindly rewarding increasingly
-     * negative values.
-     */
-    double solvation_penalty =
-        deviation_penalty(
-            v->solvation_energy,
-            0.0,
-            20.0
-        );
-
-    /*
-     * Charge penalty is converted to a bounded quantity.
-     */
-    double charge_component =
-        clamp01(
-            charge_smry.penalty / 10.0
-        );
-
-    /*
-     * Bound the decoy term so it cannot explode and dominate
-     * the entire evolutionary objective.
-     */
-    double decoy_component =
-        clamp01(
-            decoy_penalty / 10.0
-        );
-
-    /* ---------------------------------------------------------
-     * Balanced composite fitness
-     *
-     * All components are now approximately [0,1].
-     * --------------------------------------------------------- */
+    double charge_component = clamp01(
+        charge_smry.penalty / 10.0
+    );
 
     double fitness =
-          (0.40 * target_component)
-        + (0.25 * helix_component)
-        + (0.15 * (1.0 - solvation_penalty))
-        + (0.10 * (1.0 - charge_component))
-        + (0.10 * (1.0 - decoy_component))
-        - (0.10 * hydrophobic_penalty);
+          0.50 * helix_component
+        + 0.30 * (1.0 - solvation_penalty)
+        + 0.20 * (1.0 - charge_component)
+        - 0.10 * hydrophobic_penalty;
 
-    /*
-     * Final safety clamp.
-     */
-    v->fitness_score =
-        clamp01(fitness);
+    v->fitness_score = clamp01(fitness);
 }
 
 /* ============================================================================

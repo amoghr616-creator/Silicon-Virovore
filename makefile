@@ -21,7 +21,7 @@ $(LIB): $(SRC)
 	$(CC) $(CFLAGS) -shared $(SRC) -o $(LIB)
 
 clean:
-	rm -f $(LIB)
+	rm -f $(LIB) c/libsafety.dylib c/engine.o c/hydropathy.o c/ga_loop.o c/safety.o c/test_parser.o c/virovore c/virovore_sim
 	rm -rf build
 
 run:

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "status": "blocked_until_backend_preflight_passes",
+  "purpose": "Small reproducibility pilot for 21-residue HybriDock candidates; not a binding validation study.",
+  "backend": {
+    "executable": "hybridock-pep",
+    "source_directory": "hybridock-pep",
+    "source_version_expected": "0.2.0",
+    "checkpoint_policy": "strict_no_fallback",
+    "required_checkpoint": "longer_local.pt",
+    "required_checkpoint_reason": "All pilot sequences are 21 residues and the backend threshold is 13 residues.",
+    "site_sampling_note": "--site does not constrain initial Stage 1 RAPiDock sampling; independent off-pocket and pose-geometry checks remain required."
+  },
+  "receptor": {
+    "path": "prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+    "reference": "data/receptor/9SYA.pdb",
+    "chain": "A",
+    "site_center_A": [-8.405, -5.823, 1.523],
+    "box_edge_A": 52.0,
+    "verified_target": ["ARG203", "ARG205"]
+  },
+  "output": {
+    "root": "prototype2/pilot_runs",
+    "must_be_new_or_empty": true,
+    "preserve_existing_outputs": true
+  },
+  "resource_limits": {
+    "candidate_count": 6,
+    "samples_per_candidate": 20,
+    "total_stage_1_samples": 120,
+    "concurrency": 1,
+    "per_candidate_walltime_limit_minutes": 30,
+    "max_total_walltime_minutes": 180,
+    "seed_policy": "candidate_seed = 616 + candidate_index",
+    "determinism_qualification": "backend documents deterministic sampling modulo CUDA nondeterminism"
+  },
+  "fixed_runs": [
+    {"name": "P2-01", "arm": "candidate", "sequence": "MKQAVNALLVFFAGSSDAIRR", "seed": 616},
+    {"name": "P2-02", "arm": "candidate", "sequence": "DKLAVTALLVVFAESSDKLRR", "seed": 617},
+    {"name": "P2-03", "arm": "candidate", "sequence": "MKLAPFALLVVFAGASDWIRR", "seed": 618},
+    {"name": "P2-04", "arm": "control", "sequence": "MKLAVFALLVCFAESSDLVRR", "seed": 619},
+    {"name": "P2-05", "arm": "control", "sequence": "MKQAVFALLQVFAGSSDWIRR", "seed": 620},
+    {"name": "P2-06", "arm": "control", "sequence": "MKLAVFALRVFFAESSDAIRR", "seed": 621}
+  ],
+  "predeclared_success_criteria": [
+    "Strict backend preflight passes with executable, dependency environment, argument support, receptor mapping, and longer_local.pt verified.",
+    "Every run completes without timeout and emits the expected metadata and pose files.",
+    "Every pose selected for target-aware evidence has exact sequence agreement, valid coordinates, an unambiguous peptide chain, no severe clashes, a comparable receptor frame, and at least one independently measured ARG203/ARG205 contact.",
+    "Any run failing an evidence gate remains descriptive-only and is not eligible for target-aware ranking."
+  ],
+  "analysis_plan": {
+    "primary_comparison": "candidate arm versus control arm using predeclared descriptive pose/contact summaries",
+    "sequence_only_baseline": "retain the existing sequence-only ranking as a separate analysis arm",
+    "target_aware_selection": "use only evidence-gated structural records; docking score alone is descriptive",
+    "no_claims": ["binding proof", "affinity proof", "causal biological activity"]
+  }
+}

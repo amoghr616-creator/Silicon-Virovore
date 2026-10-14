@@ -1,0 +1,483 @@
+{
+  "added_atoms": [
+    {
+      "atom_name": "OE1",
+      "author_residue_number": 109,
+      "chain": "A",
+      "coordinates": [
+        -1.007,
+        -24.755,
+        -31.158
+      ],
+      "insertion_code": "",
+      "reference_altloc": "B",
+      "reference_serial": 80,
+      "residue_name": "GLN"
+    },
+    {
+      "atom_name": "NE2",
+      "author_residue_number": 109,
+      "chain": "A",
+      "coordinates": [
+        -2.791,
+        -23.505,
+        -30.606
+      ],
+      "insertion_code": "",
+      "reference_altloc": "B",
+      "reference_serial": 82,
+      "residue_name": "GLN"
+    }
+  ],
+  "changed_existing_coordinates": [],
+  "input_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_final.pdb",
+  "input_sha256": "5081d8c699bdeff7613acb97b3a3d489d870bb6d69b5fe832b55f5de3b14f911",
+  "input_structure_diagnostics": {
+    "alternate_location_records": [],
+    "atom_count": 2540,
+    "chain": "A",
+    "conect_records": [],
+    "disulfide_records": [],
+    "duplicate_atom_keys": 0,
+    "hydrogen_atom_count": 0,
+    "insertion_codes": [],
+    "internal_structural_problems": {
+      "duplicate_atom_keys": false,
+      "invalid_coordinates": false,
+      "missing_backbone_atoms": false
+    },
+    "invalid_coordinate_atoms": [],
+    "missing_backbone_atoms": [],
+    "numeric_residue_gaps": [
+      {
+        "from": 102,
+        "missing_count": 1,
+        "to": 104
+      },
+      {
+        "from": 143,
+        "missing_count": 4,
+        "to": 148
+      },
+      {
+        "from": 222,
+        "missing_count": 1,
+        "to": 224
+      },
+      {
+        "from": 232,
+        "missing_count": 4,
+        "to": 237
+      },
+      {
+        "from": 360,
+        "missing_count": 1,
+        "to": 362
+      },
+      {
+        "from": 363,
+        "missing_count": 1,
+        "to": 365
+      }
+    ],
+    "path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_final.pdb",
+    "residue_count": 319,
+    "residue_number_range": [
+      101,
+      431
+    ],
+    "sequence": "DDLEVLFQGPLIRAVTWMDNPIEVYVNDSVWVPGPIDDRAPAEGMMINISIGYRYPPICLGRAPGCLMPAVQNWLVEVPTVSPISRFTYHMVSGMSLRPRVNYLQDFSYQRSLKFRPGKPCPKEIPNTEVLVWEECVANSAVILQNNEFGTIIDWAPRGQFYHNCSGQTQSCPSAQVSPAVDSDLTESLDKHKHKKLQSFYPWEWGEKGISTPRPKIVSPVSGPEHPELWRLTVASHHIRIWSGNQTLETDRPFYTVDLNSSLTVPLQSCVKPPYMLVVGNIVIKPDSQTITCENCRLLTCIDSTFNWQHRILLVRARP"
+  },
+  "missing_reference_atoms_repaired": 2,
+  "output_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+  "output_sha256": "3e02af67c1b1c0902da992b2cea3072d46536d214851a78d9069814adccdb8fd",
+  "output_structure_diagnostics": {
+    "alternate_location_records": [],
+    "atom_count": 2542,
+    "chain": "A",
+    "conect_records": [],
+    "disulfide_records": [],
+    "duplicate_atom_keys": 0,
+    "hydrogen_atom_count": 0,
+    "insertion_codes": [],
+    "internal_structural_problems": {
+      "duplicate_atom_keys": false,
+      "invalid_coordinates": false,
+      "missing_backbone_atoms": false
+    },
+    "invalid_coordinate_atoms": [],
+    "missing_backbone_atoms": [],
+    "numeric_residue_gaps": [
+      {
+        "from": 102,
+        "missing_count": 1,
+        "to": 104
+      },
+      {
+        "from": 143,
+        "missing_count": 4,
+        "to": 148
+      },
+      {
+        "from": 222,
+        "missing_count": 1,
+        "to": 224
+      },
+      {
+        "from": 232,
+        "missing_count": 4,
+        "to": 237
+      },
+      {
+        "from": 360,
+        "missing_count": 1,
+        "to": 362
+      },
+      {
+        "from": 363,
+        "missing_count": 1,
+        "to": 365
+      }
+    ],
+    "path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+    "residue_count": 319,
+    "residue_number_range": [
+      101,
+      431
+    ],
+    "sequence": "DDLEVLFQGPLIRAVTWMDNPIEVYVNDSVWVPGPIDDRAPAEGMMINISIGYRYPPICLGRAPGCLMPAVQNWLVEVPTVSPISRFTYHMVSGMSLRPRVNYLQDFSYQRSLKFRPGKPCPKEIPNTEVLVWEECVANSAVILQNNEFGTIIDWAPRGQFYHNCSGQTQSCPSAQVSPAVDSDLTESLDKHKHKKLQSFYPWEWGEKGISTPRPKIVSPVSGPEHPELWRLTVASHHIRIWSGNQTLETDRPFYTVDLNSSLTVPLQSCVKPPYMLVVGNIVIKPDSQTITCENCRLLTCIDSTFNWQHRILLVRARP"
+  },
+  "post_repair_mapping": {
+    "author_numbering_is_observed_numbering": false,
+    "chain": "A",
+    "failure_reasons": [],
+    "mapping_valid": true,
+    "mmcif_path": null,
+    "observed_residue_count": 319,
+    "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+    "sequence_alignment_score": 628,
+    "source_metadata": {
+      "header": null,
+      "structure_id": null,
+      "title": []
+    },
+    "structure_identifier": "9SYA_chainA_repaired",
+    "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+    "structure_sha256": "3e02af67c1b1c0902da992b2cea3072d46536d214851a78d9069814adccdb8fd",
+    "target_residues": [
+      {
+        "atom_names": [
+          "C",
+          "CA",
+          "CB",
+          "CD",
+          "CG",
+          "CZ",
+          "N",
+          "NE",
+          "NH1",
+          "NH2",
+          "O"
+        ],
+        "chain": "A",
+        "coordinates_valid": true,
+        "is_arginine": true,
+        "local_sequence_context": [
+          {
+            "author_residue_number": 201,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "S",
+            "residue_name": "SER"
+          },
+          {
+            "author_residue_number": 202,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "L",
+            "residue_name": "LEU"
+          },
+          {
+            "author_residue_number": 203,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          },
+          {
+            "author_residue_number": 204,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "P",
+            "residue_name": "PRO"
+          },
+          {
+            "author_residue_number": 205,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          }
+        ],
+        "mapping_status": "mapped",
+        "missing_arginine_side_chain_atoms": [],
+        "mmcif_label_residue_number": null,
+        "observed_sequence_index": 97,
+        "one_letter": "R",
+        "pdb_author_insertion_code": "",
+        "pdb_author_residue_number": 203,
+        "present": true,
+        "reference_author_residue_number": 203,
+        "reference_residue_name": "ARG",
+        "reference_sequence_index": 99,
+        "requested_author_residue_number": 203,
+        "required_arginine_side_chain_atoms_present": true,
+        "residue_name": "ARG",
+        "sequence_alignment_identity": true
+      },
+      {
+        "atom_names": [
+          "C",
+          "CA",
+          "CB",
+          "CD",
+          "CG",
+          "CZ",
+          "N",
+          "NE",
+          "NH1",
+          "NH2",
+          "O"
+        ],
+        "chain": "A",
+        "coordinates_valid": true,
+        "is_arginine": true,
+        "local_sequence_context": [
+          {
+            "author_residue_number": 203,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          },
+          {
+            "author_residue_number": 204,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "P",
+            "residue_name": "PRO"
+          },
+          {
+            "author_residue_number": 205,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          },
+          {
+            "author_residue_number": 206,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "V",
+            "residue_name": "VAL"
+          },
+          {
+            "author_residue_number": 207,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "N",
+            "residue_name": "ASN"
+          }
+        ],
+        "mapping_status": "mapped",
+        "missing_arginine_side_chain_atoms": [],
+        "mmcif_label_residue_number": null,
+        "observed_sequence_index": 99,
+        "one_letter": "R",
+        "pdb_author_insertion_code": "",
+        "pdb_author_residue_number": 205,
+        "present": true,
+        "reference_author_residue_number": 205,
+        "reference_residue_name": "ARG",
+        "reference_sequence_index": 101,
+        "requested_author_residue_number": 205,
+        "required_arginine_side_chain_atoms_present": true,
+        "residue_name": "ARG",
+        "sequence_alignment_identity": true
+      }
+    ]
+  },
+  "pre_repair_mapping": {
+    "author_numbering_is_observed_numbering": false,
+    "chain": "A",
+    "failure_reasons": [],
+    "mapping_valid": true,
+    "mmcif_path": null,
+    "observed_residue_count": 319,
+    "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+    "sequence_alignment_score": 628,
+    "source_metadata": {
+      "header": null,
+      "structure_id": null,
+      "title": []
+    },
+    "structure_identifier": "9SYA_chainA_final",
+    "structure_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/9SYA_chainA_final.pdb",
+    "structure_sha256": "5081d8c699bdeff7613acb97b3a3d489d870bb6d69b5fe832b55f5de3b14f911",
+    "target_residues": [
+      {
+        "atom_names": [
+          "C",
+          "CA",
+          "CB",
+          "CD",
+          "CG",
+          "CZ",
+          "N",
+          "NE",
+          "NH1",
+          "NH2",
+          "O"
+        ],
+        "chain": "A",
+        "coordinates_valid": true,
+        "is_arginine": true,
+        "local_sequence_context": [
+          {
+            "author_residue_number": 201,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "S",
+            "residue_name": "SER"
+          },
+          {
+            "author_residue_number": 202,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "L",
+            "residue_name": "LEU"
+          },
+          {
+            "author_residue_number": 203,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          },
+          {
+            "author_residue_number": 204,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "P",
+            "residue_name": "PRO"
+          },
+          {
+            "author_residue_number": 205,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          }
+        ],
+        "mapping_status": "mapped",
+        "missing_arginine_side_chain_atoms": [],
+        "mmcif_label_residue_number": null,
+        "observed_sequence_index": 97,
+        "one_letter": "R",
+        "pdb_author_insertion_code": "",
+        "pdb_author_residue_number": 203,
+        "present": true,
+        "reference_author_residue_number": 203,
+        "reference_residue_name": "ARG",
+        "reference_sequence_index": 99,
+        "requested_author_residue_number": 203,
+        "required_arginine_side_chain_atoms_present": true,
+        "residue_name": "ARG",
+        "sequence_alignment_identity": true
+      },
+      {
+        "atom_names": [
+          "C",
+          "CA",
+          "CB",
+          "CD",
+          "CG",
+          "CZ",
+          "N",
+          "NE",
+          "NH1",
+          "NH2",
+          "O"
+        ],
+        "chain": "A",
+        "coordinates_valid": true,
+        "is_arginine": true,
+        "local_sequence_context": [
+          {
+            "author_residue_number": 203,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          },
+          {
+            "author_residue_number": 204,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "P",
+            "residue_name": "PRO"
+          },
+          {
+            "author_residue_number": 205,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "R",
+            "residue_name": "ARG"
+          },
+          {
+            "author_residue_number": 206,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "V",
+            "residue_name": "VAL"
+          },
+          {
+            "author_residue_number": 207,
+            "chain": "A",
+            "insertion_code": "",
+            "one_letter": "N",
+            "residue_name": "ASN"
+          }
+        ],
+        "mapping_status": "mapped",
+        "missing_arginine_side_chain_atoms": [],
+        "mmcif_label_residue_number": null,
+        "observed_sequence_index": 99,
+        "one_letter": "R",
+        "pdb_author_insertion_code": "",
+        "pdb_author_residue_number": 205,
+        "present": true,
+        "reference_author_residue_number": 205,
+        "reference_residue_name": "ARG",
+        "reference_sequence_index": 101,
+        "requested_author_residue_number": 205,
+        "required_arginine_side_chain_atoms_present": true,
+        "residue_name": "ARG",
+        "sequence_alignment_identity": true
+      }
+    ]
+  },
+  "preparation_status": "repaired_from_reference",
+  "reference_path": "/Users/centurion616/Desktop/Silicon-Virovore/data/receptor/9SYA.pdb",
+  "reference_sha256": "92007db8c20dc8afa638d60bed13bf527cfb0321999ca227838a8c417b5fd865",
+  "repair_method": "copy_missing_heavy_atoms_from_matching_reference_conformer",
+  "settings": {
+    "chain": "A",
+    "existing_coordinates_changed": false,
+    "hydrogens_added": false,
+    "renumbering_performed": false,
+    "residues_deleted": false,
+    "selected_altloc": "highest occupancy when no blank conformer exists"
+  },
+  "target_mapping_valid": true
+}

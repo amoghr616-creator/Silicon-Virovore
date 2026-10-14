@@ -1,14 +1,13 @@
 """
 docking_vina.py
 
-Docking stage for Silicon Virovore.
+Sequence-level diagnostic scoring for Silicon Virovore.
 
-Evaluates peptide candidates using a lightweight surrogate model
-and optionally escalates promising candidates to AutoDock Vina.
-
-This module is intentionally backend-agnostic so future docking
-engines (DiffDock, Boltz-2, Rosetta, GNINA, etc.) can be swapped
-without changing the remainder of the pipeline.
+The default fragment-composition score is a deterministic heuristic with
+arbitrary units. It is not docking, not a free-energy estimate, and not a
+HERV-K binding predictor. The standalone AutoDock Vina pathway is opt-in,
+diagnostic-only, and excluded from candidate ranking. A computational score
+is not experimental validation.
 """
 
 import logging
@@ -55,12 +54,12 @@ class DockingBackend:
         raise NotImplementedError
 
 
-class MLSurrogateBackend(DockingBackend):
-    """
-    Lightweight heuristic docking surrogate.
+class SequenceCompositionHeuristicBackend(DockingBackend):
+    """Sequence-composition heuristic retained for diagnostic comparison.
 
-    This backend is deterministic, local, and used only for Tier-1
-    computational screening. It is not an experimental affinity.
+    This is not a machine-learning model, a physical docking method, or a
+    target-specific binding prediction. It should not be used as binding
+    evidence or as the primary search objective.
     """
 
     HYDROPHOBIC = set("AILMFWYV")
@@ -95,12 +94,18 @@ class MLSurrogateBackend(DockingBackend):
         return result
 
 
+# Backward-compatible name used by older scripts/tests. This is a heuristic,
+# not an ML scorer.
+MLSurrogateBackend = SequenceCompositionHeuristicBackend
+
+
 class AutoDockBackend(DockingBackend):
     """
-    Optional structure-validation backend.
+    Optional AutoDock Vina scoring diagnostic.
 
-    This class is intentionally disabled unless a valid executable,
-    receptor, and candidate structure are available.
+    The output is a computational score only, not experimental validation.
+    This class is intentionally disabled unless explicitly requested and a
+    valid executable, receptor, and candidate structure are available.
     """
 
     def __init__(self, docking_directory: str | Path = DOCKING_DIR):
@@ -251,10 +256,11 @@ class AutoDockBackend(DockingBackend):
         structure_path: str | Path | None = None,
     ) -> float:
         """
-        Dock a predicted peptide structure with AutoDock Vina.
+        Score a predicted peptide structure with AutoDock Vina.
 
-        The fragment is used for Tier-1 eligibility, while the complete
-        predicted candidate structure is docked for Tier-2 validation.
+        The fragment heuristic may trigger this optional diagnostic, but the
+        result is not biological or experimental validation and never enters
+        candidate ranking.
         """
 
         if structure_path is None:
@@ -372,15 +378,11 @@ class AutoDockBackend(DockingBackend):
 
 class PeptideDockingScorer:
     """
-    Performs fragment-based docking evaluation.
+    Computes a fragment-composition heuristic for diagnostic comparison.
 
-    Computes:
-
-    • Best fragment ΔG
-    • Mean ΔG
-    • Docking consistency
-    • Consensus docking score
-    • Optional Tier-2 AutoDock validation
+    Its values have arbitrary units, not kcal/mol, and are not target-specific
+    binding scores. Optional Vina calculations are diagnostic only and never
+    affect the primary candidate rank.
     """
 
     def __init__(
@@ -390,6 +392,7 @@ class PeptideDockingScorer:
         workers: int = 1,
         cache_enabled: bool = True,
         tier2_threshold: float = TIER2_THRESHOLD,
+        enable_vina_tier2: bool = False,
     ):
 
         self.backend = backend or MLSurrogateBackend(
@@ -398,23 +401,23 @@ class PeptideDockingScorer:
         self.workers = workers
         self.cache_enabled = cache_enabled
         self.tier2_threshold = tier2_threshold
+        self.enable_vina_tier2 = bool(enable_vina_tier2)
         self._vina_cache: dict[tuple, float] = {}
         self._cache_lock = threading.Lock()
         self.vina_cache_hits = 0
         self.vina_cache_misses = 0
 
-        try:
-
-            self.vina_backend = AutoDockBackend(docking_directory)
-
-        except Exception as exc:
-
-            logger.warning(
-                "AutoDock disabled: %s",
-                exc,
+        self.vina_backend = None
+        if self.enable_vina_tier2:
+            try:
+                self.vina_backend = AutoDockBackend(docking_directory)
+            except Exception as exc:
+                logger.warning("AutoDock Vina scoring unavailable: %s", exc)
+        else:
+            logger.info(
+                "Standalone AutoDock Vina scoring disabled by configuration; "
+                "it will not be run or used for ranking."
             )
-
-            self.vina_backend = None
 
     def cache_stats(self) -> dict[str, int]:
         """Return deterministic surrogate and Tier-2 cache counters."""
@@ -536,10 +539,12 @@ class PeptideDockingScorer:
         # Reset all evidence flags on every evaluation.
         candidate.metadata.update({
             "docking_backend": (
-                "MLSurrogate"
-                if isinstance(self.backend, MLSurrogateBackend)
+                "SequenceCompositionHeuristic"
+                if isinstance(self.backend, SequenceCompositionHeuristicBackend)
                 else type(self.backend).__name__
             ),
+            "docking_score_is_target_specific": False,
+            "docking_score_used_in_primary_ranking": False,
             "docking_is_surrogate": isinstance(
                 self.backend,
                 MLSurrogateBackend,
@@ -550,7 +555,9 @@ class PeptideDockingScorer:
             "tier2_attempted": False,
             "tier2_validated": False,
             "tier2_status": "not_eligible",
-            "vina_status": "not_attempted",
+            "vina_status": (
+                "not_attempted" if self.enable_vina_tier2 else "disabled_by_config"
+            ),
             "vina_score_available": False,
         })
         for key in (
@@ -621,17 +628,24 @@ class PeptideDockingScorer:
         elif not candidate_has_valid_structure(candidate):
             candidate.metadata["tier2_status"] = "eligible_no_structure"
             candidate.add_note(
-                "Tier-2 eligibility reached, but validation was skipped "
-                "because no verified structure was available."
+                "The optional Vina diagnostic was skipped because no verified "
+                "candidate structure was available. No binding validation was performed."
+            )
+        elif not self.enable_vina_tier2:
+            candidate.metadata["tier2_status"] = "disabled_by_config"
+            candidate.metadata["vina_status"] = "disabled_by_config"
+            candidate.add_note(
+                "Standalone Vina scoring is disabled. No target-specific "
+                "binding validation was performed."
             )
         elif self.vina_backend is None:
             candidate.metadata["tier2_status"] = "unavailable"
             candidate.metadata["vina_status"] = "unavailable"
-            candidate.add_note("Tier-2 validation unavailable.")
+            candidate.add_note("Standalone Vina scoring unavailable.")
         else:
             candidate.metadata["tier2_attempted"] = True
             candidate.metadata["vina_status"] = "attempted"
-            logger.info("Tier-2 validation triggered.")
+            logger.info("Optional AutoDock Vina diagnostic scoring triggered.")
             try:
                 vina_score = self._score_vina(
                     candidate.best_fragment,
@@ -641,24 +655,27 @@ class PeptideDockingScorer:
                     raise ValueError("Vina returned a non-finite score")
 
                 candidate.vina_delta_g = vina_score
-                candidate.passed_tier_2 = True
-                candidate.metadata["tier2_validated"] = True
-                candidate.metadata["docking_validated"] = True
-                candidate.metadata["tier2_status"] = "validated"
+                # Vina returning a score is computational scoring, not
+                # biological or experimental validation.
+                candidate.passed_tier_2 = False
+                candidate.metadata["tier2_validated"] = False
+                candidate.metadata["docking_validated"] = False
+                candidate.metadata["tier2_status"] = "scored_not_validated"
                 candidate.metadata["tier2_backend"] = "AutoDock Vina"
                 candidate.metadata["vina_status"] = "success"
                 candidate.metadata["vina_score_available"] = True
                 candidate.add_note(
-                    "Tier-2 structure-based validation completed."
+                    "AutoDock Vina produced a computational docking score; "
+                    "this is not binding validation."
                 )
             except Exception as exc:
                 candidate.vina_delta_g = None
                 candidate.metadata["tier2_status"] = "failed"
                 candidate.metadata["tier2_error"] = str(exc)
                 candidate.metadata["vina_status"] = "failed"
-                candidate.add_note("Tier-2 validation failed.")
+                candidate.add_note("Optional AutoDock Vina diagnostic scoring failed.")
                 logger.warning(
-                    "Tier-2 validation failed for %s: %s",
+                    "Optional Vina diagnostic failed for %s: %s",
                     candidate.sequence,
                     exc,
                 )

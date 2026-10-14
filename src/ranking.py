@@ -1,9 +1,11 @@
 """
 ranking.py
 
-Multi-objective ranking engine for Silicon Virovore.
+Ranking engine for Silicon Virovore.
 
-Combines every computational stage into one overall score.
+The default research objective is a single bounded sequence-level fitness prior.
+It is not a target-specific peptide-binding predictor. Alternative composite
+weights remain available for explicitly controlled sensitivity studies.
 """
 
 from __future__ import annotations
@@ -24,13 +26,13 @@ class CandidateRanker:
 
     def __init__(
         self,
-        fitness_weight=0.30,
-        docking_weight=0.30,
-        structure_weight=0.10,
-        helix_weight=0.08,
+        fitness_weight=1.0,
+        docking_weight=0.0,
+        structure_weight=0.0,
+        helix_weight=0.0,
         hydro_weight=0.0,
-        solvation_weight=0.06,
-        md_weight=0.05,
+        solvation_weight=0.0,
+        md_weight=0.0,
         safety_weight=0.0,
     ):
 
@@ -44,6 +46,25 @@ class CandidateRanker:
             "md": md_weight,
             "safety": safety_weight,
         }
+
+    def _fitness_only_objective(self) -> bool:
+        return (
+            self.weights.get("fitness", 0.0) > 0.0
+            and all(
+                weight <= 0.0
+                for name, weight in self.weights.items()
+                if name != "fitness"
+            )
+        )
+
+    @staticmethod
+    def _bounded_fitness(value):
+        if value is None:
+            return None
+        value = float(value)
+        if not __import__("math").isfinite(value):
+            return None
+        return max(0.0, min(1.0, value))
 
     def normalize(
         self,
@@ -133,7 +154,11 @@ class CandidateRanker:
             ]
 
         normalized = {
-            "fitness": self.normalize(raw_values["fitness"]),
+            "fitness": (
+                [self._bounded_fitness(value) for value in raw_values["fitness"]]
+                if self._fitness_only_objective()
+                else self.normalize(raw_values["fitness"])
+            ),
             "docking": self.normalize(raw_values["docking"], reverse=True),
             "structure": self.normalize(raw_values["structure"]),
             "helix": self.normalize(raw_values["helix"]),
@@ -206,10 +231,6 @@ class CandidateRanker:
             confidence += (
                 candidate.structure_confidence / 100.0
             ) * 0.40
-
-        if candidate.vina_delta_g is not None:
-
-            confidence += 0.20
 
         if candidate.md_stability_score is not None:
 
@@ -308,8 +329,10 @@ class CandidateRanker:
         # Normalize metrics
         # ----------------------------------------------------
 
-        fitness_norm = self.normalize(
-            fitness
+        fitness_norm = (
+            [self._bounded_fitness(value) for value in fitness]
+            if self._fitness_only_objective()
+            else self.normalize(fitness)
         )
 
         docking_norm = self.normalize(
@@ -426,7 +449,19 @@ class CandidateRanker:
                 if value is None and self.weights[key] > 0.0
             ]
             candidate.metadata[f"{prefix}available_weight"] = available_weight
-            candidate.metadata[f"{prefix}normalization_scope"] = normalization_scope
+            candidate.metadata[f"{prefix}normalization_scope"] = (
+                "fixed_bounded_fitness_0_1"
+                if self._fitness_only_objective()
+                else normalization_scope
+            )
+            candidate.metadata["ranking_objective_definition"] = (
+                "sequence_prior_fitness_only_not_target_binding"
+                if self._fitness_only_objective()
+                else "weighted_normalized_composite"
+            )
+            candidate.metadata["sequence_prior_fitness"] = self._bounded_fitness(
+                candidate.c_score
+            )
             candidate.metadata[f"{prefix}score"] = score
 
             setattr(candidate, score_field, score)
@@ -447,8 +482,10 @@ class CandidateRanker:
                 candidate.metadata[f"{prefix}ranking_components"],
             )
 
+        # Confidence is diagnostic metadata, not a hidden objective/tie-breaker.
+        # Equal objective scores retain input order for reproducibility.
         candidates.sort(
-            key=lambda c: (computed_scores[id(c)], c.confidence),
+            key=lambda c: computed_scores[id(c)],
             reverse=True,
         )
 

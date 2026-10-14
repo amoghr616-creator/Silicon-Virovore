@@ -1,68 +1,51 @@
-import math
-from collections import defaultdict
+"""Run the fail-closed ARG203/ARG205 mapping audit."""
 
-PDB = "../data/receptor/9SYA.pdb"
-CHAIN = "A"
-ANCHORS = {203, 205}
-CUTOFF = 6.0
+from pathlib import Path
+import argparse
+import json
 
-atoms = []
-anchors = []
+try:
+    from .target_audit import compare_receptor_mappings
+except ImportError:  # direct script execution
+    from target_audit import compare_receptor_mappings
 
-with open(PDB) as f:
-    for line in f:
-        if not line.startswith("ATOM"):
-            continue
 
-        chain = line[21].strip()
-        if chain != CHAIN:
-            continue
+ROOT = Path(__file__).resolve().parents[1]
+REFERENCE = ROOT / "data" / "receptor" / "9SYA.pdb"
+DEFAULT_RECEPTORS = [
+    ROOT / "data" / "receptor" / "9SYA.pdb",
+    ROOT / "prototype2" / "9SYA_chainA.pdb",
+    ROOT / "prototype2" / "9SYA_chainA_final.pdb",
+    ROOT / "prototype2" / "9SYA_chainA_meeko_clean.pdb",
+    ROOT / "prototype2" / "9SYA_chainA_docking.pdb",
+    ROOT / "prototype2" / "target_aware_audit" / "9SYA_chainA_repaired.pdb",
+    ROOT / "prototype2" / "p2_rapidock" / "P2-01-clean" / "receptor_for_rapidock_full.pdb",
+]
 
-        try:
-            resid = int(line[22:26])
-            x = float(line[30:38])
-            y = float(line[38:46])
-            z = float(line[46:54])
-        except ValueError:
-            continue
 
-        atom = {
-            "resid": resid,
-            "resname": line[17:20].strip(),
-            "atom": line[12:16].strip(),
-            "xyz": (x, y, z),
-        }
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--receptor", action="append", type=Path)
+    parser.add_argument("--output", type=Path, default=ROOT / "prototype2" / "target_aware_audit" / "residue_mapping_audit.json")
+    args = parser.parse_args()
+    receptors = args.receptor or DEFAULT_RECEPTORS
+    result = compare_receptor_mappings(receptors, reference_path=REFERENCE, chain="A")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    print(json.dumps({
+        "all_representations_valid": result["all_representations_valid"],
+        "output": str(args.output),
+    }, indent=2))
+    for item in result["representations"]:
+        print(f"{Path(item['structure_path']).name}: mapping_valid={item['mapping_valid']}")
+        for target in item["target_residues"]:
+            print(
+                f"  author ARG{target['requested_author_residue_number']} -> "
+                f"{target.get('residue_name', target.get('reference_residue_name'))} "
+                f"{target.get('pdb_author_residue_number', 'missing')}"
+            )
+    return 0 if result["all_representations_valid"] else 2
 
-        atoms.append(atom)
 
-        if resid in ANCHORS:
-            anchors.append(atom)
-
-def dist(a, b):
-    return math.sqrt(sum(
-        (a[i] - b[i]) ** 2 for i in range(3)
-    ))
-
-nearby = defaultdict(lambda: {"resname": None, "min_dist": 999})
-
-for atom in atoms:
-    if atom["resid"] in ANCHORS:
-        continue
-
-    d = min(dist(atom["xyz"], x["xyz"]) for x in anchors)
-
-    if d <= CUTOFF:
-        r = atom["resid"]
-        nearby[r]["resname"] = atom["resname"]
-        nearby[r]["min_dist"] = min(nearby[r]["min_dist"], d)
-
-print("Chain:", CHAIN)
-print("Anchor residues: ARG203 and ARG205")
-print("Cutoff:", CUTOFF, "A")
-print()
-
-for resid in sorted(nearby):
-    print(
-        f"{resid:4d} {nearby[resid]['resname']:3s} "
-        f"{nearby[resid]['min_dist']:6.2f} A"
-    )
+if __name__ == "__main__":
+    raise SystemExit(main())

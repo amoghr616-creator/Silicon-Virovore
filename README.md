@@ -132,7 +132,9 @@ into independent components.
 | Language | Python |
 | Systems Programming | C |
 | Structural Biology | PyMOL |
-| Docking | AutoDock Vina |
+| Main search objective | Bounded C sequence-level fitness prior (not a binding predictor) |
+| Independent structural evaluation | HybriDock-Pep, run separately after model/length compatibility is verified |
+| Optional Vina diagnostic | Disabled by default; excluded from candidate ranking |
 | Molecular Dynamics | GROMACS |
 | Bioinformatics | Biopython |
 | Data Analysis | NumPy, Pandas |
@@ -169,19 +171,23 @@ Run the pipeline
 python run_pipeline.py
 ```
 
-Controlled baseline/adaptive runs use identical scientific settings but
-independent random seeds and separate output directories:
+For a paired comparison, use the *same seed within each baseline/adaptive pair*,
+then repeat the pair with several different seeds. This is a matched design:
+within each pair the mutation budget, starting sequence, population, generation
+count, and primary objective are identical; only the mutation-position policy
+changes. The example below is one pair, not enough by itself to establish
+superiority:
 
 ```bash
 python run_pipeline.py --condition baseline \
   --seed 1001 --seed-sequence MKLAVFALLVFFAGSSDLIRR \
-  --population-size 96 --generations 30 \
-  --output-dir results/experiments --run-id seed1001-baseline
+  --population-size 96 --generations 30 --mutation-rate 0.10 \
+  --output-dir results/experiments --run-id seed1001-baseline --preserve-best
 
 python run_pipeline.py --condition adaptive \
-  --seed 1002 --seed-sequence MKLAVFALLVFFAGSSDLIRR \
-  --population-size 96 --generations 30 \
-  --output-dir results/experiments --run-id seed1001-adaptive
+  --seed 1001 --seed-sequence MKLAVFALLVFFAGSSDLIRR \
+  --population-size 96 --generations 30 --mutation-rate 0.10 \
+  --output-dir results/experiments --run-id seed1001-adaptive --preserve-best
 ```
 
 For a clearly marked debugging run:
@@ -204,10 +210,21 @@ zero-based and `end_position` is exclusive. These are computational
 associations, not causal residue or binding claims.
 
 Baseline uses `uniform` mutation and adaptive mode defaults to
-`hotspot_biased`. Use `--mutation-guidance-mode hotspot_only` to restrict
-mutations to the selected window, or `--mutation-guidance-mode uniform` for
-an unrestricted control. The policy generator gives each candidate the same
-rounded mutation-event budget in both modes.
+`hotspot_biased_annealed`: the probability of drawing a mutation position from
+the ARISE hotspot increases linearly from 0.25 in generation 1 to 0.70 in the
+last generation. The schedule depends only on generation number, not outcomes.
+Use `--mutation-guidance-mode hotspot_only` for a hotspot-only ablation or
+`--mutation-guidance-mode uniform` for the unrestricted control. Baseline and
+adaptive use the same rounded mutation-event budget; the policy generator now
+samples mutation positions without replacement and chooses substitutions
+uniformly from the 19 residues different from the parental residue. For the
+96-candidate example above, mutation rate 0.10 gives a two-position budget;
+this setting is applied equally to both arms and should be treated as a new,
+predeclared protocol rather than compared directly with older 0.05 runs.
+The `--preserve-best` safeguard retains the best candidate under the same
+primary objective in both conditions, so best-so-far sequence-prior fitness
+cannot regress merely because an elite was lost. It does **not** guarantee
+adaptive beats baseline on independent docking results.
 
 The lightweight deterministic benchmark is:
 
@@ -225,11 +242,20 @@ For example:
 
 ```bash
 python run_pipeline.py --seed 616 --run-id adaptive-seed616
+The repository contains historical `results/` files made under earlier scoring/reporting code. They are not results of the revised protocol; some archived reports use “validated” imprecisely for Vina outputs. Rerun the experiment and use the newly generated report/audit before presenting results. Keep the old files only for provenance.
+
 The pipeline records a machine-readable audit at
 `results/experiment_audit.json`. Structure prediction may be unavailable on
-a per-candidate basis; missing structures remain missing evidence. The fast
-surrogate docking stage is separate from optional AutoDock Vina Tier-2
-validation, which requires a verified structure and a successful Vina run.
+a per-candidate basis; missing structures remain missing evidence. The deterministic fragment-composition heuristic is diagnostic only, has
+arbitrary units (not kcal/mol), and is excluded from the primary ranking.
+The primary search objective is the bounded C sequence-level fitness prior;
+it is **not target-specific evidence of HERV-K binding**. Standalone AutoDock
+Vina scoring is disabled by default (`--no-enable-vina-tier2`) and, if explicitly
+enabled for diagnostics, cannot count as experimental or biological validation
+and cannot affect candidate rank. HybriDock-Pep is intended as a separate
+Prototype 2 evaluation, not a selection input. Verify compatibility before
+using it to compare the current 21-residue candidates: the documented upstream
+model range is 3–19 residues, so the current sequences exceed that range.
 
 `ARISE_ENABLED` controls hotspot discovery and `ALE_ENABLED` controls whether
 the frozen hotspot is used for later mutation. Set the condition to `baseline`
@@ -265,7 +291,7 @@ audit trajectory uses the comparable full-run score and distinguishes
 generation best, best-so-far, final-population best, and posthoc global best.
 
 Vina evidence is represented separately with `tier2_eligible`,
-`tier2_attempted`, `tier2_validated`, `vina_delta_g`, and `vina_status`.
+`tier2_attempted`, `tier2_validated` (always false for computational Vina-only results), `vina_delta_g`, and `vina_status`.
 `vina_delta_g: 0.0` is retained only when AutoDock Vina actually reports
 exactly zero; missing or failed Vina evidence remains `None` with a status.
 
@@ -319,15 +345,15 @@ Docking scores and molecular dynamics simulations should not be interpreted as e
 
 Experimental validation, including biochemical binding assays and cell-based studies, is required to evaluate biological activity.
 
-ESMFold service failures and missing Tier-2 structures are reported as
-unavailable evidence rather than replaced with surrogate or fabricated
-values. A Tier-2 eligibility score means only that Vina was considered; it
-does not mean validation occurred.
-
-Raw docking energies retain the Vina convention that more-negative values are
-better. Ranking normalization preserves that ordering. ARISE hotspot scores
-are computational associations with the overall ranking score; they are not
-causal residue-level binding claims.
+ESMFold service failures and missing candidate structures are reported as
+unavailable evidence rather than replaced with fabricated values. The sequence-
+composition score is an arbitrary heuristic, not a docking energy; it is never
+interpreted as kcal/mol or as target-specific binding. An optional Vina run, if
+enabled for diagnostics, is a computational estimate only and is not biological
+or experimental validation. The current `ParetoAnalyzer` refuses to compute a
+binding Pareto front unless target-specific binding-score metadata is present.
+ARISE hotspot scores are associations with the fixed sequence-level prior; they
+are not causal residue-level binding claims.
 
 ---
 

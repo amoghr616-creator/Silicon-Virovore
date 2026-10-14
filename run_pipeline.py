@@ -704,6 +704,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
         "structure_available_count": 0,
         "structure_cached_count": 0,
         "structure_unavailable_count": 0,
+        "structure_not_requested_count": 0,
         "surrogate_docking_count": 0,
         "surrogate_incomplete_count": 0,
         "tier2_eligible_count": 0,
@@ -720,13 +721,18 @@ def run_pipeline(settings: PipelineSettings | None = None):
         workers=settings.docking_workers,
         cache_enabled=settings.cache_enabled,
         tier2_threshold=settings.docking_threshold,
+        enable_vina_tier2=settings.enable_vina_tier2,
     )
     ranker = CandidateRanker(
-    fitness_weight=config.FITNESS_WEIGHT,
-    docking_weight=config.DOCKING_WEIGHT,
-    helix_weight=config.HELIX_WEIGHT,
-    solvation_weight=config.SOLVATION_WEIGHT,
-)
+        fitness_weight=config.FITNESS_WEIGHT,
+        docking_weight=config.DOCKING_WEIGHT,
+        structure_weight=config.STRUCTURE_WEIGHT,
+        helix_weight=config.HELIX_WEIGHT,
+        hydro_weight=config.HYDRO_WEIGHT,
+        solvation_weight=config.SOLVATION_WEIGHT,
+        md_weight=config.MD_WEIGHT,
+        safety_weight=config.SAFETY_WEIGHT,
+    )
 
     arise_memory = load_arise_memory(
         settings.arise_memory_path,
@@ -779,26 +785,55 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 if settings.preserve_best
                 else None
             ),
+            total_generations=settings.generations,
         )
         if not candidates:
             logger.error("No candidates generated.")
             break
 
-        structure_start = time.perf_counter()
-        candidates = predict_population_structures(
-            candidates,
-            structure_directory=structure_directory,
-            workers=settings.structure_workers,
-        )
-        structure_runtime = time.perf_counter() - structure_start
+        # The search objective is sequence-level C fitness. Skip isolated-peptide
+        # structure prediction and the composition heuristic unless a user
+        # explicitly opts into the standalone Vina diagnostic. HybriDock-Pep
+        # evaluation belongs in the separate post-search Prototype 2 panel.
         for candidate in candidates:
             candidate.metadata["generation"] = generation
             candidate.metadata["generation_seed"] = seed_sequence
-        _synchronize_structure_state(candidates)
 
-        docking_start = time.perf_counter()
-        docked = scorer.evaluate_candidates(candidates)
-        docking_runtime = time.perf_counter() - docking_start
+        if settings.enable_vina_tier2:
+            structure_start = time.perf_counter()
+            candidates = predict_population_structures(
+                candidates,
+                structure_directory=structure_directory,
+                workers=settings.structure_workers,
+            )
+            structure_runtime = time.perf_counter() - structure_start
+            _synchronize_structure_state(candidates)
+
+            docking_start = time.perf_counter()
+            docked = scorer.evaluate_candidates(candidates)
+            docking_runtime = time.perf_counter() - docking_start
+        else:
+            structure_runtime = 0.0
+            docking_runtime = 0.0
+            for candidate in candidates:
+                candidate.metadata.update({
+                    "structure_available": False,
+                    "structure_status": "not_requested",
+                    "docking_backend": "not_run_primary_search_only",
+                    "docking_score_is_target_specific": False,
+                    "docking_score_used_in_primary_ranking": False,
+                    "docking_is_surrogate": False,
+                    "docking_validated": False,
+                    "docking_status": "not_run_primary_objective_excludes_heuristic",
+                    "ranking_observation_valid": True,
+                    "tier2_eligible": False,
+                    "tier2_attempted": False,
+                    "tier2_validated": False,
+                    "tier2_status": "disabled_by_config",
+                    "vina_status": "disabled_by_config",
+                    "vina_score_available": False,
+                })
+            docked = candidates
         evaluation_start = len(all_candidates) + 1
         for offset, candidate in enumerate(docked):
             candidate.metadata["evaluation_index"] = evaluation_start + offset
@@ -838,9 +873,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
         run_status["structure_success_count"] += structure_count - cached_count
         run_status["structure_available_count"] += structure_count
         run_status["structure_cached_count"] += cached_count
-        run_status["structure_unavailable_count"] += (
-            len(docked) - structure_count
-        )
+        if settings.enable_vina_tier2:
+            run_status["structure_unavailable_count"] += (
+                len(docked) - structure_count
+            )
+        else:
+            run_status["structure_not_requested_count"] += len(docked)
         run_status["surrogate_docking_count"] += surrogate_count
         run_status["surrogate_incomplete_count"] += surrogate_incomplete_count
         run_status["tier2_eligible_count"] += tier2_eligible_count
@@ -1132,6 +1170,13 @@ def run_pipeline(settings: PipelineSettings | None = None):
             "hotspot_top_quantile": settings.hotspot_top_quantile,
             "hotspot_bootstrap_iterations": settings.hotspot_bootstrap_iterations,
             "mutation_guidance_mode": settings.mutation_guidance_mode,
+            "enable_vina_tier2": settings.enable_vina_tier2,
+            "ranking_objective": "bounded sequence-level C fitness prior [0,1]",
+            "structure_prediction_performed": settings.enable_vina_tier2,
+            "composition_heuristic_performed": settings.enable_vina_tier2,
+            "target_specific_binding_score_used_for_selection": False,
+            "standalone_vina_used_for_selection": False,
+            "sequence_composition_heuristic_weight": 0.0,
             "preserve_best": settings.preserve_best,
             "score_threshold": settings.score_threshold,
             "legacy_residue_importance_status": (
@@ -1236,24 +1281,25 @@ def run_pipeline(settings: PipelineSettings | None = None):
             "final_candidate_provenance": final_candidate_provenance,
         },
         "evidence": {
-            "structure_status": "available" if run_status[
-                "structure_available_count"
-            ] else "unavailable",
+            "structure_status": (
+                "available" if run_status["structure_available_count"]
+                else "unavailable" if settings.enable_vina_tier2
+                else "not_requested"
+            ),
+            "structure_prediction_performed": settings.enable_vina_tier2,
+            "structure_not_requested_count": run_status["structure_not_requested_count"],
             "structure_cached_count": run_status[
                 "structure_cached_count"
             ],
-            "surrogate_status": "available" if run_status[
-                "surrogate_docking_count"
-            ] else "unavailable",
-            "tier2_status": (
-                "validated"
-                if run_status["tier2_validated_count"]
-                else (
-                    "unavailable_or_failed"
-                    if run_status["tier2_eligible_count"]
-                    else "not_eligible"
-                )
+            "surrogate_status": (
+                "available" if run_status["surrogate_docking_count"]
+                else "disabled_primary_objective_excludes_heuristic"
             ),
+            "surrogate_scores_used_for_ranking": False,
+            "tier2_status": "not_performed_as_binding_validation",
+            "experimental_binding_validation_performed": False,
+            "standalone_vina_scoring_enabled": settings.enable_vina_tier2,
+            "standalone_vina_used_for_ranking": False,
             "missing_structure_count": run_status[
                 "structure_unavailable_count"
             ],
@@ -1279,7 +1325,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
     logger.info(
         "Posthoc run-normalized best | sequence=%s | score=%.4f | confidence=%.3f | "
         "pLDDT=%s | surrogate_best=%s | surrogate_mean=%s | "
-        "surrogate_consensus=%s | Vina=%s | tier2=%s",
+        "surrogate_consensus=%s | Vina_diagnostic=%s | experimental_binding_validation=false",
         best_candidate.sequence,
         best_overall.overall_score,
         best_overall.confidence,
@@ -1288,14 +1334,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
         best_candidate.mean_delta_g,
         best_candidate.metadata.get("consensus_docking"),
         best_candidate.vina_delta_g,
-        best_candidate.metadata.get("tier2_validated", False),
     )
     logger.info(
-        "Final Vina state | score=%s | status=%s | attempted=%s | validated=%s",
+        "Final Vina diagnostic state | score=%s | status=%s | attempted=%s | experimental_binding_validation=false",
         best_candidate.vina_delta_g,
         best_candidate.metadata.get("vina_status"),
         best_candidate.metadata.get("tier2_attempted", False),
-        best_candidate.metadata.get("tier2_validated", False),
     )
     logger.info(
         "Final-generation score comparison | sequence=%s | "
@@ -1439,7 +1483,21 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
     parser.add_argument("--score-threshold", type=float)
     parser.add_argument(
         "--mutation-guidance-mode",
-        choices=("uniform", "hotspot_only", "hotspot_biased"),
+        choices=(
+            "uniform",
+            "hotspot_only",
+            "hotspot_biased",
+            "hotspot_biased_annealed",
+        ),
+    )
+    parser.add_argument(
+        "--enable-vina-tier2",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Opt in to standalone AutoDock Vina scoring for diagnostics. "
+            "It never contributes to the primary ranking objective."
+        ),
     )
     parser.add_argument(
         "--cache-enabled",
@@ -1494,6 +1552,8 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         values["arise_memory_enabled"] = args.arise_memory_enabled
     if args.arise_memory_use_history is not None:
         values["arise_memory_use_history"] = args.arise_memory_use_history
+    if args.enable_vina_tier2 is not None:
+        values["enable_vina_tier2"] = args.enable_vina_tier2
     if args.cache_enabled is not None:
         values["cache_enabled"] = args.cache_enabled
     if args.generate_plots is not None:
@@ -1528,10 +1588,10 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         values.setdefault("arise_enabled", True)
         values.setdefault("ale_enabled", True)
         values.setdefault("hotspot_enabled", True)
-        values.setdefault("mutation_guidance_mode", "hotspot_biased")
+        values.setdefault("mutation_guidance_mode", "hotspot_biased_annealed")
     elif condition == "pilot":
         values.setdefault("hotspot_enabled", True)
-        values.setdefault("mutation_guidance_mode", "hotspot_biased")
+        values.setdefault("mutation_guidance_mode", "hotspot_biased_annealed")
 
     return PipelineSettings(**values)
 

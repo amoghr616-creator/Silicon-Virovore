@@ -50,3 +50,10 @@ structures/
 *.tpr
 *.edr
 *.log
+# Generated diffusion lookup caches
+/.score.npy
+/.p.npy
+/.so3_*
+
+# Large generated diagnostic output
+/prototype2/target_aware_audit/target_contact_failure_diagnostic.json

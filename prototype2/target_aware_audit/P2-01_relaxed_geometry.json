@@ -1,0 +1,19 @@
+{
+  "minimum_receptor_peptide_heavy_atom_distance_A": 2.882,
+  "peptide_atom_count_heavy": 161,
+  "peptide_chain": "A",
+  "peptide_sequence": "MKQAVNALLVFFAGSSDAIRR",
+  "peptide_sequence_valid": true,
+  "pose_coordinates_valid": true,
+  "pose_geometry_status": "valid",
+  "pose_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/p2_rapidock/P2-01-clean/best_pose_vina_relaxed.pdb",
+  "receptor_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/p2_rapidock/P2-01-clean/receptor_for_rapidock_full.pdb",
+  "severe_clash_count": 0,
+  "severe_clash_cutoff_A": 2.0,
+  "severe_clashes": [],
+  "target_contact_atom_count": 0,
+  "target_contact_cutoff_A": 4.5,
+  "target_contact_evidence_status": "no_target_contacts",
+  "target_contacts": [],
+  "target_mapping_valid": true
+}

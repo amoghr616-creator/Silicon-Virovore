@@ -5,9 +5,12 @@ from pathlib import Path
 import sys
 from dataclasses import replace
 from unittest.mock import patch
+import pytest
+from c.bridge import process_candidate_peptide
 
 from c.bridge import (
     clear_evaluation_cache,
+    evaluate_sequence_metrics,
     evaluation_cache_stats,
     generate_adaptive_population,
     generate_c_population,
@@ -32,6 +35,7 @@ from src.arise_memory import (
 from src.population_runner import ARISEEngine
 from src.predict_structure import predict_population_structures
 from src.ranking import CandidateRanker
+from src.ale_policy import annealed_hotspot_probability, resolve_mutation_policy
 from src.validation import Validator
 from run_pipeline import (
     _candidate_provenance,
@@ -215,6 +219,35 @@ class TestPipelineIntegrity(unittest.TestCase):
             "adaptive-seed123456",
         )
 
+    def test_target_null_is_not_reported_as_a_measurement(self):
+        from c.bridge import evaluate_sequence_metrics
+
+        metrics = evaluate_sequence_metrics(
+            "MKLAVFALLVFFAGSSDLIRR"
+        )
+
+        self.assertIsNone(metrics["target_alignment_diagnostic"])
+        self.assertFalse(metrics["target_alignment_available"])
+        self.assertFalse(metrics["is_target_specific_binding_score"])
+
+
+    def test_candidate_metrics_are_populated(self):
+        candidate = process_candidate_peptide(
+            "MKLAVFALLVFFAGSSDLIRR",
+            cache_enabled=False,
+        )
+
+        self.assertTrue(0.0 <= candidate.c_score <= 1.0)
+        self.assertNotEqual(candidate.helix_propensity, 0.0)
+        self.assertFalse(candidate.metadata["c_fitness_target_specific"])
+
+
+    def test_invalid_sequence_is_rejected(self):
+        with self.assertRaises(ValueError):
+            process_candidate_peptide("MKLAVFALLVFFAGSSDLIRX")
+
+
+class TestPipelineIntegrityRemaining(unittest.TestCase):
     def test_configuration_rejects_out_of_range_seed(self):
         with self.assertRaises(ValueError):
             PipelineSettings(random_seed=-1)
@@ -355,10 +388,10 @@ class TestPipelineIntegrity(unittest.TestCase):
         self.assertFalse(result.metadata["tier2_validated"])
         self.assertFalse(result.passed_tier_2)
         self.assertIsNone(result.vina_delta_g)
-        self.assertEqual(result.metadata["vina_status"], "not_attempted")
+        self.assertEqual(result.metadata["vina_status"], "disabled_by_config")
 
     def test_tier2_with_structure_and_backend_is_validated(self):
-        scorer = PeptideDockingScorer()
+        scorer = PeptideDockingScorer(enable_vina_tier2=True)
         scorer.vina_backend = type(
             "FakeVina",
             (),
@@ -372,14 +405,14 @@ class TestPipelineIntegrity(unittest.TestCase):
             candidate.structure_confidence = 75.0
             candidate.metadata["structure_available"] = True
             result = scorer.evaluate_candidate(candidate)
-        self.assertTrue(result.metadata["tier2_validated"])
-        self.assertEqual(result.metadata["tier2_status"], "validated")
-        self.assertTrue(result.passed_tier_2)
+        self.assertFalse(result.metadata["tier2_validated"])
+        self.assertEqual(result.metadata["tier2_status"], "scored_not_validated")
+        self.assertFalse(result.passed_tier_2)
         self.assertEqual(result.vina_delta_g, -8.1)
         self.assertEqual(result.metadata["vina_status"], "success")
 
     def test_zero_vina_is_retained_only_as_a_real_success(self):
-        scorer = PeptideDockingScorer()
+        scorer = PeptideDockingScorer(enable_vina_tier2=True)
         scorer.vina_backend = type(
             "ZeroVina",
             (),
@@ -393,7 +426,8 @@ class TestPipelineIntegrity(unittest.TestCase):
             candidate.structure_confidence = 75.0
             candidate.metadata["structure_available"] = True
             result = scorer.evaluate_candidate(candidate)
-        self.assertTrue(result.metadata["tier2_validated"])
+        self.assertFalse(result.metadata["tier2_validated"])
+        self.assertEqual(result.metadata["tier2_status"], "scored_not_validated")
         self.assertEqual(result.metadata["vina_status"], "success")
         self.assertEqual(result.vina_delta_g, 0.0)
 
@@ -454,7 +488,7 @@ class TestPipelineIntegrity(unittest.TestCase):
         self.assertFalse(baseline.hotspot_enabled)
         self.assertEqual(baseline.mutation_guidance_mode, "uniform")
         self.assertTrue(adaptive.hotspot_enabled)
-        self.assertEqual(adaptive.mutation_guidance_mode, "hotspot_biased")
+        self.assertEqual(adaptive.mutation_guidance_mode, "hotspot_biased_annealed")
 
     def test_posthoc_ranking_does_not_overwrite_generation_score(self):
         first = Candidate("A" * 21, c_score=1.0)
@@ -530,7 +564,7 @@ class TestPipelineIntegrity(unittest.TestCase):
             "--condition", "adaptive",
             "--seed-sequence", "MKLAVFALLVFFAGSSDLIRR",
         ])
-        self.assertEqual(adaptive.mutation_guidance_mode, "hotspot_biased")
+        self.assertEqual(adaptive.mutation_guidance_mode, "hotspot_biased_annealed")
         self.assertFalse(adaptive.mutation_guidance_mode == "legacy")
 
     def test_raw_and_normalized_docking_ordering(self):
@@ -777,6 +811,62 @@ class TestPipelineIntegrity(unittest.TestCase):
             sum(old != new for old, new in zip("A" * 21, sequence)) == 1
             for sequence in population
         ))
+
+    def test_vina_is_disabled_by_default_and_not_loaded(self):
+        with patch("src.docking_vina.AutoDockBackend", side_effect=AssertionError("must not load Vina")) as ctor:
+            scorer = PeptideDockingScorer()
+        ctor.assert_not_called()
+        self.assertFalse(scorer.enable_vina_tier2)
+        self.assertIsNone(scorer.vina_backend)
+
+    def test_vina_score_does_not_change_primary_rank(self):
+        first = Candidate("A" * 21, c_score=0.61)
+        second = Candidate("C" * 21, c_score=0.61)
+        first.vina_delta_g = -15.0
+        second.vina_delta_g = 0.0
+        first.structure_confidence = 99.0
+        second.structure_confidence = 10.0
+        ranked = CandidateRanker().rank([first, second])
+        self.assertEqual([c.sequence for c in ranked], [first.sequence, second.sequence])
+        self.assertEqual(first.overall_score, second.overall_score)
+        self.assertEqual(first.overall_score, 0.61)
+
+    def test_fixed_fitness_scores_are_comparable_across_candidate_sets(self):
+        ranker = CandidateRanker()
+        single = Candidate("A" * 21, c_score=0.62)
+        ranker.rank([single])
+        self.assertEqual(single.overall_score, 0.62)
+        lower = Candidate("C" * 21, c_score=0.62)
+        higher = Candidate("D" * 21, c_score=0.88)
+        ranker.rank([lower, higher])
+        self.assertEqual(lower.overall_score, 0.62)
+        self.assertEqual(higher.overall_score, 0.88)
+
+    def test_annealed_hotspot_schedule_is_fixed_before_outcomes(self):
+        self.assertAlmostEqual(annealed_hotspot_probability(1, 10), 0.25)
+        self.assertAlmostEqual(annealed_hotspot_probability(5, 10), 0.45)
+        self.assertAlmostEqual(annealed_hotspot_probability(10, 10), 0.70)
+        self.assertEqual(
+            [annealed_hotspot_probability(g, 3) for g in (1, 2, 3)],
+            [0.25, 0.475, 0.7],
+        )
+
+    def test_policy_mutation_positions_are_distinct_and_actual_count_is_budget(self):
+        seed_native_random(616)
+        population = generate_policy_population(
+            "A" * 21,
+            mutation_rate=0.10,
+            guidance_mode="hotspot_biased_annealed",
+            hotspot_start=8,
+            hotspot_end=10,
+            hotspot_probability=0.70,
+            pop_size=30,
+        )
+        self.assertEqual(len(population), 30)
+        for sequence in population:
+            changed = [i for i, (a, b) in enumerate(zip("A" * 21, sequence)) if a != b]
+            self.assertEqual(len(changed), 2)
+            self.assertEqual(len(set(changed)), 2)
 
     def test_configuration_rejects_invalid_values(self):
         with self.assertRaises(ValueError):

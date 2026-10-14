@@ -14,6 +14,20 @@ extern void evaluate_fitness(Variant *v, const char *target, const char *decoy1,
 #define SEQ_LEN 21
 static const char AA_ALPHABET[] = "ACDEFGHIKLMNPQRSTVWY";
 
+static char random_amino_acid_different_from(char parental, char current) {
+    char allowed[20];
+    int count = 0;
+    for (int i = 0; i < 20; i++) {
+        char candidate = AA_ALPHABET[i];
+        if (candidate == current) continue;
+        /* If this site was already mutated, don't silently revert to parent. */
+        if (current != parental && candidate == parental) continue;
+        allowed[count++] = candidate;
+    }
+    if (count == 0) return current;
+    return allowed[rand() % count];
+}
+
 static int is_valid_amino_acid(char c) {
     return (strchr(AA_ALPHABET, toupper((unsigned char)c)) != NULL);
 }
@@ -131,9 +145,10 @@ void c_generate_adaptive_population(
 
 /*
  * Generate a population with an identical per-candidate mutation-event
- * budget across uniform and hotspot-guided modes. Positions are sampled with
- * replacement so a short hotspot does not silently reduce the budget.
- * guidance_mode: 0=uniform, 1=hotspot-only, 2=hotspot-biased.
+ * budget across uniform and hotspot-guided modes. Mutation positions are
+ * sampled without replacement so repeated draws cannot silently reduce the
+ * number of distinct changed positions.
+ * guidance_mode: 0=uniform, 1=hotspot-only, 2/3=probability-biased hotspot.
  */
 void c_generate_policy_population(
     const char *seed,
@@ -141,6 +156,7 @@ void c_generate_policy_population(
     int hotspot_start,
     int hotspot_end,
     int guidance_mode,
+    double hotspot_probability,
     char output[][SEQ_LEN + 1],
     int pop_size)
 {
@@ -154,28 +170,59 @@ void c_generate_policy_population(
     if (!hotspot_valid || guidance_mode == 0) {
         guidance_mode = 0;
     }
+    if (hotspot_probability < 0.0) hotspot_probability = 0.0;
+    if (hotspot_probability > 1.0) hotspot_probability = 1.0;
 
     int mutation_events = (int)(mutation_rate * SEQ_LEN + 0.5);
     if (mutation_rate > 0.0 && mutation_events < 1) mutation_events = 1;
 
     for (int p = 0; p < pop_size; p++) {
         strcpy(output[p], seed);
+        int used_positions[SEQ_LEN] = {0};
         for (int event = 0; event < mutation_events; event++) {
-            int position = rand() % SEQ_LEN;
+            int position = -1;
+            int use_hotspot = 0;
             if (guidance_mode == 1) {
-                position = hotspot_start + rand() % (hotspot_end - hotspot_start);
-            } else if (guidance_mode == 2) {
-                double hotspot_probability = 0.75;
-                if ((double)rand() / RAND_MAX < hotspot_probability) {
+                use_hotspot = 1;
+            } else if ((guidance_mode == 2 || guidance_mode == 3)
+                       && (double)rand() / RAND_MAX < hotspot_probability) {
+                use_hotspot = 1;
+            }
+
+            /* Select without replacement so the event budget equals the number
+             * of distinct mutation positions whenever valid positions exist. */
+            if (use_hotspot && hotspot_valid) {
+                int available = 0;
+                for (int i = hotspot_start; i < hotspot_end; i++) {
+                    if (!used_positions[i]) available++;
+                }
+                if (available > 0) {
+                    int pick = rand() % available;
+                    for (int i = hotspot_start; i < hotspot_end; i++) {
+                        if (used_positions[i]) continue;
+                        if (pick-- == 0) { position = i; break; }
+                    }
+                } else if (guidance_mode == 1) {
+                    /* hotspot_only stays inside the declared region even if
+                     * the mutation budget exceeds its width. */
                     position = hotspot_start + rand() % (hotspot_end - hotspot_start);
                 }
             }
-
-            int residue_index = rand() % 19;
-            char replacement = AA_ALPHABET[residue_index];
-            char original = seed[position];
-            if (replacement >= original) replacement = AA_ALPHABET[residue_index + 1];
-            output[p][position] = replacement;
+            if (position < 0) {
+                int available = 0;
+                for (int i = 0; i < SEQ_LEN; i++) {
+                    if (!used_positions[i]) available++;
+                }
+                if (available <= 0) break;
+                int pick = rand() % available;
+                for (int i = 0; i < SEQ_LEN; i++) {
+                    if (used_positions[i]) continue;
+                    if (pick-- == 0) { position = i; break; }
+                }
+            }
+            if (position < 0) break;
+            used_positions[position] = 1;
+            output[p][position] = random_amino_acid_different_from(seed[position], output[p][position]);
         }
         output[p][SEQ_LEN] = '\0';
     }

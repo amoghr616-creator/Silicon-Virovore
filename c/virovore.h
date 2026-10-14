@@ -78,6 +78,7 @@ void c_generate_policy_population(
     int hotspot_start,
     int hotspot_end,
     int guidance_mode,
+    double hotspot_probability,
     char output[][SEQ_LEN + 1],
     int pop_size
 );

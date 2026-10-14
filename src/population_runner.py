@@ -30,6 +30,7 @@ from src.config import (
     REMOVE_DUPLICATE_CANDIDATES,
     POPULATION_SIZE,
     MUTATION_RATE,
+    GENERATIONS,
 )
 
 logger = logging.getLogger(__name__)
@@ -272,6 +273,7 @@ def generate_candidates(
     generation: int = 1,
     run_id: str = "",
     preserve_sequence: str | None = None,
+    total_generations: int | None = None,
 ) -> list[Candidate]:
     """
     Generate candidate peptides.
@@ -300,21 +302,25 @@ def generate_candidates(
         ARISE_ENGINE.importance_observations(),
     )
 
+    total_generations = total_generations or GENERATIONS
     policy = resolve_mutation_policy(
         mutation_guidance_mode
         if mutation_guidance_mode != "legacy"
         else "uniform",
         hotspot_model,
         enabled=hotspot_enabled and ale_enabled,
+        generation=generation,
+        total_generations=total_generations,
     )
     if mutation_guidance_mode != "legacy":
         logger.info(
-            "ALE policy | requested=%s | active=%s | guided=%s | hotspot=%s:%s",
+            "ALE policy | requested=%s | active=%s | guided=%s | hotspot=%s:%s | hotspot_probability=%.3f",
             policy["requested_mode"],
             policy["mode"],
             policy["guided"],
             policy["hotspot_start"],
             policy["hotspot_end"],
+            policy["hotspot_probability"],
         )
 
     def generate_batch(size: int) -> list[str]:
@@ -326,6 +332,7 @@ def generate_candidates(
                 hotspot_start=policy["hotspot_start"],
                 hotspot_end=policy["hotspot_end"],
                 pop_size=size,
+                hotspot_probability=policy["hotspot_probability"],
             )
         if arise_enabled and has_learned_importance:
             return generate_adaptive_population(
@@ -396,9 +403,13 @@ def generate_candidates(
             mutation_rate * len(seed_sequence)
         )
         candidate.metadata["mutation_event_budget"] = event_budget
-        candidate.metadata["mutation_count"] = (
+        candidate.metadata["mutation_event_count"] = (
             event_budget if mutation_guidance_mode != "legacy" else len(changed_positions)
         )
+        # Count observed sequence positions that actually changed; with
+        # sampling-with-replacement this can be lower than the event budget.
+        candidate.metadata["mutation_count"] = len(changed_positions)
+        candidate.metadata["hotspot_probability"] = policy["hotspot_probability"]
         candidate.metadata["mutation_positions"] = changed_positions
         candidate.metadata["parent_sequence"] = seed_sequence
         candidate.metadata["run_id"] = run_id

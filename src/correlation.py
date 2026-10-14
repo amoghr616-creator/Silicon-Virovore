@@ -84,7 +84,7 @@ class CorrelationAnalyzer:
                 for rc in ranked_candidates
             ],
 
-            "docking": [
+            "sequence_composition_heuristic_score": [
                 rc.candidate.strongest_anchor_delta_g
                 for rc in ranked_candidates
             ],

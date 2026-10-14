@@ -78,11 +78,11 @@ class PlotGenerator:
             bins=20,
         )
 
-        plt.xlabel("Strongest Anchor ΔG")
+        plt.xlabel("Best sequence-composition heuristic score (arbitrary units)")
 
         plt.ylabel("Count")
 
-        plt.title("Docking Score Distribution")
+        plt.title("Sequence-composition Heuristic Distribution")
 
         plt.tight_layout()
 
@@ -130,9 +130,9 @@ class PlotGenerator:
 
         plt.xlabel("Native Fitness")
 
-        plt.ylabel("Docking ΔG")
+        plt.ylabel("Sequence-composition heuristic score (arbitrary units)")
 
-        plt.title("Fitness vs Docking")
+        plt.title("Sequence-level Prior Fitness vs Composition Heuristic")
 
         plt.tight_layout()
 

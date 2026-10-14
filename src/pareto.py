@@ -63,8 +63,13 @@ class ParetoAnalyzer:
             solvation penalty
         """
 
+        if candidate.metadata.get("docking_score_is_target_specific") is not True:
+            raise ValueError(
+                "Pareto analysis requires target-specific binding evidence; "
+                "the current composition heuristic is not eligible."
+            )
         if candidate.strongest_anchor_delta_g is None:
-            raise ValueError("Pareto analysis requires docking evidence.")
+            raise ValueError("Pareto analysis requires target-specific docking evidence.")
 
         return (
 
@@ -106,7 +111,10 @@ class ParetoAnalyzer:
         candidates = [
             candidate
             for candidate in candidates
-            if candidate.strongest_anchor_delta_g is not None
+            if (
+                candidate.metadata.get("docking_score_is_target_specific") is True
+                and candidate.strongest_anchor_delta_g is not None
+            )
         ]
         pareto = [
 
@@ -194,6 +202,11 @@ class ParetoAnalyzer:
         front = self.rank(candidates)
 
         return {
+
+            "status": (
+                "computed_with_target_specific_scores"
+                if candidates else "not_computed_no_target_specific_binding_scores"
+            ),
 
             "num_candidates":
 

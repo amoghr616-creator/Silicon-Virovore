@@ -1,0 +1,1392 @@
+{
+  "minimum_receptor_peptide_heavy_atom_distance_A": 0.383,
+  "peptide_atom_count_heavy": 161,
+  "peptide_chain": "A",
+  "peptide_sequence": "MKQAVNALLVFFAGSSDAIRR",
+  "peptide_sequence_valid": true,
+  "pose_coordinates_valid": true,
+  "pose_geometry_status": "severe_clashes_present",
+  "pose_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/p2_rapidock/P2-01-clean/best_pose.pdb",
+  "receptor_path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/p2_rapidock/P2-01-clean/receptor_for_rapidock_full.pdb",
+  "severe_clash_count": 196,
+  "severe_clash_cutoff_A": 2.0,
+  "severe_clashes": [
+    {
+      "distance_A": 1.809,
+      "peptide_atom": "CZ",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "C",
+      "receptor_residue": "GLU22"
+    },
+    {
+      "distance_A": 1.924,
+      "peptide_atom": "CE2",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "GLU22"
+    },
+    {
+      "distance_A": 1.403,
+      "peptide_atom": "CZ",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "GLU22"
+    },
+    {
+      "distance_A": 1.131,
+      "peptide_atom": "CE1",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 1.855,
+      "peptide_atom": "CZ",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 1.684,
+      "peptide_atom": "CE1",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "C",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 1.247,
+      "peptide_atom": "CG1",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CB",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 0.68,
+      "peptide_atom": "CB",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 1.171,
+      "peptide_atom": "CG1",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 1.719,
+      "peptide_atom": "CG2",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL23"
+    },
+    {
+      "distance_A": 1.515,
+      "peptide_atom": "CD1",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "N",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 1.876,
+      "peptide_atom": "CE1",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "N",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 1.707,
+      "peptide_atom": "O",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "CA",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 1.679,
+      "peptide_atom": "C",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "C",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 0.493,
+      "peptide_atom": "O",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "C",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 1.784,
+      "peptide_atom": "CA",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "O",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 0.477,
+      "peptide_atom": "C",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "O",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 0.833,
+      "peptide_atom": "O",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "O",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 1.624,
+      "peptide_atom": "N",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "TYR24"
+    },
+    {
+      "distance_A": 1.69,
+      "peptide_atom": "O",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "N",
+      "receptor_residue": "VAL25"
+    },
+    {
+      "distance_A": 1.813,
+      "peptide_atom": "CB",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL25"
+    },
+    {
+      "distance_A": 1.655,
+      "peptide_atom": "CE1",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "O",
+      "receptor_residue": "ASP36"
+    },
+    {
+      "distance_A": 1.321,
+      "peptide_atom": "CZ",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "O",
+      "receptor_residue": "ASP36"
+    },
+    {
+      "distance_A": 1.857,
+      "peptide_atom": "O",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "CD",
+      "receptor_residue": "ARG38"
+    },
+    {
+      "distance_A": 1.778,
+      "peptide_atom": "CA",
+      "peptide_residue": "GLY14",
+      "receptor_atom": "CZ",
+      "receptor_residue": "ARG38"
+    },
+    {
+      "distance_A": 0.818,
+      "peptide_atom": "CA",
+      "peptide_residue": "GLY14",
+      "receptor_atom": "NH1",
+      "receptor_residue": "ARG38"
+    },
+    {
+      "distance_A": 1.881,
+      "peptide_atom": "C",
+      "peptide_residue": "GLY14",
+      "receptor_atom": "NH1",
+      "receptor_residue": "ARG38"
+    },
+    {
+      "distance_A": 1.797,
+      "peptide_atom": "CA",
+      "peptide_residue": "ARG20",
+      "receptor_atom": "C",
+      "receptor_residue": "ALA41"
+    },
+    {
+      "distance_A": 1.661,
+      "peptide_atom": "CA",
+      "peptide_residue": "ARG20",
+      "receptor_atom": "O",
+      "receptor_residue": "ALA41"
+    },
+    {
+      "distance_A": 1.261,
+      "peptide_atom": "C",
+      "peptide_residue": "ARG20",
+      "receptor_atom": "O",
+      "receptor_residue": "ALA41"
+    },
+    {
+      "distance_A": 1.021,
+      "peptide_atom": "O",
+      "peptide_residue": "ARG20",
+      "receptor_atom": "O",
+      "receptor_residue": "ALA41"
+    },
+    {
+      "distance_A": 1.386,
+      "peptide_atom": "O",
+      "peptide_residue": "ILE19",
+      "receptor_atom": "CB",
+      "receptor_residue": "ALA41"
+    },
+    {
+      "distance_A": 1.699,
+      "peptide_atom": "CA",
+      "peptide_residue": "ILE19",
+      "receptor_atom": "N",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.338,
+      "peptide_atom": "CB",
+      "peptide_residue": "ILE19",
+      "receptor_atom": "N",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.21,
+      "peptide_atom": "CG1",
+      "peptide_residue": "ILE19",
+      "receptor_atom": "N",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.7,
+      "peptide_atom": "CG1",
+      "peptide_residue": "ILE19",
+      "receptor_atom": "CA",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.883,
+      "peptide_atom": "CG2",
+      "peptide_residue": "ILE19",
+      "receptor_atom": "CA",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.936,
+      "peptide_atom": "CA",
+      "peptide_residue": "ARG21",
+      "receptor_atom": "OE1",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.15,
+      "peptide_atom": "C",
+      "peptide_residue": "ARG21",
+      "receptor_atom": "OE1",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.44,
+      "peptide_atom": "O",
+      "peptide_residue": "ARG21",
+      "receptor_atom": "OE1",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.966,
+      "peptide_atom": "OXT",
+      "peptide_residue": "ARG21",
+      "receptor_atom": "OE1",
+      "receptor_residue": "GLU42"
+    },
+    {
+      "distance_A": 1.581,
+      "peptide_atom": "ND2",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "CB",
+      "receptor_residue": "GLN71"
+    },
+    {
+      "distance_A": 1.612,
+      "peptide_atom": "O",
+      "peptide_residue": "ALA4",
+      "receptor_atom": "O",
+      "receptor_residue": "ASN72"
+    },
+    {
+      "distance_A": 1.77,
+      "peptide_atom": "CG1",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CB",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.33,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CG",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.979,
+      "peptide_atom": "CG1",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CG",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.588,
+      "peptide_atom": "N",
+      "peptide_residue": "ALA4",
+      "receptor_atom": "CD1",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.63,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CD1",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.348,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CD2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 0.967,
+      "peptide_atom": "CA",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CD2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.215,
+      "peptide_atom": "CB",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CD2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.91,
+      "peptide_atom": "CG2",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CD2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.861,
+      "peptide_atom": "CA",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "NE1",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.826,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "NE1",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.685,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.724,
+      "peptide_atom": "CA",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.644,
+      "peptide_atom": "C",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.375,
+      "peptide_atom": "O",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.245,
+      "peptide_atom": "CA",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE3",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 0.692,
+      "peptide_atom": "CB",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE3",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.994,
+      "peptide_atom": "CG2",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CE3",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.293,
+      "peptide_atom": "C",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CZ2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 0.394,
+      "peptide_atom": "O",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CZ2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.768,
+      "peptide_atom": "C",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CZ3",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.929,
+      "peptide_atom": "CB",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CZ3",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.779,
+      "peptide_atom": "N",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "CZ3",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.337,
+      "peptide_atom": "C",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CH2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.606,
+      "peptide_atom": "O",
+      "peptide_residue": "VAL5",
+      "receptor_atom": "CH2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.49,
+      "peptide_atom": "N",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "CH2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.768,
+      "peptide_atom": "CA",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "CH2",
+      "receptor_residue": "TRP73"
+    },
+    {
+      "distance_A": 1.748,
+      "peptide_atom": "O",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "C",
+      "receptor_residue": "GLY93"
+    },
+    {
+      "distance_A": 1.302,
+      "peptide_atom": "CG",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "CB",
+      "receptor_residue": "SER95"
+    },
+    {
+      "distance_A": 1.023,
+      "peptide_atom": "OD1",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "CB",
+      "receptor_residue": "SER95"
+    },
+    {
+      "distance_A": 1.876,
+      "peptide_atom": "CG",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "OG",
+      "receptor_residue": "SER95"
+    },
+    {
+      "distance_A": 0.688,
+      "peptide_atom": "OD1",
+      "peptide_residue": "ASN6",
+      "receptor_atom": "OG",
+      "receptor_residue": "SER95"
+    },
+    {
+      "distance_A": 1.773,
+      "peptide_atom": "N",
+      "peptide_residue": "MET1",
+      "receptor_atom": "C",
+      "receptor_residue": "VAL131"
+    },
+    {
+      "distance_A": 1.108,
+      "peptide_atom": "N",
+      "peptide_residue": "MET1",
+      "receptor_atom": "O",
+      "receptor_residue": "VAL131"
+    },
+    {
+      "distance_A": 1.741,
+      "peptide_atom": "CA",
+      "peptide_residue": "MET1",
+      "receptor_atom": "O",
+      "receptor_residue": "VAL131"
+    },
+    {
+      "distance_A": 1.73,
+      "peptide_atom": "CG",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "O",
+      "receptor_residue": "GLU133"
+    },
+    {
+      "distance_A": 1.983,
+      "peptide_atom": "CD",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS135"
+    },
+    {
+      "distance_A": 1.695,
+      "peptide_atom": "CD",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS135"
+    },
+    {
+      "distance_A": 1.416,
+      "peptide_atom": "CE",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS135"
+    },
+    {
+      "distance_A": 1.958,
+      "peptide_atom": "O",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "N",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.66,
+      "peptide_atom": "C",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "CA",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 0.798,
+      "peptide_atom": "O",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "CA",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.97,
+      "peptide_atom": "N",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "C",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.237,
+      "peptide_atom": "CA",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "C",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 0.62,
+      "peptide_atom": "C",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "C",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.38,
+      "peptide_atom": "O",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "C",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.795,
+      "peptide_atom": "N",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "C",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.886,
+      "peptide_atom": "C",
+      "peptide_residue": "MET1",
+      "receptor_atom": "O",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.616,
+      "peptide_atom": "O",
+      "peptide_residue": "MET1",
+      "receptor_atom": "O",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.779,
+      "peptide_atom": "N",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "O",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.363,
+      "peptide_atom": "CA",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "O",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.777,
+      "peptide_atom": "C",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "O",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.862,
+      "peptide_atom": "CB",
+      "peptide_residue": "MET1",
+      "receptor_atom": "CG1",
+      "receptor_residue": "ILE209"
+    },
+    {
+      "distance_A": 1.813,
+      "peptide_atom": "CA",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "N",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 0.8,
+      "peptide_atom": "C",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "N",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.871,
+      "peptide_atom": "O",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "N",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 0.732,
+      "peptide_atom": "N",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "N",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.966,
+      "peptide_atom": "CA",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "N",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.459,
+      "peptide_atom": "N",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CA",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.939,
+      "peptide_atom": "N",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "C",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.955,
+      "peptide_atom": "CB",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "C",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.97,
+      "peptide_atom": "CA",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "O",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.91,
+      "peptide_atom": "O",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "O",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.582,
+      "peptide_atom": "CB",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "O",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.767,
+      "peptide_atom": "CB",
+      "peptide_residue": "LYS2",
+      "receptor_atom": "CB",
+      "receptor_residue": "SER210"
+    },
+    {
+      "distance_A": 1.523,
+      "peptide_atom": "CD",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CA",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.012,
+      "peptide_atom": "OE1",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CA",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.769,
+      "peptide_atom": "OE1",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "C",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 0.939,
+      "peptide_atom": "CD",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CB",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.295,
+      "peptide_atom": "OE1",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CB",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.095,
+      "peptide_atom": "NE2",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CB",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.745,
+      "peptide_atom": "NE2",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "OG1",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.531,
+      "peptide_atom": "CG",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CG2",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.089,
+      "peptide_atom": "CD",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CG2",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 0.993,
+      "peptide_atom": "NE2",
+      "peptide_residue": "GLN3",
+      "receptor_atom": "CG2",
+      "receptor_residue": "THR211"
+    },
+    {
+      "distance_A": 1.002,
+      "peptide_atom": "O",
+      "peptide_residue": "ALA7",
+      "receptor_atom": "CE3",
+      "receptor_residue": "TRP229"
+    },
+    {
+      "distance_A": 1.27,
+      "peptide_atom": "C",
+      "peptide_residue": "ALA7",
+      "receptor_atom": "CZ3",
+      "receptor_residue": "TRP229"
+    },
+    {
+      "distance_A": 0.474,
+      "peptide_atom": "O",
+      "peptide_residue": "ALA7",
+      "receptor_atom": "CZ3",
+      "receptor_residue": "TRP229"
+    },
+    {
+      "distance_A": 1.781,
+      "peptide_atom": "O",
+      "peptide_residue": "ALA7",
+      "receptor_atom": "CH2",
+      "receptor_residue": "TRP229"
+    },
+    {
+      "distance_A": 1.637,
+      "peptide_atom": "O",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "N",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.854,
+      "peptide_atom": "N",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CA",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.443,
+      "peptide_atom": "CA",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CA",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.223,
+      "peptide_atom": "C",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CA",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.324,
+      "peptide_atom": "O",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CA",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.986,
+      "peptide_atom": "CA",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "C",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 0.523,
+      "peptide_atom": "C",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "C",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 0.99,
+      "peptide_atom": "O",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "C",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.329,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "C",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.306,
+      "peptide_atom": "C",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "O",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.305,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "O",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.916,
+      "peptide_atom": "CA",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CB",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.284,
+      "peptide_atom": "CB",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CB",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.55,
+      "peptide_atom": "CB",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CG",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.733,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "NE",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.031,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "CZ",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.186,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "NH1",
+      "receptor_residue": "ARG230"
+    },
+    {
+      "distance_A": 1.769,
+      "peptide_atom": "C",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "N",
+      "receptor_residue": "LEU231"
+    },
+    {
+      "distance_A": 1.31,
+      "peptide_atom": "O",
+      "peptide_residue": "LEU9",
+      "receptor_atom": "N",
+      "receptor_residue": "LEU231"
+    },
+    {
+      "distance_A": 1.883,
+      "peptide_atom": "N",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "N",
+      "receptor_residue": "LEU231"
+    },
+    {
+      "distance_A": 1.839,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CA",
+      "receptor_residue": "THR232"
+    },
+    {
+      "distance_A": 1.903,
+      "peptide_atom": "CG",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "C",
+      "receptor_residue": "THR232"
+    },
+    {
+      "distance_A": 0.383,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "C",
+      "receptor_residue": "THR232"
+    },
+    {
+      "distance_A": 1.342,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "O",
+      "receptor_residue": "THR232"
+    },
+    {
+      "distance_A": 1.561,
+      "peptide_atom": "CB",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "N",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 0.964,
+      "peptide_atom": "CG",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "N",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.008,
+      "peptide_atom": "CD1",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "N",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.247,
+      "peptide_atom": "CB",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 0.88,
+      "peptide_atom": "CG",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.29,
+      "peptide_atom": "CD2",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.894,
+      "peptide_atom": "CD2",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "C",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.381,
+      "peptide_atom": "N",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CB",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.217,
+      "peptide_atom": "CA",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CB",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.202,
+      "peptide_atom": "CB",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CB",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.976,
+      "peptide_atom": "CG",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CB",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.516,
+      "peptide_atom": "CA",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.464,
+      "peptide_atom": "C",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.594,
+      "peptide_atom": "O",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.624,
+      "peptide_atom": "CB",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CG1",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.336,
+      "peptide_atom": "N",
+      "peptide_residue": "LEU8",
+      "receptor_atom": "CG2",
+      "receptor_residue": "VAL233"
+    },
+    {
+      "distance_A": 1.629,
+      "peptide_atom": "CB",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "O",
+      "receptor_residue": "GLN267"
+    },
+    {
+      "distance_A": 1.816,
+      "peptide_atom": "O",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CA",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.689,
+      "peptide_atom": "CA",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "CA",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.017,
+      "peptide_atom": "C",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CB",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 0.396,
+      "peptide_atom": "O",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "CB",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.897,
+      "peptide_atom": "N",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "CB",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.254,
+      "peptide_atom": "C",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "OG",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.558,
+      "peptide_atom": "O",
+      "peptide_residue": "VAL10",
+      "receptor_atom": "OG",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.636,
+      "peptide_atom": "N",
+      "peptide_residue": "PHE11",
+      "receptor_atom": "OG",
+      "receptor_residue": "SER268"
+    },
+    {
+      "distance_A": 1.243,
+      "peptide_atom": "N",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "N",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.548,
+      "peptide_atom": "CB",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "C",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.645,
+      "peptide_atom": "CG",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "C",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.386,
+      "peptide_atom": "CB",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 0.536,
+      "peptide_atom": "CG",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.436,
+      "peptide_atom": "CD1",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.768,
+      "peptide_atom": "CD2",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "O",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.951,
+      "peptide_atom": "CA",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.441,
+      "peptide_atom": "C",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.991,
+      "peptide_atom": "CB",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.541,
+      "peptide_atom": "N",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.616,
+      "peptide_atom": "CA",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.766,
+      "peptide_atom": "C",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 0.806,
+      "peptide_atom": "N",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.162,
+      "peptide_atom": "CA",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.74,
+      "peptide_atom": "C",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS269"
+    },
+    {
+      "distance_A": 1.823,
+      "peptide_atom": "CD2",
+      "peptide_residue": "PHE12",
+      "receptor_atom": "CA",
+      "receptor_residue": "VAL270"
+    },
+    {
+      "distance_A": 1.832,
+      "peptide_atom": "C",
+      "peptide_residue": "GLY14",
+      "receptor_atom": "OG1",
+      "receptor_residue": "THR299"
+    },
+    {
+      "distance_A": 1.127,
+      "peptide_atom": "O",
+      "peptide_residue": "GLY14",
+      "receptor_atom": "OG1",
+      "receptor_residue": "THR299"
+    },
+    {
+      "distance_A": 1.717,
+      "peptide_atom": "CB",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "CA",
+      "receptor_residue": "CYS300"
+    },
+    {
+      "distance_A": 1.217,
+      "peptide_atom": "CB",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "CB",
+      "receptor_residue": "CYS300"
+    },
+    {
+      "distance_A": 1.584,
+      "peptide_atom": "CA",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS300"
+    },
+    {
+      "distance_A": 1.231,
+      "peptide_atom": "C",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS300"
+    },
+    {
+      "distance_A": 1.741,
+      "peptide_atom": "O",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS300"
+    },
+    {
+      "distance_A": 1.65,
+      "peptide_atom": "CB",
+      "peptide_residue": "ALA13",
+      "receptor_atom": "SG",
+      "receptor_residue": "CYS300"
+    }
+  ],
+  "target_contact_atom_count": 0,
+  "target_contact_cutoff_A": 4.5,
+  "target_contact_evidence_status": "no_target_contacts",
+  "target_contacts": [],
+  "target_mapping_valid": true
+}
