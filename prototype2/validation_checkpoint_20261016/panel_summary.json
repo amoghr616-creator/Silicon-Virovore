@@ -1,0 +1,73 @@
+{
+  "selection_rule": "top native_fitness, descending; candidate_id ascending for ties; deduplicate exact sequence before taking panel",
+  "docking_used_for_selection": false,
+  "panel_size_per_run_arm": 32,
+  "matched_pairs": [
+    {
+      "baseline_run": "baseline-616-A",
+      "adaptive_run": "adaptive-616",
+      "matched": true,
+      "random_seed": 616,
+      "population_size": 10,
+      "generations": 10,
+      "mutation_rate": 0.05,
+      "source_candidate_count": {
+        "baseline": 100,
+        "adaptive": 100
+      },
+      "source_unique_sequence_count": {
+        "baseline": 100,
+        "adaptive": 95
+      },
+      "panel_unique_sequence_count": {
+        "baseline": 32,
+        "adaptive": 32
+      },
+      "fitness_median": {
+        "baseline": 0.7202669454230687,
+        "adaptive": 0.7045409906058568,
+        "adaptive_minus_baseline": -0.01572595481721184
+      },
+      "fitness_mean": {
+        "baseline": 0.7245945892188316,
+        "adaptive": 0.7064803806769442,
+        "adaptive_minus_baseline": -0.01811420854188739
+      },
+      "independent_run_pair_count": 1,
+      "inferential_uncertainty_status": "descriptive_only_one_matched_run_pair"
+    },
+    {
+      "baseline_run": "baseline-618-A",
+      "adaptive_run": "adaptive-618-A",
+      "matched": true,
+      "random_seed": 618,
+      "population_size": 10,
+      "generations": 10,
+      "mutation_rate": 0.05,
+      "source_candidate_count": {
+        "baseline": 100,
+        "adaptive": 100
+      },
+      "source_unique_sequence_count": {
+        "baseline": 100,
+        "adaptive": 98
+      },
+      "panel_unique_sequence_count": {
+        "baseline": 32,
+        "adaptive": 32
+      },
+      "fitness_median": {
+        "baseline": 0.7274259572963166,
+        "adaptive": 0.7019914280469487,
+        "adaptive_minus_baseline": -0.025434529249367954
+      },
+      "fitness_mean": {
+        "baseline": 0.7319559140470058,
+        "adaptive": 0.7043637962332909,
+        "adaptive_minus_baseline": -0.027592117813714845
+      },
+      "independent_run_pair_count": 1,
+      "inferential_uncertainty_status": "descriptive_only_one_matched_run_pair"
+    }
+  ]
+}

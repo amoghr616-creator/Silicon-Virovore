@@ -1,0 +1,36 @@
+{
+  "status": "incomplete_runtime_limit",
+  "backend": "AutoDock Vina-only; separate from HybriDock/RAPiDock",
+  "runtime_seconds_before_manual_stop": 2425,
+  "vina_process_cpu_utilization_percent_at_stop": 203.5,
+  "raw_pose_exists": false,
+  "pose_mapping_status": "not_available_no_raw_pose",
+  "pose_metrics_status": "not_computed",
+  "reason": "Vina 1.2.7 exhaustiveness 64, 20 modes, 30 A box, 4 CPUs, seed 20261016 remained CPU-bound for over 40 minutes without writing raw output. The run was stopped; archived lower-effort run is not substituted.",
+  "prepared_receptor_chain": "A only; peptide chain B excluded",
+  "deposited_peptide_sequence": "SQETFSDLWKLLPEN",
+  "observed_coordinate_peptide_sequence": "ETFSDLWKLLPEN",
+  "observed_coordinate_residue_numbers": [17, 29],
+  "selected_configuration": {
+    "vina_version": "AutoDock Vina v1.2.7",
+    "scoring": "vina",
+    "exhaustiveness": 64,
+    "num_modes": 20,
+    "energy_range_kcal_mol": 5.0,
+    "cpu": 4,
+    "seed": 20261016,
+    "box_center_A": [25.42080527280284, -25.135265468496137, -7.92108850458027],
+    "box_size_A": [30.0, 30.0, 30.0]
+  },
+  "prepared_inputs_preserved": [
+    "reference_complex.pdb",
+    "receptor_chainA_only.pdb",
+    "receptor_meeko.pdbqt",
+    "ligand_meeko.pdbqt",
+    "inputs.json",
+    "vina_command.txt",
+    "receptor_prepare.stdout.txt",
+    "receptor_prepare.stderr.txt"
+  ],
+  "scientific_interpretation": "No positive-control result or docking-validity claim. Candidate-panel docking remains gated."
+}

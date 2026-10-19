@@ -673,15 +673,16 @@ class TestPipelineIntegrityRemaining(unittest.TestCase):
                     "sequence": "".join(sequence),
                     "score": score,
                     "generation": generation,
-                    "run_id": "synthetic",
+                    "run_id": f"synthetic-{index % 4}",
                     "arise_score_comparable_across_generations": True,
                 })
 
         model = discover_hotspot_model(
             history,
             discovery_generation=4,
-            run_id="synthetic",
+            run_id="synthetic-0",
             bootstrap_iterations=20,
+            permutation_iterations=19,
             random_seed=7,
         )
         selected = model["selected_hotspot"]

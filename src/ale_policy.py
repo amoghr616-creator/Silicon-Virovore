@@ -59,11 +59,24 @@ def resolve_mutation_policy(
         )
 
     selected = (hotspot_model or {}).get("selected_hotspot")
-    if not enabled or mode == "uniform" or not selected:
+    significance_validated = (
+        (hotspot_model or {}).get("hotspot_significance_validated") is True
+    )
+    if (
+        not enabled
+        or mode == "uniform"
+        or not selected
+        or not significance_validated
+    ):
         return {
             "mode": "uniform",
             "requested_mode": mode,
             "guided": False,
+            "guidance_disabled_reason": (
+                "hotspot_significance_unvalidated"
+                if selected and not significance_validated
+                else "hotspot_unavailable_or_guidance_disabled"
+            ),
             "hotspot_start": None,
             "hotspot_end": None,
             "hotspot_discovery_generation": None,

@@ -134,18 +134,45 @@ def _valid_records(
     return records
 
 
-def _split_history(records: list[dict], seed: int) -> tuple[list[dict], list[dict]]:
-    """Make a deterministic history-only discovery/holdout split."""
+def _split_history(
+    records: list[dict],
+    seed: int,
+) -> tuple[list[dict], list[dict]]:
+    """Split history by independent run, never by individual candidate.
 
-    if len(records) < 8:
+    If fewer than two run IDs are available, return all records for
+    exploratory discovery and no holdout. A within-run split is not
+    independent validation.
+    """
+    from collections import defaultdict
+
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for record in records:
+        run_id = record.get("run_id")
+        key = str(run_id) if run_id is not None else "__missing_run_id__"
+        groups[key].append(record)
+    run_ids = sorted(groups)
+    if len(run_ids) < 2:
         return list(records), []
 
-    indices = list(range(len(records)))
-    random.Random(seed).shuffle(indices)
-    holdout_count = max(1, len(records) // 4)
-    holdout_indices = set(indices[:holdout_count])
-    discovery = [record for index, record in enumerate(records) if index not in holdout_indices]
-    holdout = [record for index, record in enumerate(records) if index in holdout_indices]
+    rng = random.Random(seed)
+    shuffled_run_ids = list(run_ids)
+    rng.shuffle(shuffled_run_ids)
+    holdout_count = max(1, round(len(run_ids) * 0.25))
+    holdout_count = min(holdout_count, len(run_ids) - 1)
+    holdout_ids = set(shuffled_run_ids[:holdout_count])
+    discovery = [
+        record
+        for run_id in run_ids
+        if run_id not in holdout_ids
+        for record in groups[run_id]
+    ]
+    holdout = [
+        record
+        for run_id in run_ids
+        if run_id in holdout_ids
+        for record in groups[run_id]
+    ]
     return discovery, holdout
 
 
@@ -249,6 +276,98 @@ def _window_association(
     }
 
 
+def _max_statistic_permutation_p_value(
+    records: list[dict],
+    starts: range,
+    window_lengths: range,
+    top_quantile: float,
+    iterations: int,
+    seed: int,
+    hotspot_start: int | None = None,
+    hotspot_end: int | None = None,
+) -> float | None:
+    """Test the maximum hotspot score against a within-stratum null.
+
+    Scores are permuted among candidates in the same run and generation.
+    Every permutation rescans all eligible windows, correcting for selecting
+    the maximum window. This assumes score exchangeability within strata;
+    lineage dependence can violate that assumption.
+    """
+    if iterations < 1:
+        raise ValueError("iterations must be >= 1")
+    if len(records) < 2:
+        return None
+
+    observed_scores = []
+    for length in window_lengths:
+        for start in starts:
+            if hotspot_start is not None and start < hotspot_start:
+                continue
+            if hotspot_end is not None and start + length > hotspot_end:
+                continue
+            association = _window_association(
+                records,
+                start,
+                length,
+                top_quantile,
+            )
+            if association is not None:
+                observed_scores.append(association["hotspot_score"])
+    if not observed_scores:
+        return None
+    observed_maximum = max(observed_scores)
+
+    from collections import defaultdict
+
+    strata: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for index, record in enumerate(records):
+        run_id = record.get("run_id")
+        generation = record.get("generation")
+        run_key = str(run_id) if run_id is not None else "__missing_run_id__"
+        generation_key = (
+            str(generation) if generation is not None else "__missing_generation__"
+        )
+        strata[(run_key, generation_key)].append(index)
+
+    rng = random.Random(seed)
+    null_maxima: list[float] = []
+    for _ in range(iterations):
+        permuted_scores = [record["score"] for record in records]
+        for indices in strata.values():
+            values = [permuted_scores[index] for index in indices]
+            rng.shuffle(values)
+            for index, value in zip(indices, values):
+                permuted_scores[index] = value
+
+        permuted_records = [
+            {**record, "score": score}
+            for record, score in zip(records, permuted_scores)
+        ]
+        permutation_scores = []
+        for length in window_lengths:
+            for start in starts:
+                if hotspot_start is not None and start < hotspot_start:
+                    continue
+                if hotspot_end is not None and start + length > hotspot_end:
+                    continue
+                association = _window_association(
+                    permuted_records,
+                    start,
+                    length,
+                    top_quantile,
+                )
+                if association is not None:
+                    permutation_scores.append(association["hotspot_score"])
+        if permutation_scores:
+            null_maxima.append(max(permutation_scores))
+
+    if not null_maxima:
+        return None
+    return (1 + sum(value >= observed_maximum for value in null_maxima)) / (
+        len(null_maxima) + 1
+    )
+
+
 def _bootstrap_stability(
     records: list[dict],
     starts: range,
@@ -261,10 +380,27 @@ def _bootstrap_stability(
 ) -> dict[tuple[int, int], float]:
     if not records or iterations <= 0:
         return {}
+    from collections import defaultdict
+
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for record in records:
+        run_id = record.get("run_id")
+        if run_id is None:
+            return {}
+        groups[str(run_id)].append(record)
+    run_ids = sorted(groups)
+    if len(run_ids) < 2:
+        return {}
+
     rng = random.Random(seed)
     selections: Counter[tuple[int, int]] = Counter()
     for _ in range(iterations):
-        sample = [records[rng.randrange(len(records))] for _ in records]
+        sampled_runs = [rng.choice(run_ids) for _ in run_ids]
+        sample = [
+            record
+            for run_id in sampled_runs
+            for record in groups[run_id]
+        ]
         candidates = []
         for length in window_lengths:
             for start in starts:
@@ -301,6 +437,9 @@ def discover_hotspot_model(
     random_seed: int = 616,
     hotspot_start: int | None = None,
     hotspot_end: int | None = None,
+    permutation_iterations: int = 499,
+    permutation_alpha: float = 0.05,
+    require_significant_hotspot: bool = False,
 ) -> dict:
     """Discover computationally associated local windows from past history.
 
@@ -342,6 +481,11 @@ def discover_hotspot_model(
         "causal_interpretation": False,
         "arise_score_source": score_source,
         "arise_score_comparable_across_generations": score_comparable,
+        "hotspot_permutation_p_value": None,
+        "hotspot_permutation_threshold_passed": False,
+        "hotspot_significance_passed": False,
+        "hotspot_significance_status": "unvalidated",
+        "hotspot_significance_validated": False,
     }
     if not score_comparable:
         empty["status"] = "incomparable_score"
@@ -356,6 +500,10 @@ def discover_hotspot_model(
         return empty
     if not 0.0 < top_quantile < 1.0:
         raise ValueError("top_quantile must be between 0 and 1.")
+    if permutation_iterations < 1:
+        raise ValueError("permutation_iterations must be >= 1")
+    if not 0.0 < permutation_alpha < 1.0:
+        raise ValueError("permutation_alpha must be between 0 and 1")
 
     discovery, holdout = _split_history(records, random_seed)
     min_start = max(0, hotspot_start) if hotspot_start is not None else 0
@@ -410,6 +558,28 @@ def discover_hotspot_model(
             )
             candidates.append(association)
 
+    permutation_p_value = _max_statistic_permutation_p_value(
+        discovery,
+        starts,
+        lengths,
+        top_quantile,
+        permutation_iterations,
+        random_seed + 7919,
+        hotspot_start,
+        hotspot_end,
+    )
+    permutation_passed = (
+        permutation_p_value is not None
+        and permutation_p_value < permutation_alpha
+    )
+    empty["hotspot_permutation_p_value"] = permutation_p_value
+    empty["hotspot_permutation_threshold_passed"] = permutation_passed
+    empty["hotspot_significance_passed"] = False
+    empty["hotspot_significance_status"] = "unvalidated_candidate_permutation"
+    empty["hotspot_significance_validated"] = False
+    empty["permutation_iterations"] = permutation_iterations
+    empty["permutation_alpha"] = permutation_alpha
+
     if not candidates:
         return empty
 
@@ -432,6 +602,23 @@ def discover_hotspot_model(
     ),
     reverse=True,
 )
+
+    if require_significant_hotspot:
+        return {
+            **empty,
+            "status": "significance_unvalidated",
+            "discovery_sample_size_train": len(discovery),
+            "holdout_sample_size": len(holdout),
+            "top_quantile": top_quantile,
+            "window_min": window_min,
+            "window_max": window_max,
+            "bootstrap_iterations": bootstrap_iterations,
+            "hotspots": ranked[:10],
+            "fragment_scores": ranked,
+            "selection_uses_heldout": False,
+            "permutation_iterations": permutation_iterations,
+            "permutation_alpha": permutation_alpha,
+        }
 
     for rank, fragment in enumerate(ranked, start=1):
         fragment["fragment_rank"] = rank
@@ -466,6 +653,13 @@ def discover_hotspot_model(
         "positions_zero_based_end_exclusive": True,
         "arise_score_source": score_source,
         "arise_score_comparable_across_generations": score_comparable,
+        "hotspot_permutation_p_value": permutation_p_value,
+        "hotspot_permutation_threshold_passed": permutation_passed,
+        "hotspot_significance_passed": False,
+        "hotspot_significance_status": "unvalidated_candidate_permutation",
+        "hotspot_significance_validated": False,
+        "permutation_iterations": permutation_iterations,
+        "permutation_alpha": permutation_alpha,
     }
 def derive_positional_signal(
     hotspot_model: dict | None,

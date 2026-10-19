@@ -1,0 +1,199 @@
+{
+  "backend": "AutoDock Vina 1.2.7 only",
+  "backend_comparison_scope": "separate from HybriDock/RAPiDock; not score-equivalent",
+  "scoring_function": "vina",
+  "vina_score_direction": "more negative is more favorable; kcal/mol score, not measured affinity",
+  "exhaustiveness": 64,
+  "num_modes": 20,
+  "energy_range_kcal_mol": 5.0,
+  "cpu": 4,
+  "seed": 20261016,
+  "box_center_source": "centroid of the experimentally observed peptide chain B heavy atoms",
+  "box_size_A": [
+    30.0,
+    30.0,
+    30.0
+  ],
+  "box_margin_note": "native peptide coordinate span is 21.03 x 17.51 x 15.49 A; 30 A cubic box leaves at least 4.48 A per side along the largest span",
+  "native_contact_cutoff_A": 5.0,
+  "interface_residue_cutoff_A": 10.0,
+  "severe_clash_cutoff_A": 2.0,
+  "peptide_sequence": "ETFSDLWKLLPEN",
+  "deposited_chain_B_sequence": "SQETFSDLWKLLPEN",
+  "observed_chain_B_sequence": "ETFSDLWKLLPEN",
+  "observed_to_deposited_residue_mapping": [
+    {
+      "observed_sequence_index_1based": 1,
+      "deposited_sequence_index_1based": 3,
+      "deposited_residue": "E",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 17,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 2,
+      "deposited_sequence_index_1based": 4,
+      "deposited_residue": "T",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 18,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 3,
+      "deposited_sequence_index_1based": 5,
+      "deposited_residue": "F",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 19,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 4,
+      "deposited_sequence_index_1based": 6,
+      "deposited_residue": "S",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 20,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 5,
+      "deposited_sequence_index_1based": 7,
+      "deposited_residue": "D",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 21,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 6,
+      "deposited_sequence_index_1based": 8,
+      "deposited_residue": "L",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 22,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 7,
+      "deposited_sequence_index_1based": 9,
+      "deposited_residue": "W",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 23,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 8,
+      "deposited_sequence_index_1based": 10,
+      "deposited_residue": "K",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 24,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 9,
+      "deposited_sequence_index_1based": 11,
+      "deposited_residue": "L",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 25,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 10,
+      "deposited_sequence_index_1based": 12,
+      "deposited_residue": "L",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 26,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 11,
+      "deposited_sequence_index_1based": 13,
+      "deposited_residue": "P",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 27,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 12,
+      "deposited_sequence_index_1based": 14,
+      "deposited_residue": "E",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 28,
+      "insertion_code": ""
+    },
+    {
+      "observed_sequence_index_1based": 13,
+      "deposited_sequence_index_1based": 15,
+      "deposited_residue": "N",
+      "observed_residue": "ETFSDLWKLLPEN",
+      "author_residue_number": 29,
+      "insertion_code": ""
+    }
+  ],
+  "missing_coordinate_residues": [
+    {
+      "deposited_sequence_index_1based": 1,
+      "deposited_residue": "S",
+      "author_residue_number": 15
+    },
+    {
+      "deposited_sequence_index_1based": 2,
+      "deposited_residue": "Q",
+      "author_residue_number": 16
+    }
+  ],
+  "peptide_heavy_atom_count": 113,
+  "box_center_A": [
+    25.42080527280284,
+    -25.135265468496137,
+    -7.92108850458027
+  ],
+  "receptor_chain": "A only; extracted from 1YCR, peptide chain B excluded",
+  "receptor_preparation_command": [
+    "/opt/homebrew/Caskroom/miniforge/base/envs/sv-docking/bin/python",
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin/mk_prepare_receptor.py",
+    "--read_pdb",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/vina_positive_control_20261016/receptor_chainA_only.pdb",
+    "-o",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/vina_positive_control_20261016/receptor_meeko",
+    "-p",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/vina_positive_control_20261016/receptor_meeko.pdbqt"
+  ],
+  "vina_executable": "/opt/homebrew/Caskroom/miniforge/base/envs/sv-docking/bin/vina",
+  "vina_version": "AutoDock Vina v1.2.7",
+  "python_executable": "/opt/homebrew/Caskroom/miniforge/base/envs/sv-docking/bin/python",
+  "meeko_version": "0.8.0",
+  "reference_sha256": "d8f23749da9ec22da2e17bb31c33803e3db6123233cd0404bdc005111196e7a3",
+  "receptor_pdbqt_sha256": "7a35a45951780581fa3fa64bc343ef1730b7c2ea77fc95c567caed4dc07d45cd",
+  "ligand_pdbqt_sha256": "f6380b4adf94af191025ed08c7f390f7bc216a7b435e5128862d284a3e58f762",
+  "pose_atom_map_source": "Meeko REMARK INDEX MAP, validated against experimental ligand heavy-atom coordinates before docking",
+  "scientific_scope": "computational positive-control pose recovery only",
+  "vina_command": [
+    "/opt/homebrew/Caskroom/miniforge/base/envs/sv-docking/bin/vina",
+    "--receptor",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/vina_positive_control_20261016/receptor_meeko.pdbqt",
+    "--ligand",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/vina_positive_control_20261016/ligand_meeko.pdbqt",
+    "--center_x",
+    "25.421",
+    "--center_y",
+    "-25.135",
+    "--center_z",
+    "-7.921",
+    "--size_x",
+    "30.0",
+    "--size_y",
+    "30.0",
+    "--size_z",
+    "30.0",
+    "--exhaustiveness",
+    "64",
+    "--num_modes",
+    "20",
+    "--energy_range",
+    "5.0",
+    "--cpu",
+    "4",
+    "--seed",
+    "20261016",
+    "--out",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/vina_positive_control_20261016/vina_raw_out.pdbqt"
+  ]
+}

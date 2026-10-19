@@ -227,13 +227,42 @@ class MatchedPolicyTrialRunner:
         self.branch_budget = branch_budget
 
     @staticmethod
-    def _choose(rng: random.Random, state: tuple[int, ...], preferred: int | None) -> int:
-        available = [index for index, value in enumerate(state) if not value]
-        if not available:
-            return rng.randrange(len(state))
-        if preferred is not None and preferred in available and rng.random() >= 0.25:
+    @staticmethod
+    def _choose(
+        rng: random.Random,
+        state: tuple[int, ...],
+        preferred: int | None,
+    ) -> int:
+        """Choose a reversible mutation while preserving a positive signal."""
+        if not state:
+            raise ValueError("state must contain at least one position")
+
+        # Both policy modes consume two random draws.
+        guidance_draw = rng.random()
+        fallback_draw = rng.random()
+
+        if preferred is None or not 0 <= preferred < len(state):
+            return min(int(fallback_draw * len(state)), len(state) - 1)
+
+        # A positive position signal means activating that bit scored well
+        # in the one-bit discovery experiment. Do not intentionally switch
+        # it back off once it is active.
+        alternatives = [
+            index for index in range(len(state))
+            if index != preferred
+        ]
+
+        if state[preferred] == 0 and guidance_draw >= 0.25:
             return preferred
-        return rng.choice(available)
+
+        if not alternatives:
+            return preferred
+
+        index = min(
+            int(fallback_draw * len(alternatives)),
+            len(alternatives) - 1,
+        )
+        return alternatives[index]
 
     def run_trial(
         self,
@@ -245,37 +274,89 @@ class MatchedPolicyTrialRunner:
         objective: Callable[[tuple[int, ...], random.Random], float],
         preferred_position: int | None,
     ) -> MatchedTrialResult:
-        def run(preferred: int | None, branch_seed: int) -> tuple[float, int, str | None]:
-            rng = random.Random(branch_seed)
-            state = tuple(start_state)
-            best = float("-inf")
-            failure = None
+        """Compare fitness-guided branches from the same starting state."""
+
+        start_state = tuple(start_state)
+        if not start_state:
+            raise ValueError("start_state must not be empty")
+        if any(bit not in (0, 1) for bit in start_state):
+            raise ValueError("start_state must contain only binary values")
+        if (
+            preferred_position is not None
+            and not 0 <= preferred_position < len(start_state)
+        ):
+            raise ValueError("preferred_position is out of range")
+
+        def run(
+            preferred: int | None,
+            branch_seed: int,
+        ) -> tuple[float, int, str | None]:
+            policy_rng = random.Random(branch_seed)
+            objective_rng = random.Random(branch_seed + 1_000_003)
+
+            state = start_state
+            current_score: float | None = None
+            best_score = float("-inf")
             evaluations = 0
-            for _ in range(self.branch_budget):
+            failure: str | None = None
+
+            try:
+                current_score = float(objective(state, objective_rng))
+                if not math.isfinite(current_score):
+                    raise ValueError("non-finite objective")
+            except Exception as exc:
+                return float("-inf"), 0, type(exc).__name__
+
+            evaluations += 1
+            best_score = max(best_score, current_score)
+
+            for _ in range(self.branch_budget - 1):
                 try:
-                    outcome = float(objective(state, rng))
-                    if not math.isfinite(outcome):
+                    position = self._choose(policy_rng, state, preferred)
+
+                    next_state = list(state)
+                    next_state[position] = 1 - next_state[position]
+                    candidate_state = tuple(next_state)
+
+                    candidate_score = float(objective(candidate_state, objective_rng))
+                    if not math.isfinite(candidate_score):
                         raise ValueError("non-finite objective")
-                except Exception as exc:  # record branch failure, do not hide it
+
+                    evaluations += 1
+                    best_score = max(best_score, candidate_score)
+
+                    if candidate_score > current_score:
+                        state = candidate_state
+                        current_score = candidate_score
+
+                except Exception as exc:
                     failure = type(exc).__name__
                     break
-                evaluations += 1
-                best = max(best, outcome)
-                position = self._choose(rng, state, preferred)
-                next_state = list(state)
-                next_state[position] = 1
-                state = tuple(next_state)
-            return best, evaluations, failure
+
+            return best_score, evaluations, failure
 
         baseline, baseline_evals, baseline_failure = run(None, seed)
-        adaptive, adaptive_evals, adaptive_failure = run(preferred_position, seed)
+        adaptive, adaptive_evals, adaptive_failure = run(
+            preferred_position, seed
+        )
+
         if baseline_failure or adaptive_failure:
             difference = float("nan")
         else:
             difference = adaptive - baseline
+
         return MatchedTrialResult(
-            trial_id, independent_group_id, seed, tuple(start_state), baseline, adaptive,
-            baseline_evals, adaptive_evals, difference, baseline_failure, adaptive_failure,
+            trial_id=trial_id,
+            independent_group_id=independent_group_id,
+            seed=seed,
+            start_state=start_state,
+            baseline_best=baseline,
+            adaptive_best=adaptive,
+            baseline_evaluations=baseline_evals,
+            adaptive_evaluations=adaptive_evals,
+            paired_difference=difference,
+            baseline_failure=baseline_failure,
+            adaptive_failure=adaptive_failure,
         )
 
     def compare(
@@ -286,25 +367,77 @@ class MatchedPolicyTrialRunner:
         minimum_improvement: float = 0.05,
         required_win_rate: float = 0.60,
     ) -> PolicyComparisonResult:
-        valid = [trial for trial in trials if math.isfinite(trial.paired_difference)]
+        """Summarize paired outcomes across independent trials."""
+
+        if minimum_trials < 1:
+            raise ValueError("minimum_trials must be at least 1")
+        if not 0.0 <= required_win_rate <= 1.0:
+            raise ValueError("required_win_rate must be between 0 and 1")
+        if not math.isfinite(minimum_improvement):
+            raise ValueError("minimum_improvement must be finite")
+
+        valid = [
+            trial
+            for trial in trials
+            if (
+                trial.baseline_failure is None
+                and trial.adaptive_failure is None
+                and math.isfinite(trial.paired_difference)
+            )
+        ]
+
+        # Do not count multiple trials from the same independent group as
+        # independent evidence in this comparison.
+        groups = [trial.independent_group_id for trial in valid]
+        if len(groups) != len(set(groups)):
+            raise ValueError(
+                "each independent_group_id may appear only once per comparison"
+            )
+
         differences = [trial.paired_difference for trial in valid]
-        ci = IndependentSignalValidator._bootstrap_ci(differences, 17) if differences else None
-        mean_difference = statistics.mean(differences) if differences else None
-        median_difference = statistics.median(differences) if differences else None
-        win_rate = sum(value > 0.0 for value in differences) / len(differences) if differences else None
+
+        ci = (
+            IndependentSignalValidator._bootstrap_ci(differences, 17)
+            if differences
+            else None
+        )
+        mean_difference = (
+            statistics.mean(differences) if differences else None
+        )
+        median_difference = (
+            statistics.median(differences) if differences else None
+        )
+        win_rate = (
+            sum(value > 0.0 for value in differences) / len(differences)
+            if differences
+            else None
+        )
+
         reasons: list[str] = []
+
         if len(valid) < minimum_trials:
             reasons.append("insufficient_independent_trials")
-        if mean_difference is None or mean_difference < minimum_improvement:
+        if (
+            mean_difference is None
+            or mean_difference < minimum_improvement
+        ):
             reasons.append("mean_improvement_below_threshold")
         if win_rate is None or win_rate < required_win_rate:
             reasons.append("win_rate_below_threshold")
-        return PolicyComparisonResult(
-            tuple(trials), len(valid), mean_difference, median_difference, ci, win_rate,
-            not reasons, ";".join(reasons) if reasons else "passed",
-            minimum_trials, minimum_improvement, required_win_rate,
-        )
 
+        return PolicyComparisonResult(
+            trials=tuple(trials),
+            independent_trials=len(valid),
+            mean_difference=mean_difference,
+            median_difference=median_difference,
+            ci95=ci,
+            win_rate=win_rate,
+            passes=not reasons,
+            reason=";".join(reasons) if reasons else "passed",
+            minimum_trials=minimum_trials,
+            minimum_improvement=minimum_improvement,
+            required_win_rate=required_win_rate,
+        )
 
 @dataclass(frozen=True)
 class PolicyDecision:
