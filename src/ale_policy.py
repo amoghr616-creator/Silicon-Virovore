@@ -15,6 +15,7 @@ GUIDANCE_MODES = frozenset({
     "hotspot_only",
     "hotspot_biased",
     "hotspot_biased_annealed",
+    "hotspot_biased_annealed_exploratory",
 })
 
 HOTSPOT_PROBABILITY_MIN = 0.25
@@ -62,11 +63,17 @@ def resolve_mutation_policy(
     significance_validated = (
         (hotspot_model or {}).get("hotspot_significance_validated") is True
     )
+    exploratory_mode = (
+        mode == "hotspot_biased_annealed_exploratory"
+    )
     if (
         not enabled
         or mode == "uniform"
         or not selected
-        or not significance_validated
+        or (
+            not significance_validated
+            and not exploratory_mode
+        )
     ):
         return {
             "mode": "uniform",
@@ -85,7 +92,10 @@ def resolve_mutation_policy(
 
     if mode == "hotspot_only":
         hotspot_probability = 1.0
-    elif mode == "hotspot_biased_annealed":
+    elif mode in {
+        "hotspot_biased_annealed",
+        "hotspot_biased_annealed_exploratory",
+    }:
         hotspot_probability = annealed_hotspot_probability(
             generation,
             total_generations,
@@ -94,7 +104,13 @@ def resolve_mutation_policy(
         hotspot_probability = FIXED_HOTSPOT_PROBABILITY
 
     return {
-        "mode": mode,
+        # Reuse the existing supported generator mode. The requested mode
+        # separately records that this is exploratory guidance.
+        "mode": (
+            "hotspot_biased_annealed"
+            if exploratory_mode
+            else mode
+        ),
         "requested_mode": mode,
         "guided": True,
         "hotspot_start": int(selected["start_position"]),
@@ -107,6 +123,12 @@ def resolve_mutation_policy(
         "bootstrap_stability": selected.get("bootstrap_stability"),
         "correlation_length": hotspot_model.get("correlation_length"),
         "hotspot_probability": hotspot_probability,
+        "hotspot_significance_validated": significance_validated,
+        "guidance_evidence_status": (
+            "exploratory_unvalidated_hotspot"
+            if exploratory_mode and not significance_validated
+            else "validated_hotspot"
+        ),
     }
 
 

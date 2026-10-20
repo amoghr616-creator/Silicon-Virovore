@@ -36,6 +36,11 @@ float calculate_charge_penalty(int net_charge, int threshold)
     }
 }
 
+static int is_standard_amino_acid(char aa)
+{
+    return strchr("ACDEFGHIKLMNPQRSTVWY", aa) != NULL;
+}
+
 int compute_charge_profile(const char *sequence, int charge_threshold, charge_summary *summary_out)
 {
     if (sequence == NULL || summary_out == NULL)
@@ -66,24 +71,25 @@ int compute_charge_profile(const char *sequence, int charge_threshold, charge_su
         }
     }
     
-    for (size_t i = 0; i < len; i++)
-    {
-        char aa = toupper((unsigned char)sequence[i]);
-        
-        if (aa == 'K' || aa == 'R')
-        {
-            num_positive++;
-        }
-        else if (aa == 'D' || aa == 'E')
-        {
-            num_negative++;
-        }
-        else if (aa < 'A' || aa > 'Z')
-        {
-            fprintf(stderr, "ERROR: Invalid amino acid '%c' at position %zu\n", sequence[i], i);
-            return -1;
-        }
+    for (size_t i = 0; i < len; i++) {
+    char aa = (char)toupper((unsigned char)sequence[i]);
+
+    if (!is_standard_amino_acid(aa)) {
+        fprintf(
+            stderr,
+            "ERROR: Invalid amino acid '%c' at position %zu\n",
+            sequence[i],
+            i
+        );
+        return -1;
     }
+
+    if (aa == 'K' || aa == 'R') {
+        num_positive++;
+    } else if (aa == 'D' || aa == 'E') {
+        num_negative++;
+    }
+}
     
     summary_out->num_positive = num_positive;
     summary_out->num_negative = num_negative;

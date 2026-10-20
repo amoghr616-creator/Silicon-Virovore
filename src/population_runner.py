@@ -1,263 +1,196 @@
 """
 population_runner.py
 
-Generates candidate peptides using the native C backend and
-implements the Adaptive Recursive Intelligent Selection Engine (ARISE).
+Generates candidate peptides using the native C backend or controlled
+Python mutation policies.
 
-ARISE discovers local sequence windows associated with higher
-computational performance. ALE can then guide future mutation positions
-using a frozen hotspot model, without treating the association as causal.
+ARISE's mutation-credit mode learns from eligible, explicitly recorded
+parent-child score changes. A missing or invalid structural reward is never
+replaced silently with sequence-level fitness.
+
+Modes:
+    legacy                  Existing native C mutation generator.
+    uniform_matched         Fixed-budget uniform mutation baseline.
+    mutation_credit         Fixed-budget mutation-credit adaptive search.
+    uniform                 Existing ALE uniform policy.
+    hotspot_only            Existing ALE hotspot-only policy.
+    hotspot_biased          Existing ALE hotspot-biased policy.
+    hotspot_biased_annealed Existing ALE annealed hotspot policy.
 """
 
 from __future__ import annotations
 
 import logging
+import math
+from collections import defaultdict
+from typing import Any
 
 from c.bridge import (
     generate_c_population,
-    generate_adaptive_population,
     generate_policy_population,
     process_candidate_peptide,
 )
 
 from src.ale_policy import resolve_mutation_policy, mutation_positions
-from src.models import Candidate
-
 from src.config import (
     ARISE_ENABLED,
-    ARISE_MIN_OBSERVATIONS,
     DIVERSITY_REFILL_ATTEMPTS,
-    REMOVE_DUPLICATE_CANDIDATES,
-    POPULATION_SIZE,
-    MUTATION_RATE,
     GENERATIONS,
+    MUTATION_RATE,
+    POPULATION_SIZE,
+    REMOVE_DUPLICATE_CANDIDATES,
+)
+from src.models import Candidate
+from src.mutation_credit import (
+    MutationCreditARISE,
+    generate_position_weighted_population,
+    mutation_event_budget,
 )
 
 logger = logging.getLogger(__name__)
 
 
 # ==========================================================
-# ARISE
+# Legacy diagnostic: sequence-position association
 # ==========================================================
 
-class ARISEEngine:
+def estimate_position_effects(
+    sequences: list[str],
+    scores: list[float],
+    *,
+    min_group_size: int = 3,
+    shrinkage: float = 5.0,
+) -> dict[int, float]:
     """
-    Adaptive Recursive Intelligent Selection Engine.
+    Estimate the strength of the association between residue identity
+    at each position and scores in the supplied candidate set.
 
-    Estimates position-specific importance from the relationship
-    between residue identity and candidate performance.
+    This is an observational association, not a causal mutation effect
+    and not evidence of target binding. It is retained for compatibility
+    and analysis; mutation_credit mode does not use it as its reward.
     """
+    if len(sequences) != len(scores):
+        raise ValueError("sequences and scores must have equal length")
 
-    def __init__(self):
-        # Running raw importance accumulated across generations.
-        self.position_scores: dict[int, float] = {}
+    if not sequences:
+        return {}
 
-        # Current normalized importance values.
-        self._importance: dict[int, float] = {}
-        self.sequence_length = 0
-        self.position_observations: dict[int, int] = {}
+    if min_group_size < 2 or shrinkage < 0:
+        raise ValueError("invalid estimator parameters")
 
-    def reset(self) -> None:
-        """Reset learning state at the beginning of an experiment."""
+    try:
+        numeric_scores = [float(score) for score in scores]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("scores must be numeric and finite") from exc
 
-        self.position_scores.clear()
-        self._importance.clear()
-        self.position_observations.clear()
-        self.sequence_length = 0
+    if any(not math.isfinite(score) for score in numeric_scores):
+        raise ValueError("scores must be finite")
 
-    def observe_generation(
-        self,
-        ranked_candidates: list[Candidate],
-    ) -> None:
-        """
-        Estimate positional importance from score differences
-        associated with residue identity.
+    if any(not isinstance(seq, str) or not seq for seq in sequences):
+        raise ValueError("sequences must be nonempty strings")
 
-        A position receives stronger importance when different
-        residues at that position are associated with meaningfully
-        different candidate scores.
-        """
+    normalized_sequences = [seq.upper() for seq in sequences]
+    length = len(normalized_sequences[0])
 
-        valid_candidates = [
-            candidate
-            for candidate in ranked_candidates
-            if candidate.metadata.get("ranking_observation_valid") is True
-        ]
+    if any(len(seq) != length for seq in normalized_sequences):
+        raise ValueError("all sequences must have equal length")
 
-        if not valid_candidates:
-            return
+    ordered = sorted(numeric_scores)
 
-        for candidate in valid_candidates:
-            candidate.metadata["arise_observation_score"] = float(
-                candidate.overall_score
-            )
-            candidate.metadata["arise_observation_source"] = "overall_score"
-
-        logger.info(
-            "ARISE objective: overall_score | candidates=%d",
-            len(valid_candidates),
+    def quantile(q: float) -> float:
+        index = q * (len(ordered) - 1)
+        lo = int(index)
+        hi = min(lo + 1, len(ordered) - 1)
+        fraction = index - lo
+        return (
+            ordered[lo] * (1.0 - fraction)
+            + ordered[hi] * fraction
         )
 
-        sequence_length = len(valid_candidates[0].sequence)
-        self.sequence_length = sequence_length
+    median = quantile(0.5)
+    scale = max(quantile(0.75) - quantile(0.25), 1e-8)
 
-        for position in range(sequence_length):
+    standardized = [
+        max(-3.0, min(3.0, (score - median) / scale))
+        for score in numeric_scores
+    ]
 
-            residue_scores: dict[str, list[float]] = {}
+    overall = sum(standardized) / len(standardized)
+    total_ss = sum((score - overall) ** 2 for score in standardized)
 
-            for candidate in valid_candidates:
+    if total_ss <= 1e-12:
+        return {position: 0.0 for position in range(length)}
 
-                if position >= len(candidate.sequence):
-                    continue
+    effects: dict[int, float] = {}
 
-                residue = candidate.sequence[position]
+    for position in range(length):
+        groups: dict[str, list[float]] = defaultdict(list)
 
-                residue_scores.setdefault(
-                    residue,
-                    [],
-                )
+        for sequence, score in zip(normalized_sequences, standardized):
+            groups[sequence[position]].append(score)
 
-                residue_scores[residue].append(
-                    float(candidate.overall_score)
-                )
-
-            total_observations = sum(
-                len(scores)
-                for scores in residue_scores.values()
-            )
-            self.position_observations[position] = total_observations
-
-            # Need at least two distinct residue groups
-            # to estimate a positional effect.
-            if len(residue_scores) < 2:
-                continue
-
-            if total_observations < ARISE_MIN_OBSERVATIONS:
-                continue
-
-            residue_means = []
-
-            for scores in residue_scores.values():
-
-                if not scores:
-                    continue
-
-                residue_means.append(
-                    sum(scores) / len(scores)
-                )
-
-            if len(residue_means) < 2:
-                continue
-
-            positional_signal = (
-                max(residue_means)
-                - min(residue_means)
-            )
-
-            self.position_scores[position] = (
-                0.7 * self.position_scores.get(
-                    position,
-                    0.0,
-                )
-                + 0.3 * positional_signal
-            )
-
-    def update_importance(self) -> None:
-        """
-        Normalize accumulated positional signals to [0, 1].
-        """
-
-        if not self.position_scores:
-            return
-
-        values = list(
-            self.position_scores.values()
-        )
-
-        minimum = min(values)
-        maximum = max(values)
-
-        if abs(maximum - minimum) < 1e-12:
-
-            self._importance = {
-                position: 0.5
-                for position in self.position_scores
-            }
-
-            return
-
-        self._importance = {
-            position: (
-                (value - minimum)
-                / (maximum - minimum)
-            )
-            for position, value
-            in self.position_scores.items()
-        }
-
-    def importance_map(self) -> dict[int, float]:
-        """
-        Return normalized importance for every residue position.
-        """
-
-        return {
-            position: round(self._importance.get(position, 0.5), 3)
-            for position in range(self.sequence_length)
-        }
-
-    def importance_observations(self) -> dict[int, int]:
-        """Return the number of valid observations used per position."""
-
-        return {
-            position: self.position_observations.get(position, 0)
-            for position in range(self.sequence_length)
-        }
-
-    def importance_statistics(self) -> dict[str, float | int]:
-        values = self.get_importance_array(self.sequence_length)
-        if not values:
-            return {
-                "mean": 0.0,
-                "nonuniformity": 0.0,
-                "observed_positions": 0,
-            }
-
-        mean = sum(values) / len(values)
-        return {
-            "mean": round(mean, 4),
-            "nonuniformity": round(
-                max(values) - min(values),
-                4,
-            ),
-            "observed_positions": sum(
-                1
-                for position in range(self.sequence_length)
-                if self.position_observations.get(position, 0) > 0
-            ),
-        }
-
-    def get_importance_array(
-        self,
-        length: int,
-    ) -> list[float]:
-        """
-        Return importance values in sequence-position order.
-        """
-
-        return [
-            self._importance.get(
-                position,
-                0.5,
-            )
-            for position in range(length)
+        eligible = [
+            values
+            for values in groups.values()
+            if len(values) >= min_group_size
         ]
 
+        if len(eligible) < 2:
+            effects[position] = 0.0
+            continue
 
-ARISE_ENGINE = ARISEEngine()
+        between_ss = 0.0
+
+        for values in eligible:
+            count = len(values)
+            group_mean = sum(values) / count
+            reliability = count / (count + shrinkage)
+            shrunk_mean = overall + reliability * (group_mean - overall)
+            between_ss += count * (shrunk_mean - overall) ** 2
+
+        effects[position] = math.sqrt(
+            max(0.0, min(1.0, between_ss / total_ss))
+        )
+
+    return effects
+
+
+# ==========================================================
+# ARISE mutation-credit engine
+# ==========================================================
+
+# The public ARISE_ENGINE name points to the mutation-credit learner.
+# Its observe_generation() method accepts only candidates carrying
+# explicitly validated, comparable reward metadata.
+ARISE_ENGINE = MutationCreditARISE(
+    reward_source="validated_target_structural",
+    memory_decay=0.90,
+    exploration_floor=0.25,
+    exploration_c=1.0,
+)
+# Backward-compatible import name used by existing tests and modules.
+ARISEEngine = MutationCreditARISE
+
 
 # ==========================================================
 # Population generation
 # ==========================================================
+
+CONTROLLED_MODES = {
+    "uniform_matched",
+    "mutation_credit",
+}
+
+VALID_MODES = {
+    "legacy",
+    "uniform_matched",
+    "mutation_credit",
+    "uniform",
+    "hotspot_only",
+    "hotspot_biased",
+    "hotspot_biased_annealed",
+    "hotspot_biased_annealed_exploratory",
+}
 
 
 def generate_candidates(
@@ -274,116 +207,262 @@ def generate_candidates(
     run_id: str = "",
     preserve_sequence: str | None = None,
     total_generations: int | None = None,
+    random_seed: int | None = None,
 ) -> list[Candidate]:
     """
-    Generate candidate peptides.
+    Generate and evaluate a population of candidate peptides.
 
-    ``legacy`` preserves the historical native generator. Controlled
-    baseline/guided experiments use the policy generator so both conditions
-    receive the same fixed mutation-event budget.
+    Controlled comparisons:
+        uniform_matched:
+            Uses uniform position probabilities with a fixed event budget.
 
-    Controlled baseline/guided conditions use the policy generator with a
-    fixed mutation-event budget. The legacy positional-importance generator
-    remains available for compatibility when ``mutation_guidance_mode`` is
-    ``legacy``.
+        mutation_credit:
+            Uses ARISE's learned position probabilities with the same
+            fixed event budget, alphabet, and replacement rule.
 
-    ALE therefore changes only the mutation-position policy and does not
-    perform a second Python-side mutation pass.
+    Both controlled modes differ only in the distribution used to select
+    mutation positions. The mutation-credit mode learns only when valid,
+    comparable parent-child structural reward metadata is supplied by the
+    downstream scoring/evaluation layer.
+
+    random_seed:
+        Optional deterministic seed. Use the same seed for the baseline and
+        adaptive arms of each paired experiment.
     """
+    if not isinstance(seed_sequence, str) or not seed_sequence:
+        raise ValueError("seed_sequence must be a nonempty string")
 
-    logger.info("Generating peptide candidates...")
+    seed_sequence = seed_sequence.upper()
 
-    importance_map = ARISE_ENGINE.get_importance_array(len(seed_sequence))
-    has_learned_importance = bool(ARISE_ENGINE.position_scores)
-    logger.info(
-        "ARISE legacy mode %s | importance=%s | observations=%s",
-        "enabled" if arise_enabled else "disabled",
-        [round(x, 3) for x in importance_map],
-        ARISE_ENGINE.importance_observations(),
-    )
+    if population_size <= 0:
+        raise ValueError("population_size must be positive")
+
+    if not math.isfinite(float(mutation_rate)):
+        raise ValueError("mutation_rate must be finite")
+
+    if not 0.0 <= mutation_rate <= 1.0:
+        raise ValueError("mutation_rate must be between 0 and 1")
+
+    if mutation_guidance_mode not in {
+        "uniform",
+        "hotspot_only",
+        "hotspot_biased",
+        "hotspot_biased_annealed",
+        "hotspot_biased_annealed_exploratory",
+        "uniform_matched",
+        "mutation_credit",
+    }:
+        raise ValueError(
+            "mutation_guidance_mode must be one of: "
+            "uniform, hotspot_only, hotspot_biased, "
+            "hotspot_biased_annealed, "
+            "hotspot_biased_annealed_exploratory, "
+            "uniform_matched, mutation_credit"
+        )
+
+    if (
+        mutation_guidance_mode == "mutation_credit"
+        and not arise_enabled
+    ):
+        raise ValueError(
+            "mutation_credit mode requires arise_enabled=True"
+        )
 
     total_generations = total_generations or GENERATIONS
-    policy = resolve_mutation_policy(
-        mutation_guidance_mode
-        if mutation_guidance_mode != "legacy"
-        else "uniform",
-        hotspot_model,
-        enabled=hotspot_enabled and ale_enabled,
-        generation=generation,
-        total_generations=total_generations,
+
+    if total_generations <= 0:
+        raise ValueError("total_generations must be positive")
+
+    if generation <= 0:
+        raise ValueError("generation must be positive")
+
+    mode = mutation_guidance_mode
+
+    logger.info(
+        "Generating candidates | mode=%s | generation=%d/%d | "
+        "population_size=%d | mutation_rate=%.4f | random_seed=%s",
+        mode,
+        generation,
+        total_generations,
+        population_size,
+        mutation_rate,
+        random_seed,
     )
-    if mutation_guidance_mode != "legacy":
+
+    # These two modes bypass ALE's hotspot resolver: they are the controlled
+    # baseline/adaptive pair for the P2 experiment.
+    if mode in CONTROLLED_MODES:
+        policy: dict[str, Any] = {
+            "requested_mode": mode,
+            "mode": mode,
+            "guided": mode == "mutation_credit",
+            "hotspot_start": None,
+            "hotspot_end": None,
+            "hotspot_discovery_generation": None,
+            "hotspot_probability": 0.0,
+        }
+
+        if mode == "uniform_matched":
+            probabilities = None
+        else:
+            probabilities = ARISE_ENGINE.position_probabilities(
+                len(seed_sequence)
+            )
+
         logger.info(
-            "ALE policy | requested=%s | active=%s | guided=%s | hotspot=%s:%s | hotspot_probability=%.3f",
-            policy["requested_mode"],
-            policy["mode"],
-            policy["guided"],
-            policy["hotspot_start"],
-            policy["hotspot_end"],
-            policy["hotspot_probability"],
+            "Controlled mutation policy | mode=%s | budget=%d | "
+            "observed_positions=%d | probability_range=[%.5f, %.5f]",
+            mode,
+            mutation_event_budget(len(seed_sequence), mutation_rate),
+            len(ARISE_ENGINE.stats),
+            min(probabilities) if probabilities is not None else (
+                1.0 / len(seed_sequence)
+            ),
+            max(probabilities) if probabilities is not None else (
+                1.0 / len(seed_sequence)
+            ),
+        )
+    else:
+        probabilities = None
+
+        # Keep the legacy mode on its original native C population generator.
+        # Other established ALE modes use the existing policy resolver.
+        policy = resolve_mutation_policy(
+            "uniform" if mode == "legacy" else mode,
+            hotspot_model,
+            enabled=hotspot_enabled and ale_enabled,
+            generation=generation,
+            total_generations=total_generations,
         )
 
+        if mode != "legacy":
+            logger.info(
+                "ALE policy | requested=%s | active=%s | guided=%s | "
+                "hotspot=%s:%s | hotspot_probability=%.3f",
+                policy["requested_mode"],
+                policy["mode"],
+                policy["guided"],
+                policy["hotspot_start"],
+                policy["hotspot_end"],
+                policy["hotspot_probability"],
+            )
+
+    # Candidate generation can be retried when duplicate removal is active.
+    attempts = 0
+
     def generate_batch(size: int) -> list[str]:
-        if mutation_guidance_mode != "legacy":
-            return generate_policy_population(
+        nonlocal attempts
+
+        if mode in CONTROLLED_MODES:
+            batch_seed = (
+                None
+                if random_seed is None
+                else (
+                    int(random_seed)
+                    + generation * 1_000_003
+                    + attempts
+                )
+            )
+
+            return generate_position_weighted_population(
                 seed_sequence,
+                pop_size=size,
                 mutation_rate=mutation_rate,
-                guidance_mode=policy["mode"],
-                hotspot_start=policy["hotspot_start"],
-                hotspot_end=policy["hotspot_end"],
-                pop_size=size,
-                hotspot_probability=policy["hotspot_probability"],
+                probabilities=probabilities,
+                seed=batch_seed,
             )
-        if arise_enabled and has_learned_importance:
-            return generate_adaptive_population(
+
+        if mode == "legacy":
+            return generate_c_population(
                 seed_sequence,
-                importance_map,
                 pop_size=size,
+                mutation_rate=mutation_rate,
             )
-        return generate_c_population(
+
+        return generate_policy_population(
             seed_sequence,
-            pop_size=size,
             mutation_rate=mutation_rate,
+            guidance_mode=policy["mode"],
+            hotspot_start=policy["hotspot_start"],
+            hotspot_end=policy["hotspot_end"],
+            pop_size=size,
+            hotspot_probability=policy["hotspot_probability"],
         )
+
+    # ------------------------------------------------------
+    # Generate population and remove duplicates if required
+    # ------------------------------------------------------
 
     sequences: list[str] = []
     seen: set[str] = set()
-    attempts = 0
+
     while len(sequences) < population_size:
-        batch = generate_batch(population_size - len(sequences))
+        requested_size = population_size - len(sequences)
+        batch = generate_batch(requested_size)
+
         if not REMOVE_DUPLICATE_CANDIDATES:
             sequences.extend(batch)
             break
 
         before = len(sequences)
+
         for sequence in batch:
             if sequence not in seen:
                 seen.add(sequence)
                 sequences.append(sequence)
+
                 if len(sequences) >= population_size:
                     break
 
         attempts += 1
+
         if len(sequences) >= population_size:
             break
+
         if attempts >= DIVERSITY_REFILL_ATTEMPTS:
             logger.warning(
-                "Could only generate %d/%d unique candidates after %d attempts.",
+                "Could only generate %d/%d unique candidates after %d "
+                "attempts.",
                 len(sequences),
                 population_size,
                 attempts,
             )
-            if before == len(sequences):
-                break
+            break
+
+        # Avoid spinning indefinitely if a generator returns no new sequence.
+        if before == len(sequences):
+            logger.debug(
+                "Duplicate refill made no progress on attempt %d",
+                attempts,
+            )
+
+    # ------------------------------------------------------
+    # Preserve the requested elite, if applicable
+    # ------------------------------------------------------
 
     preserved_elite = False
-    if preserve_sequence and preserve_sequence not in sequences and sequences:
-        sequences[-1] = preserve_sequence
+
+    if (
+        preserve_sequence
+        and preserve_sequence not in sequences
+        and sequences
+    ):
+        sequences[-1] = preserve_sequence.upper()
         preserved_elite = True
+
+    # ------------------------------------------------------
+    # Evaluate candidates and attach mutation metadata
+    # ------------------------------------------------------
 
     candidates: list[Candidate] = []
 
+    controlled_budget = mutation_event_budget(
+        len(seed_sequence),
+        mutation_rate,
+    )
+
     for sequence in sequences:
+        sequence = sequence.upper()
 
         candidate = process_candidate_peptide(
             sequence,
@@ -391,72 +470,105 @@ def generate_candidates(
         )
 
         if candidate is None:
+            logger.warning(
+                "Candidate processing returned None; candidate skipped."
+            )
             continue
 
-        changed_positions = mutation_positions(
-            seed_sequence,
-            sequence,
+        if not isinstance(candidate.metadata, dict):
+            candidate.metadata = {}
+
+        changed_positions = mutation_positions(seed_sequence, sequence)
+
+        is_preserved = (
+            preserved_elite
+            and sequence == (preserve_sequence or "").upper()
         )
-        is_preserved = preserved_elite and sequence == preserve_sequence
-        candidate.metadata["changed_positions_count"] = len(changed_positions)
-        event_budget = 0 if is_preserved else round(
-            mutation_rate * len(seed_sequence)
+
+        if is_preserved:
+            event_budget = 0
+        elif mode in CONTROLLED_MODES:
+            event_budget = controlled_budget
+        else:
+            # Preserve the recorded convention used by the existing modes.
+            event_budget = round(mutation_rate * len(seed_sequence))
+
+        candidate.metadata["changed_positions_count"] = len(
+            changed_positions
         )
         candidate.metadata["mutation_event_budget"] = event_budget
+
         candidate.metadata["mutation_event_count"] = (
-            event_budget if mutation_guidance_mode != "legacy" else len(changed_positions)
+            event_budget
+            if mode in CONTROLLED_MODES or mode != "legacy"
+            else len(changed_positions)
         )
-        # Count observed sequence positions that actually changed; with
-        # sampling-with-replacement this can be lower than the event budget.
+
         candidate.metadata["mutation_count"] = len(changed_positions)
-        candidate.metadata["hotspot_probability"] = policy["hotspot_probability"]
         candidate.metadata["mutation_positions"] = changed_positions
+
+        # The seed sequence is the direct parent for this population.
+        # Parent and child structural scores are intentionally not fabricated
+        # here; the downstream evaluator must add them when valid.
         candidate.metadata["parent_sequence"] = seed_sequence
         candidate.metadata["run_id"] = run_id
         candidate.metadata["generation"] = generation
-        candidate.metadata["hotspot_guided"] = policy["guided"]
+
         candidate.metadata["mutation_guidance_mode"] = policy["mode"]
         candidate.metadata["requested_mutation_guidance_mode"] = (
             policy["requested_mode"]
         )
+        candidate.metadata["hotspot_guided"] = policy["guided"]
+        candidate.metadata["hotspot_probability"] = policy[
+            "hotspot_probability"
+        ]
         candidate.metadata["hotspot_discovery_generation"] = policy[
             "hotspot_discovery_generation"
         ]
         candidate.metadata["hotspot_start"] = policy["hotspot_start"]
         candidate.metadata["hotspot_end"] = policy["hotspot_end"]
+
         candidate.metadata["is_duplicate"] = False
-        candidate.metadata["preserved_elite"] = (
-            is_preserved
-        )
+        candidate.metadata["preserved_elite"] = is_preserved
+
+        candidate.metadata["mutation_reward_source"] = None
+        candidate.metadata["mutation_parent_score"] = None
+        candidate.metadata["mutation_child_score"] = None
+        candidate.metadata["ranking_observation_valid"] = False
+
         candidates.append(candidate)
 
     logger.info(
-        "Generated %d candidates (%d unique).",
+        "Generated %d candidates (%d unique) | mode=%s | budget=%d",
         len(candidates),
         len({candidate.sequence for candidate in candidates}),
+        mode,
+        controlled_budget,
     )
 
     return candidates
+
+
 # ==========================================================
 # Debug
 # ==========================================================
 
-
 if __name__ == "__main__":
-
     logging.basicConfig(level=logging.INFO)
 
     seed = "ACDEFGHIKLMNPQRSTVWYA"
 
-    population = generate_candidates(seed)
-
-    print()
+    population = generate_candidates(
+        seed,
+        mutation_guidance_mode="uniform_matched",
+        random_seed=1234,
+        generation=1,
+    )
 
     for candidate in population:
-
-        print("--------------------------------------")
+        print("-" * 40)
         print(candidate.sequence)
+        print(candidate.metadata)
 
-    print()
-    print("ARISE importance map:")
+    print("\nARISE mutation-credit position probabilities:")
     print(ARISE_ENGINE.importance_map())

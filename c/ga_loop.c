@@ -47,31 +47,69 @@ void mutate_variant(Variant *v, double rate) {
 }
 
 // Single-point crossover producing safe structural progeny
-void crossover(const Variant *p1, const Variant *p2, Variant *child) {
-    if (!p1 || !p2 || !child) return;
-    
-    size_t min_len = (p1->length < p2->length) ? p1->length : p2->length;
-    if (min_len <= 1) {
-        strncpy(child->sequence, p1->sequence, child->capacity - 1);
-        child->sequence[child->capacity - 1] = '\0';
-        child->length = strlen(child->sequence);
+void crossover(const Variant *p1, const Variant *p2, Variant *child)
+{
+    if (!p1 || !p2 || !child ||
+        !p1->sequence || !p2->sequence ||
+        !child->sequence || child->capacity == 0) {
         return;
     }
 
-    size_t split = 1 + (rand() % (min_len - 1));
-    
-    // Copy first half from parent 1
-    memcpy(child->sequence, p1->sequence, split);
-    
-    // Copy second half from parent 2
-    size_t second_half_len = p2->length - split;
-    if (split + second_half_len >= child->capacity) {
-        second_half_len = child->capacity - split - 1;
+    child->length = 0;
+    child->sequence[0] = '\0';
+
+    if (child->capacity == 1) {
+        return;
     }
-    memcpy(child->sequence + split, p2->sequence + split, second_half_len);
-    
-    child->sequence[split + second_half_len] = '\0';
-    child->length = strlen(child->sequence);
+
+    const size_t max_length = child->capacity - 1;
+    const size_t min_length =
+        p1->length < p2->length ? p1->length : p2->length;
+
+    /* A crossover is not useful for sequences shorter than two residues. */
+    if (min_length <= 1 || child->capacity < 3) {
+        size_t copy_length = p1->length;
+        if (copy_length > max_length) {
+            copy_length = max_length;
+        }
+
+        memcpy(child->sequence, p1->sequence, copy_length);
+        child->sequence[copy_length] = '\0';
+        child->length = copy_length;
+        return;
+    }
+
+    size_t split = 1 + ((size_t)rand() % (min_length - 1));
+
+    /* Ensure the destination can hold the first segment and terminator. */
+    const size_t max_split = child->capacity - 2;
+    if (split > max_split) {
+        split = max_split;
+    }
+    if (split > p1->length) {
+        split = p1->length;
+    }
+
+    memcpy(child->sequence, p1->sequence, split);
+
+    size_t second_length =
+        p2->length > split ? p2->length - split : 0;
+
+    const size_t remaining = max_length - split;
+    if (second_length > remaining) {
+        second_length = remaining;
+    }
+
+    if (second_length > 0) {
+        memcpy(
+            child->sequence + split,
+            p2->sequence + split,
+            second_length
+        );
+    }
+
+    child->length = split + second_length;
+    child->sequence[child->length] = '\0';
 }
 
 // High-performance tournament selection to avoid genetic drift

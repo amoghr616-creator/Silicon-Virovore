@@ -14,6 +14,7 @@ import time
 from dataclasses import replace
 from pathlib import Path
 from src import config
+from src.population_runner import ARISE_ENGINE
 from src.arise_memory import (
     load_arise_memory,
     save_arise_memory,
@@ -752,7 +753,10 @@ def run_pipeline(settings: PipelineSettings | None = None):
         len(arise_memory.get("runs", [])),
         len(prior_memory_history),
     )
+    # Prevent learned state from leaking across independent experiments.
+    ARISE_ENGINE.reset()
     final_signal = [0.0] * len(seed_sequence)
+    parent_sequence = seed_sequence
     for generation in range(1, settings.generations + 1):
         generation_start = time.perf_counter()
         logger.info("-" * 50)
@@ -760,15 +764,29 @@ def run_pipeline(settings: PipelineSettings | None = None):
         logger.info("Seed: %s", seed_sequence)
         logger.info("-" * 50)
       
+                # Generate the next population around the best sequence
+        # retained from the preceding generation.
+        generation_parent = parent_sequence
+
         candidates = generate_candidates(
-            seed_sequence,
+            generation_parent,
+            random_seed=(
+                None
+                if settings.random_seed is None
+                else settings.random_seed + generation - 1
+            ),
             population_size=settings.population_size,
             mutation_rate=settings.mutation_rate,
             arise_enabled=(
                 settings.adaptive_enabled
                 and settings.arise_enabled
-                and settings.ale_enabled
-                and settings.mutation_guidance_mode == "legacy"
+                and (
+                    settings.mutation_guidance_mode == "mutation_credit"
+                    or (
+                        settings.ale_enabled
+                        and settings.mutation_guidance_mode == "legacy"
+                    )
+                )
             ),
             cache_enabled=settings.cache_enabled,
             hotspot_model=hotspot_model,
@@ -781,7 +799,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
             generation=generation,
             run_id=settings.run_id,
             preserve_sequence=(
-                previous_best_sequence
+                generation_parent
                 if settings.preserve_best
                 else None
             ),
@@ -797,7 +815,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
         # evaluation belongs in the separate post-search Prototype 2 panel.
         for candidate in candidates:
             candidate.metadata["generation"] = generation
-            candidate.metadata["generation_seed"] = seed_sequence
+            candidate.metadata["generation_seed"] = generation_parent
 
         if settings.enable_vina_tier2:
             structure_start = time.perf_counter()
@@ -817,6 +835,9 @@ def run_pipeline(settings: PipelineSettings | None = None):
             docking_runtime = 0.0
             for candidate in candidates:
                 candidate.metadata.update({
+                    "target_pose_passed_geometry_gate": False,
+                    "target_structural_score_validated": False,
+                    "target_structural_score": None,    
                     "structure_available": False,
                     "structure_status": "not_requested",
                     "docking_backend": "not_run_primary_search_only",
@@ -840,8 +861,24 @@ def run_pipeline(settings: PipelineSettings | None = None):
             candidate.metadata["candidate_id"] = (
                 f"{settings.run_id or 'run'}:g{generation}:c{offset + 1}"
             )
-        all_candidates.extend(docked)
+            all_candidates.extend(docked)
 
+        if settings.mutation_guidance_mode == "mutation_credit":
+            records_before = len(ARISE_ENGINE.records)
+
+            # Fail-closed: only explicitly validated structural rewards
+            # are eligible for mutation-credit learning.
+            ARISE_ENGINE.observe_generation(docked)
+
+            records_added = len(ARISE_ENGINE.records) - records_before
+            logger.info(
+                "Mutation-credit update: generation=%d, added=%d, "
+                "total=%d, skipped=%d",
+                generation,
+                records_added,
+                len(ARISE_ENGINE.records),
+                ARISE_ENGINE.skipped_observations,
+            )
         structure_count = sum(
             candidate_has_valid_structure(candidate)
             for candidate in docked
@@ -909,7 +946,8 @@ def run_pipeline(settings: PipelineSettings | None = None):
             global_best = current_best
             global_best_score = current_best.overall_score
             global_best_sequence = current_best.sequence
-
+        # Carry the best sequence forward as the next generation's parent.
+        parent_sequence = current_best.sequence
         candidate_history.extend(
             _candidate_history_record(candidate)
             for candidate in ranked
@@ -1488,6 +1526,9 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
             "hotspot_only",
             "hotspot_biased",
             "hotspot_biased_annealed",
+            "hotspot_biased_annealed_exploratory",
+            "uniform_matched",
+            "mutation_credit",
         ),
     )
     parser.add_argument(

@@ -496,10 +496,16 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
         "hotspot_only",
         "hotspot_biased",
         "hotspot_biased_annealed",
+        "hotspot_biased_annealed_exploratory",
+        "uniform_matched",
+        "mutation_credit",
     }:
         raise ValueError(
-            "mutation_guidance_mode must be uniform, hotspot_only, "
-            "hotspot_biased, or hotspot_biased_annealed."
+            "mutation_guidance_mode must be one of: "
+            "uniform, hotspot_only, hotspot_biased, "
+            "hotspot_biased_annealed, "
+            "hotspot_biased_annealed_exploratory, "
+            "uniform_matched, mutation_credit"
         )
     if score_threshold is not None and not math.isfinite(float(score_threshold)):
         raise ValueError("score_threshold must be finite when configured.")

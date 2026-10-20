@@ -573,17 +573,32 @@ class TestPipelineIntegrityRemaining(unittest.TestCase):
         self.assertGreater(normalized[0], normalized[1])
         self.assertGreater(normalized[1], normalized[2])
 
-    def test_arise_receives_overall_score_and_excludes_missing_docking(self):
+    def test_arise_ignores_overall_score_without_validated_structural_reward(self):
         engine = ARISEEngine()
-        valid = Candidate("A" * 21, overall_score=0.8)
-        valid.metadata["ranking_observation_valid"] = True
-        invalid = Candidate("C" * 21, overall_score=0.9)
-        invalid.metadata["ranking_observation_valid"] = False
-        engine.observe_generation([valid, invalid])
-        self.assertEqual(valid.metadata["arise_observation_source"], "overall_score")
-        self.assertEqual(valid.metadata["arise_observation_score"], 0.8)
-        self.assertNotIn("arise_observation_score", invalid.metadata)
-        self.assertEqual(engine.importance_observations()[0], 1)
+
+        valid_only_for_legacy_ranking = Candidate("A" * 21, overall_score=0.8)
+        valid_only_for_legacy_ranking.metadata["ranking_observation_valid"] = True
+
+        invalid_ranking = Candidate("C" * 21, overall_score=0.9)
+        invalid_ranking.metadata["ranking_observation_valid"] = False
+
+        engine.observe_generation([
+            valid_only_for_legacy_ranking,
+            invalid_ranking,
+    ])
+
+    # A sequence-level score alone must not produce mutation-credit records.
+        self.assertEqual(engine.records, [])
+
+    # Neither candidate should be labeled as having supplied an ARISE reward.
+        self.assertNotIn(
+        "arise_observation_source",
+        valid_only_for_legacy_ranking.metadata,
+    )
+        self.assertNotIn(
+        "arise_observation_source",
+        invalid_ranking.metadata,
+    )
 
     def test_final_candidate_provenance_uses_candidate_fields(self):
         candidate = Candidate("A" * 21, overall_score=0.73, confidence=0.61)
