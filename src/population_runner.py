@@ -41,6 +41,10 @@ from src.config import (
     REMOVE_DUPLICATE_CANDIDATES,
 )
 from src.models import Candidate
+from src.epistasis_entropy import (
+    EpistasisEntropyController,
+    PAIRWISE_MODES,
+)
 from src.mutation_credit import (
     MutationCreditARISE,
     generate_position_weighted_population,
@@ -190,7 +194,7 @@ VALID_MODES = {
     "hotspot_biased",
     "hotspot_biased_annealed",
     "hotspot_biased_annealed_exploratory",
-}
+} | set(PAIRWISE_MODES)
 
 
 def generate_candidates(
@@ -208,6 +212,7 @@ def generate_candidates(
     preserve_sequence: str | None = None,
     total_generations: int | None = None,
     random_seed: int | None = None,
+    operator_controller: EpistasisEntropyController | None = None,
 ) -> list[Candidate]:
     """
     Generate and evaluate a population of candidate peptides.
@@ -243,21 +248,11 @@ def generate_candidates(
     if not 0.0 <= mutation_rate <= 1.0:
         raise ValueError("mutation_rate must be between 0 and 1")
 
-    if mutation_guidance_mode not in {
-        "uniform",
-        "hotspot_only",
-        "hotspot_biased",
-        "hotspot_biased_annealed",
-        "hotspot_biased_annealed_exploratory",
-        "uniform_matched",
-        "mutation_credit",
-    }:
+    if mutation_guidance_mode not in VALID_MODES:
         raise ValueError(
-            "mutation_guidance_mode must be one of: "
-            "uniform, hotspot_only, hotspot_biased, "
-            "hotspot_biased_annealed, "
-            "hotspot_biased_annealed_exploratory, "
-            "uniform_matched, mutation_credit"
+            "Unknown mutation_guidance_mode: "
+            f"{mutation_guidance_mode!r}. Valid modes: "
+            f"{', '.join(sorted(VALID_MODES))}"
         )
 
     if (
@@ -289,10 +284,65 @@ def generate_candidates(
         random_seed,
     )
 
-    # These two modes bypass ALE's hotspot resolver: they are the controlled
-    # baseline/adaptive pair for the P2 experiment.
-    if mode in CONTROLLED_MODES:
+    if mode in PAIRWISE_MODES:
+        if operator_controller is None:
+            raise ValueError(
+                f"{mode} requires an EpistasisEntropyController"
+            )
+
+        selected = (hotspot_model or {}).get("selected_hotspot")
+        hotspot_validated = bool(
+            selected
+            and (hotspot_model or {}).get(
+                "hotspot_significance_validated"
+            ) is True
+        )
+        apply_hotspot = bool(
+            mode in {
+                "hotspot_epistasis_entropy",
+                "hotspot_epistasis_entropy_exploratory",
+            }
+            and selected
+            and (
+                hotspot_validated
+                or mode == "hotspot_epistasis_entropy_exploratory"
+            )
+        )
+        hotspot_start = (
+            int(selected["start_position"]) if apply_hotspot else None
+        )
+        hotspot_end = (
+            int(selected["end_position"]) if apply_hotspot else None
+        )
+
         policy: dict[str, Any] = {
+            "requested_mode": mode,
+            "mode": mode,
+            "guided": apply_hotspot,
+            "hotspot_start": hotspot_start,
+            "hotspot_end": hotspot_end,
+            "hotspot_discovery_generation": (
+                (hotspot_model or {}).get("discovery_generation")
+                if apply_hotspot else None
+            ),
+            # None means not applicable: this method uses a weight multiplier,
+            # not the legacy probability-of-guidance schedule.
+            "hotspot_probability": None if apply_hotspot else 0.0,
+            "hotspot_weight_multiplier": 2.0 if apply_hotspot else 1.0,
+            "hotspot_guidance_evidence_status": (
+                "validated" if hotspot_validated
+                else "exploratory_unvalidated" if apply_hotspot
+                else "not_used"
+            ),
+            "hotspot_positions_used": (
+                list(range(hotspot_start, hotspot_end))
+                if apply_hotspot else []
+            ),
+        }
+        probabilities = None
+
+    elif mode in CONTROLLED_MODES:
+        policy = {
             "requested_mode": mode,
             "mode": mode,
             "guided": mode == "mutation_credit",
@@ -310,23 +360,14 @@ def generate_candidates(
             )
 
         logger.info(
-            "Controlled mutation policy | mode=%s | budget=%d | "
-            "observed_positions=%d | probability_range=[%.5f, %.5f]",
+            "Controlled mutation policy | mode=%s | budget=%d",
             mode,
             mutation_event_budget(len(seed_sequence), mutation_rate),
-            len(ARISE_ENGINE.stats),
-            min(probabilities) if probabilities is not None else (
-                1.0 / len(seed_sequence)
-            ),
-            max(probabilities) if probabilities is not None else (
-                1.0 / len(seed_sequence)
-            ),
         )
+
     else:
         probabilities = None
 
-        # Keep the legacy mode on its original native C population generator.
-        # Other established ALE modes use the existing policy resolver.
         policy = resolve_mutation_policy(
             "uniform" if mode == "legacy" else mode,
             hotspot_model,
@@ -348,10 +389,79 @@ def generate_candidates(
             )
 
     # Candidate generation can be retried when duplicate removal is active.
+            # Candidate generation can be retried when duplicate removal is active.
+    # Initialize this BEFORE defining and calling generate_batch.
     attempts = 0
 
     def generate_batch(size: int) -> list[str]:
         nonlocal attempts
+
+        if mode in PAIRWISE_MODES:
+            if operator_controller is None:
+                raise RuntimeError(
+                    f"Missing controller for pairwise mode: {mode}"
+                )
+
+            batch_seed = (
+                None
+                if random_seed is None
+                else (
+                    int(random_seed)
+                    + generation * 1_000_003
+                    + attempts
+                )
+            )
+
+            protected_positions: set[int] = set()
+            hotspot_positions: set[int] = set()
+            selected = (hotspot_model or {}).get("selected_hotspot")
+
+            # Only the explicitly combined method may consume hotspot data.
+            # In particular, do not protect hotspot positions in the entropy
+            # ablation: that would silently change its entropy weights.
+            if (
+                mode in {
+                    "hotspot_epistasis_entropy",
+                    "hotspot_epistasis_entropy_exploratory",
+                }
+                and selected
+                and (
+                    (hotspot_model or {}).get(
+                        "hotspot_significance_validated"
+                    ) is True
+                    or mode == "hotspot_epistasis_entropy_exploratory"
+                )
+            ):
+                start = int(selected["start_position"])
+                end = int(selected["end_position"])
+                hotspot_positions.update(range(start, end))
+
+            population = operator_controller.generate_population(
+                seed_sequence,
+                pop_size=size,
+                seed=batch_seed,
+                mode=mode,
+                protected_positions=protected_positions,
+                hotspot_positions=hotspot_positions,
+                hotspot_boost=2.0,
+            )
+
+            logger.info(
+                "Pair-selection telemetry | generation=%d | mode=%s | "
+                "hotspot_positions=%s | hotspot_boost=%.2f | "
+                "top_weights=%s | selected_pairs=%s",
+                generation,
+                mode,
+                sorted(hotspot_positions),
+                2.0 if hotspot_positions else 1.0,
+                [
+                    (pair, round(weight, 8))
+                    for pair, weight
+                    in operator_controller.last_pair_weights
+                ],
+                operator_controller.last_selected_pairs,
+            )
+            return population
 
         if mode in CONTROLLED_MODES:
             batch_seed = (
@@ -388,11 +498,7 @@ def generate_candidates(
             pop_size=size,
             hotspot_probability=policy["hotspot_probability"],
         )
-
-    # ------------------------------------------------------
-    # Generate population and remove duplicates if required
-    # ------------------------------------------------------
-
+                    # Generate population and remove duplicates if required.
     sequences: list[str] = []
     seen: set[str] = set()
 
@@ -429,31 +535,24 @@ def generate_candidates(
             )
             break
 
-        # Avoid spinning indefinitely if a generator returns no new sequence.
         if before == len(sequences):
             logger.debug(
                 "Duplicate refill made no progress on attempt %d",
                 attempts,
             )
 
-    # ------------------------------------------------------
-    # Preserve the requested elite, if applicable
-    # ------------------------------------------------------
-
+    # Preserve the requested elite, if applicable.
     preserved_elite = False
 
     if (
         preserve_sequence
-        and preserve_sequence not in sequences
+        and preserve_sequence.upper() not in sequences
         and sequences
     ):
         sequences[-1] = preserve_sequence.upper()
         preserved_elite = True
 
-    # ------------------------------------------------------
-    # Evaluate candidates and attach mutation metadata
-    # ------------------------------------------------------
-
+    # Evaluate candidates and attach mutation metadata.
     candidates: list[Candidate] = []
 
     controlled_budget = mutation_event_budget(
@@ -487,29 +586,28 @@ def generate_candidates(
 
         if is_preserved:
             event_budget = 0
+        elif mode in PAIRWISE_MODES:
+            event_budget = len(changed_positions)
         elif mode in CONTROLLED_MODES:
             event_budget = controlled_budget
         else:
-            # Preserve the recorded convention used by the existing modes.
-            event_budget = round(mutation_rate * len(seed_sequence))
+            event_budget = round(
+                mutation_rate * len(seed_sequence)
+            )
 
         candidate.metadata["changed_positions_count"] = len(
             changed_positions
         )
         candidate.metadata["mutation_event_budget"] = event_budget
-
         candidate.metadata["mutation_event_count"] = (
-            event_budget
-            if mode in CONTROLLED_MODES or mode != "legacy"
-            else len(changed_positions)
+            len(changed_positions)
+            if mode == "legacy" or mode in PAIRWISE_MODES
+            else event_budget
         )
 
         candidate.metadata["mutation_count"] = len(changed_positions)
         candidate.metadata["mutation_positions"] = changed_positions
 
-        # The seed sequence is the direct parent for this population.
-        # Parent and child structural scores are intentionally not fabricated
-        # here; the downstream evaluator must add them when valid.
         candidate.metadata["parent_sequence"] = seed_sequence
         candidate.metadata["run_id"] = run_id
         candidate.metadata["generation"] = generation
@@ -519,18 +617,28 @@ def generate_candidates(
             policy["requested_mode"]
         )
         candidate.metadata["hotspot_guided"] = policy["guided"]
-        candidate.metadata["hotspot_probability"] = policy[
-            "hotspot_probability"
-        ]
-        candidate.metadata["hotspot_discovery_generation"] = policy[
-            "hotspot_discovery_generation"
-        ]
+        candidate.metadata["hotspot_probability"] = (
+            policy["hotspot_probability"]
+        )
+        candidate.metadata["hotspot_positions_used"] = list(
+            policy.get("hotspot_positions_used", [])
+        )
+        candidate.metadata["hotspot_weight_multiplier"] = policy.get(
+            "hotspot_weight_multiplier", 1.0
+        )
+        candidate.metadata["hotspot_guidance_evidence_status"] = policy.get(
+            "hotspot_guidance_evidence_status", "not_used"
+        )
+        candidate.metadata["hotspot_discovery_generation"] = (
+            policy["hotspot_discovery_generation"]
+        )
         candidate.metadata["hotspot_start"] = policy["hotspot_start"]
         candidate.metadata["hotspot_end"] = policy["hotspot_end"]
 
         candidate.metadata["is_duplicate"] = False
         candidate.metadata["preserved_elite"] = is_preserved
 
+        # Never fabricate structural reward observations.
         candidate.metadata["mutation_reward_source"] = None
         candidate.metadata["mutation_parent_score"] = None
         candidate.metadata["mutation_child_score"] = None
@@ -546,29 +654,4 @@ def generate_candidates(
         controlled_budget,
     )
 
-    return candidates
-
-
-# ==========================================================
-# Debug
-# ==========================================================
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
-    seed = "ACDEFGHIKLMNPQRSTVWYA"
-
-    population = generate_candidates(
-        seed,
-        mutation_guidance_mode="uniform_matched",
-        random_seed=1234,
-        generation=1,
-    )
-
-    for candidate in population:
-        print("-" * 40)
-        print(candidate.sequence)
-        print(candidate.metadata)
-
-    print("\nARISE mutation-credit position probabilities:")
-    print(ARISE_ENGINE.importance_map())
+    return candidates 

@@ -1,0 +1,19 @@
+P2 factorial ablation
+Population size: 16
+Generations: 10
+Mutation rate: 0.05
+Elite count: 2
+Matched seeds: 20261021 through 20261030
+Conditions:
+  uniform_pair_matched
+  entropy_pair_matched
+  epistasis_pair_matched
+  epistasis_entropy
+Legacy adaptive mechanisms: disabled
+ARISE memory history: disabled
+Docking: disabled
+Primary endpoint: best sequence-level fitness attained by generation 10
+Secondary endpoints: generation-wise median fitness, diversity, convergence
+Interpretation: search performance only; not a target-binding result
+The CLI condition label "baseline" disables legacy adaptive defaults.
+The mutation_guidance_mode identifies the actual ablation treatment.

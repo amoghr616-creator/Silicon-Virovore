@@ -14,7 +14,8 @@ import time
 from dataclasses import replace
 from pathlib import Path
 from src import config
-from src.population_runner import ARISE_ENGINE
+from src.population_runner import ARISE_ENGINE, PAIRWISE_MODES
+from src.epistasis_entropy import EpistasisEntropyController, PAIRWISE_MODES
 from src.arise_memory import (
     load_arise_memory,
     save_arise_memory,
@@ -22,6 +23,7 @@ from src.arise_memory import (
     upsert_arise_run,
     aggregate_memory_positional_signal,
 )
+
 from c.bridge import (
     clear_evaluation_cache,
     evaluation_cache_stats,
@@ -665,7 +667,14 @@ def run_pipeline(settings: PipelineSettings | None = None):
         random_seed=effective_seed,
         run_id=effective_run_id,
     )
-
+        # Initialize once per run, before Generation 1.
+    epistasis_entropy_controller = EpistasisEntropyController(
+        entropy_floor=0.5,
+        entropy_boost=2.0,
+        pair_exploration=0.10,
+        pair_strength=4.0,
+        pair_prior_count=3.0,
+    )
     validate_configuration(settings)
     output_directory = _run_directory(settings)
     structure_directory = output_directory / "structures"
@@ -775,6 +784,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 if settings.random_seed is None
                 else settings.random_seed + generation - 1
             ),
+            operator_controller=(
+                epistasis_entropy_controller
+                if settings.mutation_guidance_mode in PAIRWISE_MODES
+                else None
+            ),
+
             population_size=settings.population_size,
             mutation_rate=settings.mutation_rate,
             arise_enabled=(
@@ -805,6 +820,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
             ),
             total_generations=settings.generations,
         )
+
         if not candidates:
             logger.error("No candidates generated.")
             break
@@ -855,13 +871,19 @@ def run_pipeline(settings: PipelineSettings | None = None):
                     "vina_score_available": False,
                 })
             docked = candidates
-        evaluation_start = len(all_candidates) + 1
+            evaluation_start = len(all_candidates) + 1
+
         for offset, candidate in enumerate(docked):
-            candidate.metadata["evaluation_index"] = evaluation_start + offset
-            candidate.metadata["candidate_id"] = (
-                f"{settings.run_id or 'run'}:g{generation}:c{offset + 1}"
+            candidate.metadata["evaluation_index"] = (
+                evaluation_start + offset
             )
-            all_candidates.extend(docked)
+            candidate.metadata["candidate_id"] = (
+                f"{settings.run_id or 'run'}:"
+                f"g{generation}:c{offset + 1}"
+            )
+
+        # Append this generation exactly once.
+        all_candidates.extend(docked)
 
         if settings.mutation_guidance_mode == "mutation_credit":
             records_before = len(ARISE_ENGINE.records)
@@ -926,9 +948,27 @@ def run_pipeline(settings: PipelineSettings | None = None):
         ranking_start = time.perf_counter()
         ranked = ranker.rank(docked)
         ranking_runtime = time.perf_counter() - ranking_start
+
         if not ranked:
             logger.error("Ranking failed.")
             break
+
+        if settings.mutation_guidance_mode in PAIRWISE_MODES:
+            diagnostics = epistasis_entropy_controller.observe_generation(
+                docked,
+                parent_sequence=generation_parent,
+            )
+
+            logger.info(
+                "Epistasis/entropy telemetry | generation=%d | "
+                "mean_H=%.4f bits | low_entropy_positions=%d | "
+                "pair_updates=%d | observed_pairs=%d",
+                generation,
+                diagnostics["mean_entropy_bits"],
+                diagnostics["low_entropy_positions"],
+                diagnostics["epistasis_updates"],
+                diagnostics["observed_pair_count"],
+            )
 
         current_best = ranked[0]
         for generation_rank, candidate in enumerate(ranked, start=1):
@@ -1529,6 +1569,12 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
             "hotspot_biased_annealed_exploratory",
             "uniform_matched",
             "mutation_credit",
+            "uniform_pair_matched",
+            "entropy_pair_matched",
+            "epistasis_pair_matched",
+            "epistasis_entropy",
+            "hotspot_epistasis_entropy",
+            "hotspot_epistasis_entropy_exploratory",
         ),
     )
     parser.add_argument(

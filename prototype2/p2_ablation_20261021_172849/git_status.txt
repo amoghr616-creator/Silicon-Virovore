@@ -1,0 +1,14 @@
+ m hybridock-pep
+ M run_pipeline.py
+ M src/config.py
+ M src/population_runner.py
+?? prototype2/inspect_pose_clashes.py
+?? prototype2/p2_ablation_20261021_172849/
+?? prototype2/p2_ablation_smoke_20261021_172053/
+?? prototype2/p2_pose_repair_pilot/
+?? prototype2/p2_preflight_preflight.json
+?? prototype2/p2_rapidock/clash_forensics.csv
+?? prototype2/p2_rapidock/clash_forensics.json
+?? prototype2/p2_v2_geometry_audit.csv
+?? src/epistasis_entropy.py
+?? tests/test_epistasis_entropy.py

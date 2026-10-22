@@ -499,13 +499,25 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
         "hotspot_biased_annealed_exploratory",
         "uniform_matched",
         "mutation_credit",
+        "uniform_pair_matched",
+        "entropy_pair_matched",
+        "epistasis_pair_matched",
+        "epistasis_entropy",
+        "hotspot_epistasis_entropy",
+        "hotspot_epistasis_entropy_exploratory",
     }:
         raise ValueError(
             "mutation_guidance_mode must be one of: "
             "uniform, hotspot_only, hotspot_biased, "
             "hotspot_biased_annealed, "
             "hotspot_biased_annealed_exploratory, "
-            "uniform_matched, mutation_credit"
+            "uniform_matched, mutation_credit, "
+            "uniform_pair_matched, entropy_pair_matched, "
+            "epistasis_pair_matched, epistasis_entropy, "
+            "hotspot_epistasis_entropy, "
+            "hotspot_epistasis_entropy_exploratory. "
+            "Unknown mutation_guidance_mode: "
+            f"{mutation_guidance_mode!r}"
         )
     if score_threshold is not None and not math.isfinite(float(score_threshold)):
         raise ValueError("score_threshold must be finite when configured.")
