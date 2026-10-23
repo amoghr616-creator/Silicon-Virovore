@@ -301,12 +301,10 @@ def generate_candidates(
             mode in {
                 "hotspot_epistasis_entropy",
                 "hotspot_epistasis_entropy_exploratory",
+                "hotspot_entropy_substitution_epistasis_exploratory",
             }
             and selected
-            and (
-                hotspot_validated
-                or mode == "hotspot_epistasis_entropy_exploratory"
-            )
+            and hotspot_validated
         )
         hotspot_start = (
             int(selected["start_position"]) if apply_hotspot else None
@@ -423,13 +421,13 @@ def generate_candidates(
                 mode in {
                     "hotspot_epistasis_entropy",
                     "hotspot_epistasis_entropy_exploratory",
+                    "hotspot_entropy_substitution_epistasis_exploratory",
                 }
                 and selected
                 and (
                     (hotspot_model or {}).get(
                         "hotspot_significance_validated"
                     ) is True
-                    or mode == "hotspot_epistasis_entropy_exploratory"
                 )
             ):
                 start = int(selected["start_position"])
@@ -449,7 +447,7 @@ def generate_candidates(
             logger.info(
                 "Pair-selection telemetry | generation=%d | mode=%s | "
                 "hotspot_positions=%s | hotspot_boost=%.2f | "
-                "top_weights=%s | selected_pairs=%s",
+                "top_weights=%s | selected_pairs=%s | selected_substitutions=%s",
                 generation,
                 mode,
                 sorted(hotspot_positions),
@@ -460,6 +458,7 @@ def generate_candidates(
                     in operator_controller.last_pair_weights
                 ],
                 operator_controller.last_selected_pairs,
+                operator_controller.last_selected_substitutions,
             )
             return population
 

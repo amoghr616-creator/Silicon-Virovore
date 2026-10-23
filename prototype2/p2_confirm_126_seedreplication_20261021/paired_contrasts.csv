@@ -1,0 +1,3 @@
+method,reference,n_paired_seeds,mean_paired_delta,median_paired_delta,sd_paired_differences,bootstrap_95ci_low,bootstrap_95ci_high,wins,ties,losses
+combined_exploratory,pairwise_uniform_control,126,0.000696531746031749,0.0002829999999999777,0.025528099886575655,-0.003759936507936511,0.005131039682539688,63,0,63
+combined_exploratory,uniform_baseline,126,-0.008210388888888896,-0.007127500000000009,0.02828705536657281,-0.013165119047619056,-0.003253904761904768,47,0,79

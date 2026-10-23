@@ -110,6 +110,53 @@ class HotspotContextPolicyTests(unittest.TestCase):
         self.assertEqual(decision.action, "baseline")
         self.assertEqual(decision.reason, "hotspot_significance_unvalidated")
 
+    def test_frozen_hotspot_passes_independent_holdout_validation(self):
+        records = []
+        for run_index in range(16):
+            for generation in range(2):
+                for candidate_index in range(8):
+                    is_high = candidate_index in (2, 3)
+                    sequence = list("A" * 10)
+                    sequence[3:5] = "KL" if is_high else "CC"
+                    score = (
+                        1.0 + candidate_index * 0.01
+                        if is_high
+                        else 0.1 + candidate_index * 0.01
+                    )
+                    records.append({
+                        "sequence": "".join(sequence),
+                        "score": score,
+                        "generation": generation,
+                        "run_id": f"independent-{run_index}",
+                        "arise_score_comparable_across_generations": True,
+                    })
+
+        model = discover_hotspot_model(
+            records,
+            discovery_generation=1,
+            run_id="independent-0",
+            top_quantile=0.25,
+            window_min=2,
+            window_max=4,
+            bootstrap_iterations=50,
+            permutation_iterations=199,
+            permutation_alpha=0.05,
+            require_significant_hotspot=True,
+            random_seed=9,
+        )
+
+        self.assertTrue(model["hotspot_significance_validated"])
+        self.assertTrue(model["hotspot_significance_passed"])
+        self.assertIsNotNone(model["selected_hotspot"])
+        self.assertGreaterEqual(model["holdout_run_count"], 3)
+        self.assertGreaterEqual(model["holdout_sample_size"], 20)
+        self.assertLess(model["holdout_permutation_p_value"], 0.05)
+        self.assertGreaterEqual(
+            model["selected_hotspot"]["bootstrap_stability"], 0.70
+        )
+        self.assertFalse(model["selection_uses_heldout"])
+
+
     def test_context_selector_uses_evidence_and_budget(self):
         reliable = SearchContext(
             hotspot_p_value=0.01,

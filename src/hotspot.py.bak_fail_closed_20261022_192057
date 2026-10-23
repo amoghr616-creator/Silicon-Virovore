@@ -1,0 +1,867 @@
+"""Data-driven local sequence hotspot discovery for ARISE.
+
+The model describes reproducible computational associations in candidate
+histories. It is deliberately not a residue-level causal or structural
+binding attribution model.
+"""
+
+from __future__ import annotations
+
+from collections import Counter
+import math
+import random
+from typing import Iterable
+
+from src.ranking import CandidateRanker
+
+
+ARISE_SCORE_SOURCE = "pooled_history_overall_score"
+
+
+def annotate_arise_scores(history: list[dict]) -> dict:
+    """Attach one shared-scope ARISE score to each history record.
+
+    Raw objective components are normalized across the complete history
+    available at discovery time.  This keeps candidates from different
+    generations on the same scale while preserving their generation-local
+    scores separately.
+    """
+
+    records = list(history)
+    raw_records = [
+        record.get("raw_objectives")
+        for record in records
+    ]
+    has_raw_objectives = bool(records) and all(
+        isinstance(raw, dict)
+        for raw in raw_records
+    )
+
+    if has_raw_objectives:
+        scores = CandidateRanker().score_raw_objective_records(raw_records)
+        for record, score in zip(records, scores):
+            record["arise_comparable_score"] = score
+            record["arise_score_source"] = ARISE_SCORE_SOURCE
+            record["arise_score_comparable_across_generations"] = True
+        return {
+            "records": records,
+            "score_source": ARISE_SCORE_SOURCE,
+            "score_comparable_across_generations": True,
+        }
+
+    # Explicitly allow external/synthetic callers to provide a score that
+    # they have already established as comparable.  Unmarked scores are not
+    # safe for pooled discovery and are rejected by discover_hotspot_model.
+    explicitly_comparable = bool(records) and all(
+        record.get("arise_score_comparable_across_generations") is True
+        and record.get("score") is not None
+        for record in records
+    )
+    if explicitly_comparable:
+        for record in records:
+            record["arise_comparable_score"] = record.get("score")
+            record["arise_score_source"] = record.get(
+                "arise_score_source",
+                "provided_comparable_score",
+            )
+        return {
+            "records": records,
+            "score_source": records[0]["arise_score_source"],
+            "score_comparable_across_generations": True,
+        }
+
+    return {
+        "records": records,
+        "score_source": "unmarked_history_score",
+        "score_comparable_across_generations": False,
+    }
+
+
+def _valid_records(
+    history: Iterable[dict],
+    discovery_generation: int | None = None,
+    generation_limit_run_id: str | None = None,
+) -> list[dict]:
+    """
+    Validate discovery records.
+
+    For the current run, only generations <= discovery_generation are used.
+
+    Historical records from previous runs are allowed to contribute their
+    complete history because their generation numbers are local to those runs.
+    """
+
+    records = []
+
+    for record in history:
+        sequence = str(record.get("sequence", "")).upper()
+
+        score = record.get(
+            "arise_comparable_score",
+            record.get("score"),
+        )
+
+        generation = record.get("generation")
+
+        if not sequence or score is None:
+            continue
+
+        try:
+            score = float(score)
+            generation = int(generation)
+        except (TypeError, ValueError):
+            continue
+
+        if not math.isfinite(score):
+            continue
+
+        # Only constrain generations belonging to the current run.
+        # Older runs have their own generation numbering.
+        if (
+            discovery_generation is not None
+            and generation_limit_run_id is not None
+            and str(record.get("run_id")) == str(generation_limit_run_id)
+            and generation > discovery_generation
+        ):
+            continue
+
+        records.append({
+            **record,
+            "sequence": sequence,
+            "score": score,
+        })
+
+    return records
+
+
+def _split_history(
+    records: list[dict],
+    seed: int,
+) -> tuple[list[dict], list[dict]]:
+    """Split history by independent run, never by individual candidate.
+
+    If fewer than two run IDs are available, return all records for
+    exploratory discovery and no holdout. A within-run split is not
+    independent validation.
+    """
+    from collections import defaultdict
+
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for record in records:
+        run_id = record.get("run_id")
+        key = str(run_id) if run_id is not None else "__missing_run_id__"
+        groups[key].append(record)
+    run_ids = sorted(groups)
+    if len(run_ids) < 2:
+        return list(records), []
+
+    rng = random.Random(seed)
+    shuffled_run_ids = list(run_ids)
+    rng.shuffle(shuffled_run_ids)
+    holdout_count = max(1, round(len(run_ids) * 0.25))
+    holdout_count = min(holdout_count, len(run_ids) - 1)
+    holdout_ids = set(shuffled_run_ids[:holdout_count])
+    discovery = [
+        record
+        for run_id in run_ids
+        if run_id not in holdout_ids
+        for record in groups[run_id]
+    ]
+    holdout = [
+        record
+        for run_id in run_ids
+        if run_id in holdout_ids
+        for record in groups[run_id]
+    ]
+    return discovery, holdout
+
+
+def _high_background(
+    records: list[dict],
+    top_quantile: float,
+) -> tuple[list[dict], list[dict]]:
+    if len(records) < 2:
+        return [], []
+    ordered = sorted(
+        enumerate(records),
+        key=lambda item: (-item[1]["score"], item[0]),
+    )
+    high_count = max(1, int(math.ceil(len(records) * top_quantile)))
+    high_count = min(high_count, len(records) - 1)
+    high_indices = {index for index, _record in ordered[:high_count]}
+    high = [record for index, record in enumerate(records) if index in high_indices]
+    background = [record for index, record in enumerate(records) if index not in high_indices]
+    return high, background
+
+
+def _js_divergence(left: Counter[str], right: Counter[str]) -> float:
+    """Jensen-Shannon divergence with light additive smoothing."""
+
+    keys = set(left) | set(right)
+    if not keys:
+        return 0.0
+    alpha = 0.5
+    left_total = sum(left.values()) + alpha * len(keys)
+    right_total = sum(right.values()) + alpha * len(keys)
+    divergence = 0.0
+    for key in keys:
+        p = (left.get(key, 0) + alpha) / left_total
+        q = (right.get(key, 0) + alpha) / right_total
+        midpoint = (p + q) / 2.0
+        divergence += 0.5 * p * math.log2(p / midpoint)
+        divergence += 0.5 * q * math.log2(q / midpoint)
+    return divergence
+
+
+def _window_features(
+    records: list[dict],
+    start: int,
+    length: int,
+) -> tuple[list[Counter[str]], list[Counter[str]]]:
+    residue_features = [Counter() for _ in range(length)]
+    pair_features = [Counter() for _ in range(max(0, length - 1))]
+    for record in records:
+        sequence = record["sequence"][start:start + length]
+        if len(sequence) != length:
+            continue
+        for offset, residue in enumerate(sequence):
+            residue_features[offset][residue] += 1
+        for offset in range(length - 1):
+            pair_features[offset][sequence[offset:offset + 2]] += 1
+    return residue_features, pair_features
+
+
+def _window_association(
+    records: list[dict],
+    start: int,
+    length: int,
+    top_quantile: float,
+) -> dict | None:
+    high, background = _high_background(records, top_quantile)
+    if not high or not background:
+        return None
+
+    high_residues, high_pairs = _window_features(high, start, length)
+    background_residues, background_pairs = _window_features(
+        background,
+        start,
+        length,
+    )
+    residue_js = (
+        sum(
+            _js_divergence(left, right)
+            for left, right in zip(high_residues, background_residues)
+        )
+        / max(1, len(high_residues))
+    )
+    pair_js = (
+        sum(
+            _js_divergence(left, right)
+            for left, right in zip(high_pairs, background_pairs)
+        )
+        / max(1, len(high_pairs))
+        if high_pairs
+        else 0.0
+    )
+    score = 0.5 * residue_js + 0.5 * pair_js
+    return {
+        "start_position": start,
+        "end_position": start + length,
+        "window_length": length,
+        "hotspot_score": round(score, 8),
+        "residue_distribution_association": round(residue_js, 8),
+        "adjacent_pair_association": round(pair_js, 8),
+        "high_performing_count": len(high),
+        "background_count": len(background),
+    }
+
+
+def _max_statistic_permutation_p_value(
+    records: list[dict],
+    starts: range,
+    window_lengths: range,
+    top_quantile: float,
+    iterations: int,
+    seed: int,
+    hotspot_start: int | None = None,
+    hotspot_end: int | None = None,
+) -> float | None:
+    """Test the maximum hotspot score against a within-stratum null.
+
+    Scores are permuted among candidates in the same run and generation.
+    Every permutation rescans all eligible windows, correcting for selecting
+    the maximum window. This assumes score exchangeability within strata;
+    lineage dependence can violate that assumption.
+    """
+    if iterations < 1:
+        raise ValueError("iterations must be >= 1")
+    if len(records) < 2:
+        return None
+
+    observed_scores = []
+    for length in window_lengths:
+        for start in starts:
+            if hotspot_start is not None and start < hotspot_start:
+                continue
+            if hotspot_end is not None and start + length > hotspot_end:
+                continue
+            association = _window_association(
+                records,
+                start,
+                length,
+                top_quantile,
+            )
+            if association is not None:
+                observed_scores.append(association["hotspot_score"])
+    if not observed_scores:
+        return None
+    observed_maximum = max(observed_scores)
+
+    from collections import defaultdict
+
+    strata: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for index, record in enumerate(records):
+        run_id = record.get("run_id")
+        generation = record.get("generation")
+        run_key = str(run_id) if run_id is not None else "__missing_run_id__"
+        generation_key = (
+            str(generation) if generation is not None else "__missing_generation__"
+        )
+        strata[(run_key, generation_key)].append(index)
+
+    rng = random.Random(seed)
+    null_maxima: list[float] = []
+    for _ in range(iterations):
+        permuted_scores = [record["score"] for record in records]
+        for indices in strata.values():
+            values = [permuted_scores[index] for index in indices]
+            rng.shuffle(values)
+            for index, value in zip(indices, values):
+                permuted_scores[index] = value
+
+        permuted_records = [
+            {**record, "score": score}
+            for record, score in zip(records, permuted_scores)
+        ]
+        permutation_scores = []
+        for length in window_lengths:
+            for start in starts:
+                if hotspot_start is not None and start < hotspot_start:
+                    continue
+                if hotspot_end is not None and start + length > hotspot_end:
+                    continue
+                association = _window_association(
+                    permuted_records,
+                    start,
+                    length,
+                    top_quantile,
+                )
+                if association is not None:
+                    permutation_scores.append(association["hotspot_score"])
+        if permutation_scores:
+            null_maxima.append(max(permutation_scores))
+
+    if not null_maxima:
+        return None
+    return (1 + sum(value >= observed_maximum for value in null_maxima)) / (
+        len(null_maxima) + 1
+    )
+
+
+def _fixed_window_permutation_p_value(
+    records: list[dict],
+    start: int,
+    length: int,
+    top_quantile: float,
+    iterations: int,
+    seed: int,
+) -> float | None:
+    """Test one discovery-selected window on holdout records only.
+
+    Scores are shuffled within run-generation strata. This assumes
+    exchangeability within strata; lineage dependence can violate it.
+    """
+    if iterations < 1:
+        raise ValueError("iterations must be >= 1")
+    if len(records) < 2:
+        return None
+
+    observed = _window_association(
+        records, start, length, top_quantile
+    )
+    if observed is None:
+        return None
+    observed_score = observed["hotspot_score"]
+
+    from collections import defaultdict
+
+    strata: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for i, record in enumerate(records):
+        run_id = record.get("run_id")
+        generation = record.get("generation")
+        key = (
+            str(run_id) if run_id is not None else "__missing_run_id__",
+            str(generation)
+            if generation is not None else "__missing_generation__",
+        )
+        strata[key].append(i)
+
+    original = [float(record["score"]) for record in records]
+    rng = random.Random(seed)
+    null_scores = []
+
+    for _ in range(iterations):
+        shuffled = list(original)
+        for indices in strata.values():
+            values = [shuffled[i] for i in indices]
+            rng.shuffle(values)
+            for i, value in zip(indices, values):
+                shuffled[i] = value
+
+        permuted = [
+            {**record, "score": score}
+            for record, score in zip(records, shuffled)
+        ]
+        result = _window_association(
+            permuted, start, length, top_quantile
+        )
+        if result is not None:
+            null_scores.append(result["hotspot_score"])
+
+    if not null_scores:
+        return None
+    return (
+        1 + sum(value >= observed_score for value in null_scores)
+    ) / (len(null_scores) + 1)
+
+
+def _bootstrap_stability(
+    records: list[dict],
+    starts: range,
+    window_lengths: range,
+    top_quantile: float,
+    iterations: int,
+    seed: int,
+    hotspot_start: int | None = None,
+    hotspot_end: int | None = None,
+) -> dict[tuple[int, int], float]:
+    if not records or iterations <= 0:
+        return {}
+    from collections import defaultdict
+
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for record in records:
+        run_id = record.get("run_id")
+        if run_id is None:
+            return {}
+        groups[str(run_id)].append(record)
+    run_ids = sorted(groups)
+    if len(run_ids) < 2:
+        return {}
+
+    rng = random.Random(seed)
+    selections: Counter[tuple[int, int]] = Counter()
+    for _ in range(iterations):
+        sampled_runs = [rng.choice(run_ids) for _ in run_ids]
+        sample = [
+            record
+            for run_id in sampled_runs
+            for record in groups[run_id]
+        ]
+        candidates = []
+        for length in window_lengths:
+            for start in starts:
+                if hotspot_start is not None and start < hotspot_start:
+                    continue
+                if hotspot_end is not None and start + length > hotspot_end:
+                    continue
+                association = _window_association(
+                    sample,
+                    start,
+                    length,
+                    top_quantile,
+                )
+                if association is not None:
+                    candidates.append(association)
+        if candidates:
+            best = max(candidates, key=lambda item: item["hotspot_score"])
+            selections[(best["start_position"], best["window_length"])] += 1
+    return {
+        key: round(value / iterations, 6)
+        for key, value in selections.items()
+    }
+
+
+def discover_hotspot_model(
+    history: Iterable[dict],
+    *,
+    discovery_generation: int,
+    run_id: str,
+    top_quantile: float = 0.25,
+    window_min: int = 2,
+    window_max: int = 6,
+    bootstrap_iterations: int = 100,
+    random_seed: int = 616,
+    hotspot_start: int | None = None,
+    hotspot_end: int | None = None,
+    permutation_iterations: int = 499,
+    permutation_alpha: float = 0.05,
+    require_significant_hotspot: bool = False,
+    minimum_holdout_runs: int = 3,
+    minimum_holdout_records: int = 20,
+    minimum_bootstrap_stability: float = 0.70,
+) -> dict:
+    """Discover computationally associated local windows from past history.
+
+    Window selection uses only the discovery split. Held-out association is
+    reported for reproducibility and is never used to select the guided window.
+    Positions are zero-based and ``end_position`` is exclusive.
+    """
+
+    annotation = annotate_arise_scores(
+        history if isinstance(history, list) else list(history)
+    )
+    score_source = annotation["score_source"]
+    score_comparable = annotation["score_comparable_across_generations"]
+    records = _valid_records(
+    annotation["records"],
+    discovery_generation,
+    generation_limit_run_id=run_id,
+)
+    source_run_ids = sorted({
+        str(record.get("run_id"))
+        for record in records
+        if record.get("run_id") is not None
+    })
+    if run_id and run_id not in source_run_ids:
+        source_run_ids.append(run_id)
+
+    empty = {
+        "model_version": "arise-hotspot-v2",
+        "status": "insufficient_history",
+        "discovery_generation": discovery_generation,
+        "source_run_ids": source_run_ids,
+        "discovery_sample_size": len(records),
+        "discovery_sample_size_train": 0,
+        "holdout_sample_size": 0,
+        "hotspots": [],
+        "selected_hotspot": None,
+        "correlation_length": None,
+        "method": "JS divergence over residue and adjacent-pair distributions",
+        "causal_interpretation": False,
+        "arise_score_source": score_source,
+        "arise_score_comparable_across_generations": score_comparable,
+        "hotspot_permutation_p_value": None,
+        "hotspot_permutation_threshold_passed": False,
+        "hotspot_significance_passed": False,
+        "hotspot_significance_status": "unvalidated",
+        "hotspot_significance_validated": False,
+    }
+    if not score_comparable:
+        empty["status"] = "incomparable_score"
+        return empty
+    if len(records) < 6:
+        return empty
+
+    sequence_length = len(records[0]["sequence"])
+    window_min = max(2, int(window_min))
+    window_max = min(sequence_length, int(window_max))
+    if window_min > window_max:
+        return empty
+    if not 0.0 < top_quantile < 1.0:
+        raise ValueError("top_quantile must be between 0 and 1.")
+    if permutation_iterations < 1:
+        raise ValueError("permutation_iterations must be >= 1")
+    if not 0.0 < permutation_alpha < 1.0:
+        raise ValueError("permutation_alpha must be between 0 and 1")
+    if minimum_holdout_runs < 2:
+        raise ValueError("minimum_holdout_runs must be at least 2")
+    if minimum_holdout_records < 2:
+        raise ValueError("minimum_holdout_records must be at least 2")
+    if not 0.0 <= minimum_bootstrap_stability <= 1.0:
+        raise ValueError(
+            "minimum_bootstrap_stability must be between 0 and 1"
+        )
+
+    discovery, holdout = _split_history(records, random_seed)
+    min_start = max(0, hotspot_start) if hotspot_start is not None else 0
+    max_start = sequence_length - window_min + 1
+    if hotspot_end is not None:
+        max_start = min(max_start, hotspot_end - window_min + 1)
+    starts = range(min_start, max(min_start, max_start))
+    lengths = range(window_min, window_max + 1)
+    stability = _bootstrap_stability(
+        discovery,
+        starts,
+        lengths,
+        top_quantile,
+        bootstrap_iterations,
+        random_seed,
+        hotspot_start,
+        hotspot_end,
+    )
+
+    candidates = []
+    for length in lengths:
+        for start in starts:
+            if hotspot_start is not None and start < hotspot_start:
+                continue
+            if hotspot_end is not None and start + length > hotspot_end:
+                continue
+            association = _window_association(
+                discovery,
+                start,
+                length,
+                top_quantile,
+            )
+            if association is None:
+                continue
+            heldout = _window_association(
+                holdout,
+                start,
+                length,
+                top_quantile,
+            )
+            association["held_out_association"] = (
+                heldout["hotspot_score"] if heldout is not None else None
+            )
+            association["bootstrap_stability"] = stability.get(
+                (start, length),
+                0.0,
+            )
+            association["selection_score"] = round(
+                association["hotspot_score"]
+                * (0.5 + 0.5 * association["bootstrap_stability"]),
+                8,
+            )
+            candidates.append(association)
+
+    permutation_p_value = _max_statistic_permutation_p_value(
+        discovery,
+        starts,
+        lengths,
+        top_quantile,
+        permutation_iterations,
+        random_seed + 7919,
+        hotspot_start,
+        hotspot_end,
+    )
+    permutation_passed = (
+        permutation_p_value is not None
+        and permutation_p_value < permutation_alpha
+    )
+    empty["hotspot_permutation_p_value"] = permutation_p_value
+    empty["hotspot_permutation_threshold_passed"] = permutation_passed
+    empty["hotspot_significance_passed"] = False
+    empty["hotspot_significance_status"] = "unvalidated_candidate_permutation"
+    empty["hotspot_significance_validated"] = False
+    empty["permutation_iterations"] = permutation_iterations
+    empty["permutation_alpha"] = permutation_alpha
+
+    if not candidates:
+        return empty
+
+    selected = max(
+        candidates,
+        key=lambda item: (
+            item["selection_score"],
+            item["hotspot_score"],
+            -item["window_length"],
+            -item["start_position"],
+        ),
+    )
+    # Evaluate the already-selected window without retuning it on holdout.
+    selected_start = int(selected["start_position"])
+    selected_length = int(selected["window_length"])
+
+    heldout_association = _window_association(
+        holdout, selected_start, selected_length, top_quantile
+    )
+    holdout_p_value = _fixed_window_permutation_p_value(
+        holdout,
+        selected_start,
+        selected_length,
+        top_quantile,
+        permutation_iterations,
+        random_seed + 15485863,
+    )
+
+    holdout_run_count = len({
+        str(record["run_id"])
+        for record in holdout
+        if record.get("run_id") is not None
+    })
+    holdout_permutation_passed = (
+        holdout_p_value is not None
+        and holdout_p_value < permutation_alpha
+    )
+    selected_stability = float(
+        selected.get("bootstrap_stability") or 0.0
+    )
+
+    significance_validated = bool(
+        permutation_passed
+        and holdout_permutation_passed
+        and heldout_association is not None
+        and heldout_association["hotspot_score"] > 0.0
+        and len(holdout) >= minimum_holdout_records
+        and holdout_run_count >= minimum_holdout_runs
+        and selected_stability >= minimum_bootstrap_stability
+    )
+
+    selected = dict(selected)
+    selected["held_out_association"] = (
+        heldout_association["hotspot_score"]
+        if heldout_association is not None else None
+    )
+    selected["held_out_permutation_p_value"] = holdout_p_value
+    selected["hotspot_significance_validated"] = significance_validated
+
+    ranked = sorted(
+    candidates,
+    key=lambda item: (
+        item["selection_score"],
+        item["hotspot_score"],
+        -item["window_length"],
+        -item["start_position"],
+    ),
+    reverse=True,
+)
+
+    if require_significant_hotspot and not significance_validated:
+        return {
+            **empty,
+            "status": "significance_unvalidated",
+            "discovery_sample_size_train": len(discovery),
+            "holdout_sample_size": len(holdout),
+            "top_quantile": top_quantile,
+            "window_min": window_min,
+            "window_max": window_max,
+            "bootstrap_iterations": bootstrap_iterations,
+            "hotspots": ranked[:10],
+            "fragment_scores": ranked,
+            "selection_uses_heldout": False,
+            "permutation_iterations": permutation_iterations,
+            "permutation_alpha": permutation_alpha,
+            "hotspot_permutation_threshold_passed": permutation_passed,
+            "hotspot_significance_passed": False,
+            "hotspot_significance_status": "unvalidated_holdout_evidence",
+            "hotspot_significance_validated": False,
+            "holdout_permutation_p_value": holdout_p_value,
+            "holdout_permutation_threshold_passed": (
+                holdout_permutation_passed
+            ),
+            "holdout_run_count": holdout_run_count,
+        }
+
+    for rank, fragment in enumerate(ranked, start=1):
+        fragment["fragment_rank"] = rank
+
+    selected = dict(selected)
+    selected = dict(selected)
+    selected.update({
+        "discovery_generation": discovery_generation,
+        "source_run_ids": source_run_ids,
+        "discovery_sample_size": len(records),
+    })
+    return {
+        "model_version": "arise-hotspot-v2",
+        "status": "selected",
+        "discovery_generation": discovery_generation,
+        "source_run_ids": source_run_ids,
+        "discovery_sample_size": len(records),
+        "discovery_sample_size_train": len(discovery),
+        "holdout_sample_size": len(holdout),
+        "top_quantile": top_quantile,
+        "window_min": window_min,
+        "window_max": window_max,
+        "bootstrap_iterations": bootstrap_iterations,
+        "correlation_length": selected["window_length"],
+        # Preserve the complete fragment landscape for analysis.
+        "hotspots": ranked[:10],
+        "fragment_scores": ranked,
+        "selected_hotspot": selected,   
+        "method": "JS divergence over residue and adjacent-pair distributions",
+        "causal_interpretation": False,
+        "selection_uses_heldout": False,
+        "positions_zero_based_end_exclusive": True,
+        "arise_score_source": score_source,
+        "arise_score_comparable_across_generations": score_comparable,
+        "hotspot_permutation_p_value": permutation_p_value,
+        "hotspot_permutation_threshold_passed": permutation_passed,
+        "hotspot_significance_passed": significance_validated,
+        "hotspot_significance_status": (
+            "validated_independent_holdout_under_exchangeability_assumption"
+            if significance_validated
+            else "unvalidated_holdout_evidence"
+        ),
+        "hotspot_significance_validated": significance_validated,
+        "holdout_permutation_p_value": holdout_p_value,
+        "holdout_permutation_threshold_passed": (
+            holdout_permutation_passed
+        ),
+        "holdout_run_count": holdout_run_count,
+        "minimum_holdout_runs": minimum_holdout_runs,
+        "minimum_holdout_records": minimum_holdout_records,
+        "minimum_bootstrap_stability": minimum_bootstrap_stability,
+        "permutation_iterations": permutation_iterations,
+        "permutation_alpha": permutation_alpha,
+    }
+def derive_positional_signal(
+    hotspot_model: dict | None,
+    sequence_length: int,
+) -> list[float]:
+    """
+    Convert the ARISE hotspot model into a normalized positional signal.
+
+    This is an interpretability/reporting signal only.
+    It is NOT used by ALE for mutation.
+    """
+
+    signal = [0.0] * sequence_length
+
+    if not hotspot_model:
+        return signal
+
+    hotspots = hotspot_model.get("hotspots", [])
+
+    for hotspot in hotspots:
+        try:
+            start = int(hotspot["start_position"])
+            end = int(hotspot["end_position"])
+            weight = float(
+                hotspot.get(
+                    "selection_score",
+                    hotspot.get("hotspot_score", 0.0),
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+
+        if weight <= 0.0 or end <= start:
+            continue
+
+        start = max(0, start)
+        end = min(sequence_length, end)
+        length = end - start
+
+        if length <= 0:
+            continue
+
+        # Divide by window length so longer windows do not receive
+        # a larger total contribution simply because they cover
+        # more positions.
+        per_position = weight / length
+
+        for position in range(start, end):
+            signal[position] += per_position
+
+    maximum = max(signal, default=0.0)
+
+    if maximum <= 0.0:
+        return signal
+
+    return [
+        round(value / maximum, 4)
+        for value in signal
+    ]

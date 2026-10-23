@@ -962,12 +962,15 @@ def run_pipeline(settings: PipelineSettings | None = None):
             logger.info(
                 "Epistasis/entropy telemetry | generation=%d | "
                 "mean_H=%.4f bits | low_entropy_positions=%d | "
-                "pair_updates=%d | observed_pairs=%d",
+                "pair_updates=%d | observed_pairs=%d | "
+                "substitution_updates=%d | substitution_pair_updates=%d",
                 generation,
                 diagnostics["mean_entropy_bits"],
                 diagnostics["low_entropy_positions"],
                 diagnostics["epistasis_updates"],
                 diagnostics["observed_pair_count"],
+                diagnostics["substitution_updates"],
+                diagnostics["substitution_pair_updates"],
             )
 
         current_best = ranked[0]
@@ -1575,6 +1578,7 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
             "epistasis_entropy",
             "hotspot_epistasis_entropy",
             "hotspot_epistasis_entropy_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory",
         ),
     )
     parser.add_argument(

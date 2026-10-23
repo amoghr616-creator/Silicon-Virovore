@@ -368,6 +368,73 @@ def _max_statistic_permutation_p_value(
     )
 
 
+def _fixed_window_permutation_p_value(
+    records: list[dict],
+    start: int,
+    length: int,
+    top_quantile: float,
+    iterations: int,
+    seed: int,
+) -> float | None:
+    """Test one discovery-selected window on holdout records only.
+
+    Scores are shuffled within run-generation strata. This assumes
+    exchangeability within strata; lineage dependence can violate it.
+    """
+    if iterations < 1:
+        raise ValueError("iterations must be >= 1")
+    if len(records) < 2:
+        return None
+
+    observed = _window_association(
+        records, start, length, top_quantile
+    )
+    if observed is None:
+        return None
+    observed_score = observed["hotspot_score"]
+
+    from collections import defaultdict
+
+    strata: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for i, record in enumerate(records):
+        run_id = record.get("run_id")
+        generation = record.get("generation")
+        key = (
+            str(run_id) if run_id is not None else "__missing_run_id__",
+            str(generation)
+            if generation is not None else "__missing_generation__",
+        )
+        strata[key].append(i)
+
+    original = [float(record["score"]) for record in records]
+    rng = random.Random(seed)
+    null_scores = []
+
+    for _ in range(iterations):
+        shuffled = list(original)
+        for indices in strata.values():
+            values = [shuffled[i] for i in indices]
+            rng.shuffle(values)
+            for i, value in zip(indices, values):
+                shuffled[i] = value
+
+        permuted = [
+            {**record, "score": score}
+            for record, score in zip(records, shuffled)
+        ]
+        result = _window_association(
+            permuted, start, length, top_quantile
+        )
+        if result is not None:
+            null_scores.append(result["hotspot_score"])
+
+    if not null_scores:
+        return None
+    return (
+        1 + sum(value >= observed_score for value in null_scores)
+    ) / (len(null_scores) + 1)
+
+
 def _bootstrap_stability(
     records: list[dict],
     starts: range,
@@ -440,6 +507,9 @@ def discover_hotspot_model(
     permutation_iterations: int = 499,
     permutation_alpha: float = 0.05,
     require_significant_hotspot: bool = False,
+    minimum_holdout_runs: int = 3,
+    minimum_holdout_records: int = 20,
+    minimum_bootstrap_stability: float = 0.70,
 ) -> dict:
     """Discover computationally associated local windows from past history.
 
@@ -504,6 +574,14 @@ def discover_hotspot_model(
         raise ValueError("permutation_iterations must be >= 1")
     if not 0.0 < permutation_alpha < 1.0:
         raise ValueError("permutation_alpha must be between 0 and 1")
+    if minimum_holdout_runs < 2:
+        raise ValueError("minimum_holdout_runs must be at least 2")
+    if minimum_holdout_records < 2:
+        raise ValueError("minimum_holdout_records must be at least 2")
+    if not 0.0 <= minimum_bootstrap_stability <= 1.0:
+        raise ValueError(
+            "minimum_bootstrap_stability must be between 0 and 1"
+        )
 
     discovery, holdout = _split_history(records, random_seed)
     min_start = max(0, hotspot_start) if hotspot_start is not None else 0
@@ -592,6 +670,61 @@ def discover_hotspot_model(
             -item["start_position"],
         ),
     )
+    # Evaluate the already-selected window without retuning it on holdout.
+    selected_start = int(selected["start_position"])
+    selected_length = int(selected["window_length"])
+
+    heldout_association = _window_association(
+        holdout, selected_start, selected_length, top_quantile
+    )
+    holdout_p_value = _fixed_window_permutation_p_value(
+        holdout,
+        selected_start,
+        selected_length,
+        top_quantile,
+        permutation_iterations,
+        random_seed + 15485863,
+    )
+
+    holdout_run_count = len({
+        str(record["run_id"])
+        for record in holdout
+        if record.get("run_id") is not None
+    })
+    holdout_permutation_passed = (
+        holdout_p_value is not None
+        and holdout_p_value < permutation_alpha
+    )
+    selected_stability = float(
+        selected.get("bootstrap_stability") or 0.0
+    )
+
+    # Fail closed: ARISE_SCORE_SOURCE is currently normalized over the
+    # complete history before the train/holdout split. Such scores cannot
+    # authorize independent validation until normalization is fitted on
+    # discovery data and frozen for holdout evaluation.
+    pooled_score_normalization_leaks_holdout = (
+        score_source == ARISE_SCORE_SOURCE
+    )
+    significance_validated = bool(
+        not pooled_score_normalization_leaks_holdout
+        and permutation_passed
+        and holdout_permutation_passed
+        and heldout_association is not None
+        and heldout_association["hotspot_score"] > 0.0
+        and len(holdout) >= minimum_holdout_records
+        and holdout_run_count >= minimum_holdout_runs
+        and selected_stability >= minimum_bootstrap_stability
+    )
+
+    selected = dict(selected)
+    selected["held_out_association"] = (
+        heldout_association["hotspot_score"]
+        if heldout_association is not None else None
+    )
+    selected["held_out_permutation_p_value"] = holdout_p_value
+    selected["hotspot_significance_validated"] = significance_validated
+
     ranked = sorted(
     candidates,
     key=lambda item: (
@@ -603,7 +736,7 @@ def discover_hotspot_model(
     reverse=True,
 )
 
-    if require_significant_hotspot:
+    if require_significant_hotspot and not significance_validated:
         return {
             **empty,
             "status": "significance_unvalidated",
@@ -618,6 +751,15 @@ def discover_hotspot_model(
             "selection_uses_heldout": False,
             "permutation_iterations": permutation_iterations,
             "permutation_alpha": permutation_alpha,
+            "hotspot_permutation_threshold_passed": permutation_passed,
+            "hotspot_significance_passed": False,
+            "hotspot_significance_status": "unvalidated_holdout_evidence",
+            "hotspot_significance_validated": False,
+            "holdout_permutation_p_value": holdout_p_value,
+            "holdout_permutation_threshold_passed": (
+                holdout_permutation_passed
+            ),
+            "holdout_run_count": holdout_run_count,
         }
 
     for rank, fragment in enumerate(ranked, start=1):
@@ -655,9 +797,21 @@ def discover_hotspot_model(
         "arise_score_comparable_across_generations": score_comparable,
         "hotspot_permutation_p_value": permutation_p_value,
         "hotspot_permutation_threshold_passed": permutation_passed,
-        "hotspot_significance_passed": False,
-        "hotspot_significance_status": "unvalidated_candidate_permutation",
-        "hotspot_significance_validated": False,
+        "hotspot_significance_passed": significance_validated,
+        "hotspot_significance_status": (
+            "validated_independent_holdout_under_exchangeability_assumption"
+            if significance_validated
+            else "unvalidated_holdout_evidence"
+        ),
+        "hotspot_significance_validated": significance_validated,
+        "holdout_permutation_p_value": holdout_p_value,
+        "holdout_permutation_threshold_passed": (
+            holdout_permutation_passed
+        ),
+        "holdout_run_count": holdout_run_count,
+        "minimum_holdout_runs": minimum_holdout_runs,
+        "minimum_holdout_records": minimum_holdout_records,
+        "minimum_bootstrap_stability": minimum_bootstrap_stability,
         "permutation_iterations": permutation_iterations,
         "permutation_alpha": permutation_alpha,
     }

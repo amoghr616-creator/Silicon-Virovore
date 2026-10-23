@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import Counter
 from itertools import combinations
-from math import exp, isfinite, log2
+from math import exp, isfinite, log2, sqrt
 import random
 from typing import Any, Iterable
 
@@ -22,6 +22,7 @@ PAIRWISE_MODES = frozenset({
     "epistasis_entropy",
     "hotspot_epistasis_entropy",
     "hotspot_epistasis_entropy_exploratory",
+    "hotspot_entropy_substitution_epistasis_exploratory",
 })
 
 
@@ -61,6 +62,23 @@ class EpistasisEntropyController:
         self.entropy_by_position: list[float] = []
         self.pair_mean: list[list[float]] = []
         self.pair_count: list[list[int]] = []
+
+        # Learned per-substitution effects and exact substitution-pair
+        # interaction estimates. These are empirical sequence-score
+        # estimates, not biochemical interaction energies.
+        self.substitution_mean: dict[tuple[int, str, str], float] = {}
+        self.substitution_count: dict[tuple[int, str, str], int] = {}
+        self.substitution_pair_mean: dict[
+            tuple[int, str, str, int, str, str], float
+        ] = {}
+        self.substitution_pair_count: dict[
+            tuple[int, str, str, int, str, str], int
+        ] = {}
+
+        self.substitution_prior_count = 3.0
+        self.substitution_temperature = 0.01
+        self.substitution_random_probability = 0.25
+        self.substitution_ucb_bonus = 0.002
         self.last_diagnostics: dict[str, Any] = {}
 
         # Telemetry for the latest population-generation call.
@@ -68,14 +86,22 @@ class EpistasisEntropyController:
         self.last_pair_weights: list[
             tuple[tuple[int, int], float]
         ] = []
+        self.last_selected_substitutions: list[
+            tuple[int, str, str, int, str, str]
+        ] = []
     def reset(self) -> None:
         """Reset learned state and generation-level telemetry."""
         self.entropy_by_position.clear()
         self.pair_mean.clear()
         self.pair_count.clear()
+        self.substitution_mean.clear()
+        self.substitution_count.clear()
+        self.substitution_pair_mean.clear()
+        self.substitution_pair_count.clear()
         self.last_diagnostics.clear()
         self.last_selected_pairs.clear()
         self.last_pair_weights.clear()
+        self.last_selected_substitutions.clear()
 
     def _ensure_length(self, n: int) -> None:
         if n < 1:
@@ -219,6 +245,90 @@ class EpistasisEntropyController:
             child[i] = aa
         return "".join(child)
 
+    def _update_running_mean(
+        self,
+        means: dict,
+        counts: dict,
+        key: tuple,
+        value: float,
+    ) -> None:
+        """Online mean update for one substitution effect."""
+        count = counts.get(key, 0)
+        old_mean = means.get(key, 0.0)
+        means[key] = old_mean + (value - old_mean) / (count + 1)
+        counts[key] = count + 1
+
+    def _substitution_pair_scores(
+        self,
+        parent: str,
+        i: int,
+        j: int,
+    ) -> list[tuple[tuple[str, str], float]]:
+        """Predict pair score changes from learned substitution evidence."""
+        scored = []
+        prior = self.substitution_prior_count
+
+        for aa_i in AA_POOL:
+            if aa_i == parent[i]:
+                continue
+            key_i = (i, parent[i], aa_i)
+            count_i = self.substitution_count.get(key_i, 0)
+            mean_i = self.substitution_mean.get(key_i, 0.0)
+            estimate_i = mean_i * count_i / (count_i + prior)
+
+            for aa_j in AA_POOL:
+                if aa_j == parent[j]:
+                    continue
+
+                key_j = (j, parent[j], aa_j)
+                count_j = self.substitution_count.get(key_j, 0)
+                mean_j = self.substitution_mean.get(key_j, 0.0)
+                estimate_j = mean_j * count_j / (count_j + prior)
+
+                pair_key = (
+                    i, parent[i], aa_i,
+                    j, parent[j], aa_j,
+                )
+                pair_n = self.substitution_pair_count.get(pair_key, 0)
+                pair_mean = self.substitution_pair_mean.get(pair_key, 0.0)
+                pair_estimate = pair_mean * pair_n / (pair_n + prior)
+
+                # A small, bounded optimism bonus keeps less-tested choices
+                # in contention. It is not evidence that they are beneficial.
+                support = count_i + count_j + 2 * pair_n
+                bonus = self.substitution_ucb_bonus / sqrt(1 + support)
+                predicted_delta = (
+                    estimate_i + estimate_j + pair_estimate + bonus
+                )
+                scored.append(((aa_i, aa_j), predicted_delta))
+
+        return scored
+
+    def _choose_substitution_pair(
+        self,
+        parent: str,
+        i: int,
+        j: int,
+        rng: random.Random,
+    ) -> tuple[str, str]:
+        """Use learned substitutions most of the time; retain random exploration."""
+        options_i = [aa for aa in AA_POOL if aa != parent[i]]
+        options_j = [aa for aa in AA_POOL if aa != parent[j]]
+
+        if rng.random() < self.substitution_random_probability:
+            return rng.choice(options_i), rng.choice(options_j)
+
+        scored = self._substitution_pair_scores(parent, i, j)
+        best = max(score for _, score in scored)
+        temperature = max(self.substitution_temperature, 1e-9)
+
+        weights = [
+            exp(max(-50.0, min(0.0, (score - best) / temperature)))
+            for _, score in scored
+        ]
+        selected_index = self._draw(weights, rng)
+        return scored[selected_index][0]
+
     def generate_population(
         self,
         parent: str,
@@ -250,12 +360,14 @@ class EpistasisEntropyController:
         # Do NOT clear pair_mean or pair_count here.
         self.last_selected_pairs = []
         self.last_pair_weights = []
+        self.last_selected_substitutions = []
 
         use_entropy = mode in {
             "entropy_pair_matched",
             "epistasis_entropy",
             "hotspot_epistasis_entropy",
             "hotspot_epistasis_entropy_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory",
         }
         use_epistasis = mode in {
             "epistasis_pair_matched",
@@ -273,6 +385,7 @@ class EpistasisEntropyController:
                 if mode in {
                     "hotspot_epistasis_entropy",
                     "hotspot_epistasis_entropy_exploratory",
+                    "hotspot_entropy_substitution_epistasis_exploratory",
                 }
                 else ()
             ),
@@ -327,8 +440,16 @@ class EpistasisEntropyController:
             trio = None
 
             for _attempt in range(100):
-                a = rng.choice(aa_i)
-                b = rng.choice(aa_j)
+                if mode == "hotspot_entropy_substitution_epistasis_exploratory":
+                    a, b = self._choose_substitution_pair(
+                        parent, i, j, rng
+                    )
+                    self.last_selected_substitutions.append(
+                        (i, parent[i], a, j, parent[j], b)
+                    )
+                else:
+                    a = rng.choice(aa_i)
+                    b = rng.choice(aa_j)
 
                 test = [
                     self._mutate(parent, {i: a}),
@@ -437,6 +558,61 @@ class EpistasisEntropyController:
                 self.pair_mean[i][j] = self.pair_mean[j][i] = mean
                 updates += 1
 
+        substitution_updates = 0
+        substitution_pair_updates = 0
+
+        # Learn actual single-substitution score changes relative to this
+        # generation's parent; pair interactions require matching singles
+        # from the same parent background and generation.
+        if base is not None:
+            single_scores = {}
+            double_records = []
+
+            for seq, score in scores.items():
+                changed = [
+                    pos for pos, (old, new) in enumerate(zip(parent, seq))
+                    if old != new
+                ]
+                if len(changed) == 1:
+                    i = changed[0]
+                    key = (i, parent[i], seq[i])
+                    self._update_running_mean(
+                        self.substitution_mean,
+                        self.substitution_count,
+                        key,
+                        score - base,
+                    )
+                    single_scores[key] = score
+                    substitution_updates += 1
+                elif len(changed) == 2:
+                    double_records.append(
+                        (changed[0], changed[1], seq, score)
+                    )
+
+            for i, j, seq, double_score in double_records:
+                key_i = (i, parent[i], seq[i])
+                key_j = (j, parent[j], seq[j])
+                score_i = single_scores.get(key_i)
+                score_j = single_scores.get(key_j)
+
+                # Do not invent a pair effect when either matched single is
+                # missing from this generation.
+                if score_i is None or score_j is None:
+                    continue
+
+                pair_key = (
+                    i, parent[i], seq[i],
+                    j, parent[j], seq[j],
+                )
+                interaction = double_score - score_i - score_j + base
+                self._update_running_mean(
+                    self.substitution_pair_mean,
+                    self.substitution_pair_count,
+                    pair_key,
+                    interaction,
+                )
+                substitution_pair_updates += 1
+
         self.last_diagnostics = {
             "mean_entropy_bits": sum(self.entropy_by_position) / n,
             "low_entropy_positions": sum(
@@ -449,5 +625,9 @@ class EpistasisEntropyController:
             ),
             "parent_score_available": base is not None,
             "interaction_matrix_kind": "sequence_objective_finite_difference",
+            "substitution_updates": substitution_updates,
+            "substitution_pair_updates": substitution_pair_updates,
+            "learned_substitution_count": len(self.substitution_mean),
+            "learned_substitution_pair_count": len(self.substitution_pair_mean),
         }
         return dict(self.last_diagnostics)
