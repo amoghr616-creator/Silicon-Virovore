@@ -506,6 +506,8 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
         "hotspot_epistasis_entropy",
         "hotspot_epistasis_entropy_exploratory",
         "hotspot_entropy_substitution_epistasis_exploratory",
+        "hotspot_entropy_substitution_epistasis_exploratory_v2",
+        "uniform_random_reset",
     }:
         raise ValueError(
             "mutation_guidance_mode must be one of: "

@@ -1,0 +1,18 @@
+{
+  "adaptive": "adaptive_substitution",
+  "baseline": "uniform_baseline",
+  "n_matched_seeds": 200,
+  "mean_adaptive_final_best": 0.831564805,
+  "sd_adaptive_final_best": 0.02125700459634471,
+  "mean_baseline_final_best": 0.836712275,
+  "sd_baseline_final_best": 0.019762143004238557,
+  "mean_paired_delta_adaptive_minus_baseline": -0.005147470000000003,
+  "sd_paired_delta": 0.02878702867174449,
+  "paired_bootstrap_ci95_lower": -0.009079648500000002,
+  "paired_bootstrap_ci95_upper": -0.0011591032500000097,
+  "wins": 89,
+  "ties": 0,
+  "losses": 111,
+  "bootstrap_replicates": 20000,
+  "interpretation_limit": "sequence-level score only; does not establish target binding"
+}

@@ -11,6 +11,8 @@ from src.hotspot import (
     _split_history,
     discover_hotspot_model,
 )
+from src.epistasis_entropy import EpistasisEntropyController
+from src.population_runner import generate_candidates
 
 
 def synthetic_records(run_count=4):
@@ -156,6 +158,50 @@ class HotspotContextPolicyTests(unittest.TestCase):
         )
         self.assertFalse(model["selection_uses_heldout"])
 
+
+    def test_exploratory_pair_mode_uses_unvalidated_hotspot_explicitly(self):
+        parent = "MKLAVFALLVFFAGSSDLIRR"
+        model = {
+            "selected_hotspot": {
+                "start_position": 4,
+                "end_position": 6,
+                "window_length": 2,
+                "hotspot_score": 0.14,
+                "bootstrap_stability": 0.53,
+            },
+            "hotspot_significance_validated": False,
+            "discovery_generation": 1,
+        }
+        candidates = generate_candidates(
+            parent,
+            population_size=16,
+            mutation_rate=0.05,
+            arise_enabled=True,
+            cache_enabled=True,
+            hotspot_model=model,
+            hotspot_enabled=True,
+            ale_enabled=True,
+            mutation_guidance_mode=(
+                "hotspot_entropy_substitution_epistasis_exploratory"
+            ),
+            generation=2,
+            run_id="test-explicit-exploratory-hotspot",
+            preserve_sequence=parent,
+            total_generations=10,
+            random_seed=123,
+            operator_controller=EpistasisEntropyController(),
+        )
+        assert len(candidates) == 16
+        assert all(
+            c.metadata["hotspot_positions_used"] == [4, 5]
+            for c in candidates
+        )
+        assert all(
+            c.metadata["hotspot_guidance_evidence_status"]
+            == "exploratory_unvalidated"
+            for c in candidates
+        )
+        assert model["hotspot_significance_validated"] is False
 
     def test_context_selector_uses_evidence_and_budget(self):
         reliable = SearchContext(

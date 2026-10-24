@@ -48,3 +48,25 @@ def test_factorial_population_contains_parent_and_unique_sequences():
     assert len(population) == 16
     assert population[0] == "MKLAVFALLVFFAGSSDLIRR"
     assert len(set(population)) == 16
+
+
+def test_substitution_guided_v2_uses_smaller_pair_budget_and_guided_singles():
+    controller = EpistasisEntropyController()
+    parent = "MKLAVFALLVFFAGSSDLIRR"
+    population = controller.generate_population(
+        parent,
+        pop_size=16,
+        seed=1234,
+        mode="hotspot_entropy_substitution_epistasis_exploratory_v2",
+    )
+
+    assert len(population) == 16
+    assert population[0] == parent
+    assert len(set(population)) == 16
+    mutation_counts = [
+        sum(a != b for a, b in zip(parent, sequence))
+        for sequence in population[1:]
+    ]
+    assert mutation_counts.count(1) == 13
+    assert mutation_counts.count(2) == 2
+    assert all(count in {1, 2} for count in mutation_counts)

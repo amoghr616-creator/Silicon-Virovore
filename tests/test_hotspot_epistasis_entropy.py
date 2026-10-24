@@ -1,3 +1,5 @@
+from random import Random
+
 from src.epistasis_entropy import EpistasisEntropyController
 
 
@@ -88,17 +90,58 @@ def test_substitution_specific_pair_score_learns_amino_acid_choices():
 def test_new_mode_generates_unique_population_and_records_guided_choices():
     controller = EpistasisEntropyController()
     parent = "MKLAVFALLVFFAGSSDLIRR"
+    observed_epistasis_flags = []
+    original_pair_weights = controller._pair_weights
+
+    def spy_pair_weights(n, positions, use_epistasis):
+        observed_epistasis_flags.append(use_epistasis)
+        return original_pair_weights(n, positions, use_epistasis)
+
+    controller._pair_weights = spy_pair_weights
     population = controller.generate_population(
         parent,
         pop_size=16,
         seed=12345,
         mode="hotspot_entropy_substitution_epistasis_exploratory",
         hotspot_positions={4, 5},
-        hotspot_boost=2.0,
+        hotspot_boost=1.25,
     )
 
     assert len(population) == 16
     assert len(set(population)) == 16
     assert population[0] == parent
-    assert controller.last_selected_pairs
-    assert controller.last_selected_substitutions
+    assert observed_epistasis_flags == [True]
+    assert len(controller.last_selected_pairs) == 1
+    assert len(controller.last_selected_substitutions) == 1
+
+
+def test_learned_substitution_gain_biases_site_and_single_mutant_choice():
+    controller = EpistasisEntropyController()
+    parent = PARENT
+    controller.substitution_random_probability = 0.0
+    key = (0, parent[0], "A")
+    controller.substitution_mean[key] = 0.50
+    controller.substitution_count[key] = 100
+
+    assert controller._choose_single_substitution(
+        parent, 0, Random(9)
+    ) == "A"
+
+    captured = {}
+    original_pair_weights = controller._pair_weights
+
+    def spy_pair_weights(n, positions, use_epistasis):
+        captured["positions"] = list(positions)
+        captured["use_epistasis"] = use_epistasis
+        return original_pair_weights(n, positions, use_epistasis)
+
+    controller._pair_weights = spy_pair_weights
+    population = controller.generate_population(
+        parent,
+        pop_size=16,
+        seed=991,
+        mode="hotspot_entropy_substitution_epistasis_exploratory",
+    )
+    assert len(population) == 16
+    assert captured["use_epistasis"] is True
+    assert captured["positions"][0] > max(captured["positions"][1:])

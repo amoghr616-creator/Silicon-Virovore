@@ -775,7 +775,11 @@ def run_pipeline(settings: PipelineSettings | None = None):
       
                 # Generate the next population around the best sequence
         # retained from the preceding generation.
-        generation_parent = parent_sequence
+        generation_parent = (
+            settings.seed_sequence
+            if settings.mutation_guidance_mode == "uniform_random_reset"
+            else parent_sequence
+        )
 
         candidates = generate_candidates(
             generation_parent,
@@ -810,13 +814,21 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 settings.adaptive_enabled
                 and settings.ale_enabled
             ),
-            mutation_guidance_mode=settings.mutation_guidance_mode,
+            mutation_guidance_mode=(
+                "uniform_matched"
+                if settings.mutation_guidance_mode == "uniform_random_reset"
+                else settings.mutation_guidance_mode
+            ),
             generation=generation,
             run_id=settings.run_id,
             preserve_sequence=(
-                generation_parent
-                if settings.preserve_best
-                else None
+                None
+                if settings.mutation_guidance_mode == "uniform_random_reset"
+                else (
+                    generation_parent
+                    if settings.preserve_best
+                    else None
+                )
             ),
             total_generations=settings.generations,
         )
@@ -832,6 +844,10 @@ def run_pipeline(settings: PipelineSettings | None = None):
         for candidate in candidates:
             candidate.metadata["generation"] = generation
             candidate.metadata["generation_seed"] = generation_parent
+            if settings.mutation_guidance_mode == "uniform_random_reset":
+                candidate.metadata["requested_mutation_guidance_mode"] = "uniform_random_reset"
+                candidate.metadata["proposal_sampling_mode"] = "uniform_random_mutation_from_original_seed"
+                candidate.metadata["preserved_elite"] = False
 
         if settings.enable_vina_tier2:
             structure_start = time.perf_counter()
@@ -990,7 +1006,11 @@ def run_pipeline(settings: PipelineSettings | None = None):
             global_best_score = current_best.overall_score
             global_best_sequence = current_best.sequence
         # Carry the best sequence forward as the next generation's parent.
-        parent_sequence = current_best.sequence
+        parent_sequence = (
+            settings.seed_sequence
+            if settings.mutation_guidance_mode == "uniform_random_reset"
+            else current_best.sequence
+        )
         candidate_history.extend(
             _candidate_history_record(candidate)
             for candidate in ranked
@@ -1128,8 +1148,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
             round(ranking_runtime, 4)
         )
 
-        seed_sequence = current_best.sequence
-        previous_best_sequence = current_best.sequence
+        if settings.mutation_guidance_mode == "uniform_random_reset":
+            seed_sequence = settings.seed_sequence
+            previous_best_sequence = None
+        else:
+            seed_sequence = current_best.sequence
+            previous_best_sequence = current_best.sequence
         final_ranked = ranked
 
     if not final_ranked or not all_candidates:
@@ -1579,6 +1603,8 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
             "hotspot_epistasis_entropy",
             "hotspot_epistasis_entropy_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2",
+            "uniform_random_reset",
         ),
     )
     parser.add_argument(

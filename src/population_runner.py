@@ -302,9 +302,17 @@ def generate_candidates(
                 "hotspot_epistasis_entropy",
                 "hotspot_epistasis_entropy_exploratory",
                 "hotspot_entropy_substitution_epistasis_exploratory",
+                "hotspot_entropy_substitution_epistasis_exploratory_v2",
             }
             and selected
-            and hotspot_validated
+            and (
+                hotspot_validated
+                or mode in {
+                    "hotspot_epistasis_entropy_exploratory",
+                    "hotspot_entropy_substitution_epistasis_exploratory",
+                    "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                }
+            )
         )
         hotspot_start = (
             int(selected["start_position"]) if apply_hotspot else None
@@ -326,7 +334,7 @@ def generate_candidates(
             # None means not applicable: this method uses a weight multiplier,
             # not the legacy probability-of-guidance schedule.
             "hotspot_probability": None if apply_hotspot else 0.0,
-            "hotspot_weight_multiplier": 2.0 if apply_hotspot else 1.0,
+            "hotspot_weight_multiplier": (1.25 if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"} else 2.0) if apply_hotspot else 1.0,
             "hotspot_guidance_evidence_status": (
                 "validated" if hotspot_validated
                 else "exploratory_unvalidated" if apply_hotspot
@@ -422,12 +430,18 @@ def generate_candidates(
                     "hotspot_epistasis_entropy",
                     "hotspot_epistasis_entropy_exploratory",
                     "hotspot_entropy_substitution_epistasis_exploratory",
+                    "hotspot_entropy_substitution_epistasis_exploratory_v2",
                 }
                 and selected
                 and (
                     (hotspot_model or {}).get(
                         "hotspot_significance_validated"
                     ) is True
+                    or mode in {
+                        "hotspot_epistasis_entropy_exploratory",
+                        "hotspot_entropy_substitution_epistasis_exploratory",
+                        "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                    }
                 )
             ):
                 start = int(selected["start_position"])
@@ -441,7 +455,11 @@ def generate_candidates(
                 mode=mode,
                 protected_positions=protected_positions,
                 hotspot_positions=hotspot_positions,
-                hotspot_boost=2.0,
+                hotspot_boost=(
+                    1.25
+                    if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}
+                    else 2.0
+                ),
             )
 
             logger.info(

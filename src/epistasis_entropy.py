@@ -23,6 +23,7 @@ PAIRWISE_MODES = frozenset({
     "hotspot_epistasis_entropy",
     "hotspot_epistasis_entropy_exploratory",
     "hotspot_entropy_substitution_epistasis_exploratory",
+    "hotspot_entropy_substitution_epistasis_exploratory_v2",
 })
 
 
@@ -304,6 +305,45 @@ class EpistasisEntropyController:
 
         return scored
 
+    def _single_substitution_scores(
+        self,
+        parent: str,
+        position: int,
+    ) -> list[tuple[str, float]]:
+        """Return shrunken single-substitution gains plus a small UCB bonus."""
+        prior = self.substitution_prior_count
+        scored = []
+        for aa in AA_POOL:
+            if aa == parent[position]:
+                continue
+            key = (position, parent[position], aa)
+            count = self.substitution_count.get(key, 0)
+            mean = self.substitution_mean.get(key, 0.0)
+            estimate = mean * count / (count + prior)
+            bonus = self.substitution_ucb_bonus / sqrt(1 + count)
+            scored.append((aa, estimate + bonus))
+        return scored
+
+    def _choose_single_substitution(
+        self,
+        parent: str,
+        position: int,
+        rng: random.Random,
+    ) -> str:
+        """Select a learned single mutation while retaining random exploration."""
+        options = [aa for aa in AA_POOL if aa != parent[position]]
+        if rng.random() < self.substitution_random_probability:
+            return rng.choice(options)
+        scored = self._single_substitution_scores(parent, position)
+        best = max(score for _, score in scored)
+        temperature = max(self.substitution_temperature, 1e-9)
+        weights = [
+            exp(max(-50.0, min(0.0, (score - best) / temperature)))
+            for _, score in scored
+        ]
+        selected = self._draw(weights, rng)
+        return scored[selected][0]
+
     def _choose_substitution_pair(
         self,
         parent: str,
@@ -368,29 +408,57 @@ class EpistasisEntropyController:
             "hotspot_epistasis_entropy",
             "hotspot_epistasis_entropy_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2",
         }
         use_epistasis = mode in {
             "epistasis_pair_matched",
             "epistasis_entropy",
             "hotspot_epistasis_entropy",
             "hotspot_epistasis_entropy_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2",
         }
 
+        active_hotspots = (
+            set(hotspot_positions)
+            if mode in {
+                "hotspot_epistasis_entropy",
+                "hotspot_epistasis_entropy_exploratory",
+                "hotspot_entropy_substitution_epistasis_exploratory",
+                "hotspot_entropy_substitution_epistasis_exploratory_v2",
+            }
+            else set()
+        )
         pos_weights = self.position_weights(
             n,
             use_entropy=use_entropy,
             protected_positions=protected_positions,
-            hotspot_positions=(
-                hotspot_positions
-                if mode in {
-                    "hotspot_epistasis_entropy",
-                    "hotspot_epistasis_entropy_exploratory",
-                    "hotspot_entropy_substitution_epistasis_exploratory",
-                }
-                else ()
-            ),
+            hotspot_positions=active_hotspots,
             hotspot_boost=hotspot_boost,
         )
+
+        if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}:
+            # Do not let entropy alone decide where to search. Mix its
+            # exploration distribution with a softmax over learned single-AA
+            # gains, while retaining the explicit hotspot boost in both paths.
+            position_scores = [
+                max(score for _, score in self._single_substitution_scores(parent, i))
+                for i in range(n)
+            ]
+            temperature = max(2.0 * self.substitution_temperature, 0.02)
+            best_position_score = max(position_scores)
+            learned_weights = [
+                exp(max(-50.0, min(0.0, (score - best_position_score) / temperature)))
+                for score in position_scores
+            ]
+            for i in active_hotspots:
+                learned_weights[i] *= hotspot_boost
+            learned_total = sum(learned_weights)
+            learned_weights = [weight / learned_total for weight in learned_weights]
+            pos_weights = [
+                0.25 * exploration + 0.75 * learned
+                for exploration, learned in zip(pos_weights, learned_weights)
+            ]
 
         weighted_pairs = self._pair_weights(
             n,
@@ -414,8 +482,16 @@ class EpistasisEntropyController:
 
         # Each selected pair produces two single mutants and one
         # corresponding double mutant.
+        # Keep double-mutant interaction probes to roughly 20% of offspring
+        # slots; the remaining budget is filled with additional singles.
+        # This preserves matched factorial controls without spending one-third
+        # of all evaluations on double mutants.
+        requested_pair_budget = (
+            2 if mode == "hotspot_entropy_substitution_epistasis_exploratory_v2" else max(1, (pop_size - 1) // 10)
+        )
         pair_budget = min(
             (pop_size - 1) // 3,
+            requested_pair_budget,
             len(available),
         )
 
@@ -440,7 +516,7 @@ class EpistasisEntropyController:
             trio = None
 
             for _attempt in range(100):
-                if mode == "hotspot_entropy_substitution_epistasis_exploratory":
+                if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}:
                     a, b = self._choose_substitution_pair(
                         parent, i, j, rng
                     )
@@ -476,9 +552,12 @@ class EpistasisEntropyController:
         # count as additional pair-selection observations.
         while len(result) < pop_size:
             i = self._draw(pos_weights, rng)
-            aa = rng.choice(
-                [residue for residue in AA_POOL if residue != parent[i]]
-            )
+            if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}:
+                aa = self._choose_single_substitution(parent, i, rng)
+            else:
+                aa = rng.choice(
+                    [residue for residue in AA_POOL if residue != parent[i]]
+                )
             sequence = self._mutate(parent, {i: aa})
 
             if sequence not in seen:

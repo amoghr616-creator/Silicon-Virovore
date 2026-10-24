@@ -1,0 +1,41 @@
+{
+  "created_at": "2026-10-22T21:12:23.718242",
+  "seed_count": 10,
+  "seeds": [
+    20600021,
+    20601021,
+    20602021,
+    20603021,
+    20604021,
+    20605021,
+    20606021,
+    20607021,
+    20608021,
+    20609021
+  ],
+  "population_size": 16,
+  "generations": 10,
+  "mutation_rate": 0.05,
+  "elite_count": 2,
+  "seed_sequence": "MKLAVFALLVFFAGSSDLIRR",
+  "methods": [
+    {
+      "label": "substitution_specific",
+      "cli_mode": "hotspot_entropy_substitution_epistasis_exploratory"
+    },
+    {
+      "label": "previous_entropy",
+      "cli_mode": "epistasis_entropy"
+    },
+    {
+      "label": "pairwise_uniform_control",
+      "cli_mode": "uniform_pair_matched"
+    },
+    {
+      "label": "uniform_baseline",
+      "cli_mode": "uniform"
+    }
+  ],
+  "docking": "same defaults as the prior CLI replication",
+  "git_commit": "fc64d46cec24ed6c7c7364e69cad002e8b7db11e"
+}
