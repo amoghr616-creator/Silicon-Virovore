@@ -1,0 +1,11 @@
+seed,exit_code,pose,crop_pairs_lt2A,prepared_full_pairs_lt2A,original_pairs_lt2A,arg203_min_A,arg205_min_A,status
+81101,143,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81101/poses/pose_0.pdb,78,78,274,7.969723459827017,13.37156333967621,severe clash vs original
+81102,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81102/poses/pose_0.pdb,9,9,266,12.620578233154731,18.32405317159511,severe clash vs original
+81103,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81103/poses/pose_0.pdb,31,31,67,3.24249978873871,5.801584629542947,severe clash vs original
+81104,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81104/poses/pose_0.pdb,44,44,119,10.804923524156244,16.338684633283947,severe clash vs original
+81105,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81105/poses/pose_0.pdb,45,45,204,5.806035229272763,12.076046950574844,severe clash vs original
+81106,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81106/poses/pose_0.pdb,108,108,112,3.543604317883937,1.9451495315176899,severe clash vs original
+81107,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81107/poses/pose_0.pdb,24,24,27,1.2967673052482682,1.389251067015484,severe clash vs original
+81108,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81108/poses/pose_0.pdb,36,36,277,9.672294543173507,15.169390882323235,severe clash vs original
+81109,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81109/poses/pose_0.pdb,12,12,225,12.099422820960843,16.81256166127653,severe clash vs original
+81110,0,/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/rapidock_10seed_20261023_224816/seed_81110/poses/pose_0.pdb,0,0,232,13.843118750750572,18.50224618494932,severe clash vs original

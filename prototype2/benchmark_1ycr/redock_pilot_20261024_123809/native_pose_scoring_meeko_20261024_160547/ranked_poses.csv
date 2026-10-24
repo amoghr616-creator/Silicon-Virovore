@@ -1,0 +1,2 @@
+rank,ml_pose_score,bsa_fit_score,bsa,n_clash,hybrid_score,vina_score,ad4_score,entropy_correction,delta_g,mmgbsa_dg,ensemble_dg,pooled_affinity_dg,rank_score,charged_confidence,charged_frustration,cluster_id,pose_filename,n_contact_residues,is_ad4_anomaly,is_clipped,is_clashed
+1,3.905,,1418.1,2,-10.9721,-18.7860,,-7.0259,-9.8216,,,-9.8216,-9.2405,low,1.096,,pose_0.pdb,11,False,False,False

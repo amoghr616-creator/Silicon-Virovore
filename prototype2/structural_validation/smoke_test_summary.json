@@ -1,0 +1,15 @@
+{
+  "run_count": 1,
+  "results": [
+    {
+      "status": "failed",
+      "method": "adaptive_substitution",
+      "rank": 1,
+      "seed": 81001,
+      "sequence": "LKAAHEALLKFFWEWSDLLKR",
+      "output_dir": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/poses/adaptive_substitution/rank_01/seed_81001",
+      "runtime_seconds": 791.707,
+      "failure_reason": "Vina exit=-2; pose exists=False"
+    }
+  ]
+}

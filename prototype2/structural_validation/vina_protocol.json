@@ -1,0 +1,29 @@
+{
+  "scope": "Vina-only exploratory structural screen; separate from RAPiDock/HybriDock",
+  "receptor": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+  "receptor_sha256": "3e02af67c1b1c0902da992b2cea3072d46536d214851a78d9069814adccdb8fd",
+  "receptor_pdbqt_sha256": "d13cce9365ae3e57616896483187eb5b425fd0c7f7f61deb9240b8346ab058ad",
+  "receptor_chain": "A",
+  "hotspot": "ARG A203/A205 side-chain heavy atoms",
+  "receptor_frame_check": {
+    "mapped_hotspot_atom_count": 14,
+    "max_hotspot_atom_deviation_A": 0.0
+  },
+  "box_center_A": [
+    -9.381857142857143,
+    -6.101571428571428,
+    0.7600714285714287
+  ],
+  "box_size_A": [
+    28.0,
+    28.0,
+    28.0
+  ],
+  "exhaustiveness": 1,
+  "num_modes": 3,
+  "energy_range_kcal_mol": 5.0,
+  "workers": 4,
+  "per_vina_cpu": 1,
+  "seeds": "from pose_manifest.csv",
+  "interpretation": "docking scores are scoring-function outputs, not experimental affinity"
+}

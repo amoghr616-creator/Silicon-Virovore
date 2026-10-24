@@ -1,0 +1,23 @@
+{
+  "argv": [
+    "/opt/homebrew/Caskroom/miniforge/base/envs/sv-docking/bin/hybridock-pep",
+    "dock",
+    "--peptide",
+    "ETFSDLWKLLPEN",
+    "--receptor",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/redock_pilot_20261024_123809/mdm2_chainA_receptor.pdb",
+    "--site",
+    "25.4208",
+    "-25.1353",
+    "-7.9211",
+    "--box",
+    "40",
+    "--n-samples",
+    "5",
+    "--seed",
+    "19001",
+    "--output-dir",
+    "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/redock_pilot_20261024_123809/dock_run"
+  ],
+  "pid": 8688
+}

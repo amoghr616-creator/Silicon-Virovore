@@ -1,0 +1,52 @@
+{
+  "experiment": "HADDOCK independent docking inputs",
+  "created_inputs_only": true,
+  "submitted_to_server": false,
+  "receptor_note": "Full chain-A receptors; no 16 A crop.",
+  "peptide_note": "Independent generated starting conformers, not native or predicted bound structures.",
+  "jobs": [
+    {
+      "id": "positive_control_1YCR",
+      "target": "MDM2 chain A of 1YCR",
+      "receptor": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/haddock_inputs_20261024/mdm2_chainA_receptor.pdb",
+      "sequence": "ETFSDLWKLLPEN",
+      "seed": 23101,
+      "note": "Keep crystal-native peptide reference for evaluation only.",
+      "path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/haddock_inputs_20261024/p53_unbound_start.pdb",
+      "sha256": "0f548208f437e0a7f4c6a9aba6815bbfd794a22c902b4498d402981eb8815159",
+      "conformer_seed": 23101,
+      "sequence_verified": true,
+      "interpretation": "unbound starting conformer, not a bound pose"
+    },
+    {
+      "id": "adaptive_top1",
+      "target": "HERV-K Env chain A of 9SYA",
+      "method": "adaptive_substitution",
+      "receptor": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/haddock_inputs_20261024/9sya_chainA_full_receptor.pdb",
+      "sequence": "LKAAHEALLKFFWEWSDLLKR",
+      "sequence_score": "0.876181",
+      "seed": 23102,
+      "hypothesis": "Test Arg203/Arg205 engagement; not established binding.",
+      "path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/haddock_inputs_20261024/adaptive_top1_unbound_start.pdb",
+      "sha256": "d2eb8a23f453e257fe708624ccd19a23757cdf5b4a345218477b44b329a0746e",
+      "conformer_seed": 23102,
+      "sequence_verified": true,
+      "interpretation": "unbound starting conformer, not a bound pose"
+    },
+    {
+      "id": "baseline_top1",
+      "target": "HERV-K Env chain A of 9SYA",
+      "method": "uniform_baseline",
+      "receptor": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/haddock_inputs_20261024/9sya_chainA_full_receptor.pdb",
+      "sequence": "MKLAVEALLVFFAGSSDLIRR",
+      "sequence_score": "0.717084",
+      "seed": 23103,
+      "hypothesis": "Use the same target coordinates and evaluation rules.",
+      "path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/structural_validation/haddock_inputs_20261024/baseline_top1_unbound_start.pdb",
+      "sha256": "d9de749dc2c3578f23030b24d1ae700a4a98b283ddaca92cbf6f190a68b81560",
+      "conformer_seed": 23103,
+      "sequence_verified": true,
+      "interpretation": "unbound starting conformer, not a bound pose"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "experiment": "1YCR native-complex redocking positive control",
+  "source_pdb": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/1YCR.pdb",
+  "source_sha256": "d8f23749da9ec22da2e17bb31c33803e3db6123233cd0404bdc005111196e7a3",
+  "receptor_chain": "A",
+  "native_peptide_chain": "B",
+  "native_peptide_sequence": "ETFSDLWKLLPEN",
+  "native_peptide_length": 13,
+  "native_peptide_heavy_atoms": 113,
+  "native_peptide_reference": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/benchmark_1ycr/redock_pilot_20261024_123809/p53_chainB_native_reference.pdb",
+  "site_center_A": [
+    25.42080307006836,
+    -25.135269165039062,
+    -7.921088218688965
+  ],
+  "box_A": 40,
+  "n_samples": 5,
+  "seed": 19001,
+  "interpretation": "Exploratory pilot; model routing and pose validity require auditing."
+}

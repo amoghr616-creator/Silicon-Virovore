@@ -1,0 +1,11 @@
+rank,pose,stage,reported_is_clashed,backbone_RMSD_receptor_frame_A,backbone_RMSD_fitted_A,native_contact_recall,min_receptor_distance_A,pairs_lt2A,audit
+1,pose_1.pdb,poses,True,4.240,3.775,0.354,0.674,7,severe_clashes
+1,pose_1.pdb,poses_scored,True,4.240,3.775,0.354,0.674,7,severe_clashes
+2,pose_3.pdb,poses,True,4.521,3.362,0.396,1.429,2,severe_clashes
+2,pose_3.pdb,poses_scored,True,4.521,3.362,0.396,1.429,2,severe_clashes
+3,pose_2.pdb,poses,True,4.318,2.898,0.271,0.676,6,severe_clashes
+3,pose_2.pdb,poses_scored,True,4.318,2.898,0.271,0.676,6,severe_clashes
+4,pose_0.pdb,poses,True,6.188,5.856,0.208,0.808,9,severe_clashes
+4,pose_0.pdb,poses_scored,True,6.188,5.856,0.208,0.808,9,severe_clashes
+5,pose_4.pdb,poses,True,6.063,5.523,0.312,0.709,11,severe_clashes
+5,pose_4.pdb,poses_scored,True,6.063,5.523,0.312,0.709,11,severe_clashes

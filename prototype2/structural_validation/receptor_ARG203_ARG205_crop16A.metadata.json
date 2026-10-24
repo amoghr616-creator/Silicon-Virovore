@@ -1,0 +1,18 @@
+{
+  "source_receptor": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/target_aware_audit/9SYA_chainA_repaired.pdb",
+  "source_sha256": "3e02af67c1b1c0902da992b2cea3072d46536d214851a78d9069814adccdb8fd",
+  "crop_sha256": "7ce0c4afb42ac8955be51f0defecf64b63bed9da3bc74f46ac6b3e8cf9ab64de",
+  "chain": "A",
+  "site_center_A": [
+    -8.405,
+    -5.823,
+    1.523
+  ],
+  "residue_selection": "retain entire residue if any heavy atom is within radius",
+  "radius_A": 16.0,
+  "residues_retained": 92,
+  "heavy_atoms_retained": 741,
+  "arg203_retained": true,
+  "arg205_retained": true,
+  "purpose": "exploratory target-centered receptor crop; not validated docking"
+}

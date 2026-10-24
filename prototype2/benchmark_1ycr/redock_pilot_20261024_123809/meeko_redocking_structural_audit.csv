@@ -1,0 +1,6 @@
+pose,rank,reported_is_clashed,reported_n_clash,reported_delta_g,backbone_RMSD_receptor_frame_A,backbone_RMSD_fitted_A,native_contact_recall,min_receptor_distance_A,heavy_atom_pairs_lt2A,audit
+pose_0.pdb,4,True,17,-9.5586,6.188,5.856,0.208,0.808,9,severe clashes
+pose_1.pdb,1,True,19,-9.7887,4.240,3.775,0.354,0.674,7,severe clashes
+pose_2.pdb,3,True,20,-9.4317,4.318,2.898,0.271,0.676,6,severe clashes
+pose_3.pdb,2,True,13,-9.8358,4.521,3.362,0.396,1.429,2,severe clashes
+pose_4.pdb,5,True,21,-9.6871,6.063,5.523,0.312,0.709,11,severe clashes

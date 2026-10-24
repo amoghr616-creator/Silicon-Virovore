@@ -1,0 +1,11 @@
+seed,exit_code,ranked_rows,pose_file,pose_sequence_valid,csv_is_clashed,delta_g_reported,min_receptor_distance_A,atom_pairs_lt_2A,atom_pairs_lt_3A,arg203_min_A,arg203_pairs_lt4A,arg205_min_A,arg205_pairs_lt4A,audit_status
+81101,143,0,seed_81101/poses/pose_0.pdb,True,,,0.245,274,833,7.970,0,13.372,0,severe_clashes
+81102,0,1,seed_81102/poses/pose_0.pdb,True,True,-9.7674,0.323,266,880,12.621,0,18.324,0,severe_clashes
+81103,0,0,seed_81103/poses/pose_0.pdb,True,,,0.554,67,206,3.242,1,5.802,0,severe_clashes
+81104,0,1,seed_81104/poses/pose_0.pdb,True,True,-9.5550,0.365,119,396,10.805,0,16.339,0,severe_clashes
+81105,0,1,seed_81105/poses/pose_0.pdb,True,True,-9.9937,0.365,204,690,5.806,0,12.076,0,severe_clashes
+81106,0,1,seed_81106/poses/pose_0.pdb,True,True,-10.0297,0.589,112,356,3.544,1,1.945,36,severe_clashes
+81107,0,1,seed_81107/poses/pose_0.pdb,True,True,-9.6730,1.160,27,115,1.297,58,1.389,77,severe_clashes
+81108,0,1,seed_81108/poses/pose_0.pdb,True,True,-13.2142,0.377,277,860,9.672,0,15.169,0,severe_clashes
+81109,0,1,seed_81109/poses/pose_0.pdb,True,True,-10.3600,0.158,225,798,12.099,0,16.813,0,severe_clashes
+81110,0,1,seed_81110/poses/pose_0.pdb,True,False,-9.4510,0.296,232,816,13.843,0,18.502,0,severe_clashes

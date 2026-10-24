@@ -1,2 +1,0 @@
-adaptive,baseline,n_matched_seeds,mean_adaptive_final_best,sd_adaptive_final_best,mean_baseline_final_best,sd_baseline_final_best,mean_paired_delta_adaptive_minus_baseline,sd_paired_delta,paired_bootstrap_ci95_lower,paired_bootstrap_ci95_upper,wins,ties,losses,bootstrap_replicates,interpretation_limit
-adaptive_substitution,uniform_baseline,200,0.834749985,0.020776803491910932,0.83612643,0.018934593171705327,-0.001376444999999995,0.026564363888317177,-0.005043581124999994,0.0023202332500000004,97,0,103,20000,sequence-level score only; does not establish target binding
