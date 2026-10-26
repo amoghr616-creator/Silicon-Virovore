@@ -1,0 +1,23 @@
+{
+  "source_csv": "/Users/centurion616/Desktop/Silicon-Virovore/prototype2/p2_uniform_random_reset_vs_v2_100_20261023/run_summary.csv",
+  "score_column": "best_across_generations",
+  "n_matched_seeds": 100,
+  "adaptive_mean": 0.83379963,
+  "adaptive_sample_sd": 0.023092089458703988,
+  "baseline_mean": 0.7104098,
+  "baseline_sample_sd": 0.0058286666077450935,
+  "mean_paired_difference_adaptive_minus_baseline": 0.12338982999999998,
+  "sd_paired_difference": 0.022975612646585937,
+  "bootstrap_method": "paired percentile bootstrap over seed-level differences",
+  "bootstrap_replicates": 100000,
+  "bootstrap_rng_seed": 271022,
+  "bootstrap_ci95_lower": 0.11890111099999998,
+  "bootstrap_ci95_upper": 0.12785193275,
+  "paired_t_statistic": 53.704696322139256,
+  "paired_t_df": 99,
+  "paired_t_two_sided_p": 4.982094067123914e-75,
+  "adaptive_wins": 100,
+  "ties": 0,
+  "adaptive_losses": 0,
+  "interpretation_limit": "Sequence-level fitness only; does not establish target binding."
+}

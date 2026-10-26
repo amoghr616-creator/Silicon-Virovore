@@ -1,0 +1,4 @@
+group,n_models,median_interchain_min_distance_A,median_atom_pairs_le5A,median_residue_pairs_le5A,models_with_any_pair_lt2A,models_with_any_pair_lt2_5A,median_peptide_backbone_RMSD_receptor_aligned_A,n_control_RMSD_le2A,median_native_contact_recall,median_native_contact_precision,models_passing_preliminary_9SYA_geometry_screen
+control_1YCR,40,2.7083,337.5,38.0,0,0,10.3174,0,0.1875,0.2575,0
+adaptive_9SYA,36,2.6366,202.0,24.5,0,0,,0,,,31
+baseline_9SYA,40,2.6098,126.0,17.0,0,1,,0,,,37
