@@ -1,0 +1,361 @@
+=== DATE / REPO ===
+Mon Oct 26 22:20:28 EDT 2026
+ m hybridock-pep
+?? prototype3/backups/
+?? prototype3/reports/
+
+=== P3 SCRIPTS ===
+prototype3/scripts/benchmark_native_c_score_21aa.py
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py
+prototype3/scripts/pepbi_native_score_exploratory.py
+prototype3/scripts/pepbi_strict_matched_benchmark.py
+prototype3/scripts/pepbi_target_mutation_invariance.py
+prototype3/scripts/pepbi_verified_single_substitution_audit.py
+prototype3/scripts/ppikb_kd_benchmark.py
+prototype3/scripts/run_grouped_sequence_pair_validation.py
+prototype3/scripts/run_pepbi_corrected_benchmark.py
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py
+
+=== RELEVANT SCRIPT ARGUMENTS AND COMPARISON LOGIC ===
+prototype3/scripts/benchmark_native_c_score_21aa.py:17:OUT = ROOT / "prototype3/results/p3_21aa_affinity_audit/native_c_score_21aa"
+prototype3/scripts/benchmark_native_c_score_21aa.py:51:    """Convert an uncensored, explicitly reported Kd to pKd."""
+prototype3/scripts/benchmark_native_c_score_21aa.py:176:        "pKd": pkd,
+prototype3/scripts/benchmark_native_c_score_21aa.py:221:        pKd=("pKd", "median"),
+prototype3/scripts/benchmark_native_c_score_21aa.py:233:    if group["pKd"].nunique() < 2 or group["native_score"].nunique() < 2:
+prototype3/scripts/benchmark_native_c_score_21aa.py:236:    rho, pvalue = spearmanr(group["native_score"], group["pKd"])
+prototype3/scripts/benchmark_native_c_score_21aa.py:289:            delta_pkd = float(b["pKd"] - a["pKd"])
+prototype3/scripts/benchmark_native_c_score_21aa.py:308:                "pKd_a": a["pKd"],
+prototype3/scripts/benchmark_native_c_score_21aa.py:309:                "pKd_b": b["pKd"],
+prototype3/scripts/benchmark_native_c_score_21aa.py:310:                "delta_pKd_b_minus_a": delta_pkd,
+prototype3/scripts/benchmark_native_c_score_21aa.py:316:                "informative_abs_delta_pKd_ge_0_3": abs(delta_pkd) >= 0.3,
+prototype3/scripts/benchmark_native_c_score_21aa.py:324:    pairs[pairs["informative_abs_delta_pKd_ge_0_3"]].copy()
+prototype3/scripts/benchmark_native_c_score_21aa.py:336:            informative["delta_pKd_b_minus_a"],
+prototype3/scripts/benchmark_native_c_score_21aa.py:347:            n_single_substitution_pairs=("delta_pKd_b_minus_a", "size"),
+prototype3/scripts/benchmark_native_c_score_21aa.py:348:            median_abs_experimental_delta_pKd=(
+prototype3/scripts/benchmark_native_c_score_21aa.py:349:                "delta_pKd_b_minus_a", lambda x: float(np.median(np.abs(x)))
+prototype3/scripts/benchmark_native_c_score_21aa.py:361:        "median_abs_experimental_delta_pKd", "median_abs_score_change"
+prototype3/scripts/benchmark_native_c_score_21aa.py:379:    "informative_single_substitution_pairs_abs_delta_pKd_ge_0_3": int(len(informative)),
+prototype3/scripts/benchmark_native_c_score_21aa.py:381:    "informative_delta_score_vs_delta_pKd_spearman_exploratory": mutation_rho,
+prototype3/scripts/benchmark_native_c_score_21aa.py:387:        "biological hotspot selector. The grouped correlations are exploratory."
+prototype3/scripts/benchmark_native_c_score_21aa.py:405:    f"- Informative single-substitution pairs (|delta pKd| >= 0.3): **{len(informative)}**",
+prototype3/scripts/benchmark_native_c_score_21aa.py:407:    f"- Exploratory Spearman of score change vs experimental pKd change: **{mutation_rho}**",
+prototype3/scripts/benchmark_native_c_score_21aa.py:417:    "evaluate the adaptive optimizer or the target-aware structural score. Scores "
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:13:    ROOT / "prototype3/results/sequence_only_mutation_baseline/"
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:40:    f = frame.loc[frame["abs_delta_pKd"] >= 0.3]
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:44:    exp_delta = f["delta_pKd"].to_numpy()
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:54:    informative = frame.loc[frame["abs_delta_pKd"] >= 0.3]
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:57:        "spearman_delta_score_vs_delta_pKd": rho(
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:58:            frame["delta_score"], frame["delta_pKd"]
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:62:        "spearman_abs_delta_score_vs_abs_delta_pKd": rho(
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:64:            informative["delta_pKd"].abs(),
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:88:    "pKd_a", "pKd_b",
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:96:pairs["pKd_a"] = pd.to_numeric(pairs["pKd_a"], errors="coerce")
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:97:pairs["pKd_b"] = pd.to_numeric(pairs["pKd_b"], errors="coerce")
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:98:pairs["delta_pKd"] = pairs["pKd_b"] - pairs["pKd_a"]
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:99:pairs["abs_delta_pKd"] = pairs["delta_pKd"].abs()
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:194:    "spearman_delta_score_vs_delta_pKd",
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:196:    "spearman_abs_delta_score_vs_abs_delta_pKd",
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:222:# This is NOT the adaptive hotspot selector itself.
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:227:    informative = g[g["abs_delta_pKd"] >= 0.3]
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:234:        "median_abs_delta_pKd": float(g["delta_pKd"].abs().median()),
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:260:    and eligible_pos["median_abs_delta_pKd"].nunique() > 1
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:264:        eligible_pos["median_abs_delta_pKd"],
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:269:    exp_profiles = eligible_pos["median_abs_delta_pKd"].to_numpy()
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:310:        "This benchmark tests the native score, not the adaptive optimizer.",
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:312:        "Position profiling is exploratory and is not validation of ARISE/ALE hotspot selection.",
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:313:        "Pairs overlap in peptides and target groups; connected-component bootstrap partly "
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:326:    f"- Independent connected components: **{len(component_rows)}**",
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:352:    "differences, not whether the adaptive optimizer improves or whether HERV-K Env "
+prototype3/scripts/benchmark_native_score_all_mutation_pairs.py:354:    "not direct validation of ARISE/ALE hotspot rankings.",
+prototype3/scripts/pepbi_native_score_exploratory.py:11:WORKBOOK = ROOT / "prototype3/data/raw/PEPBI.xlsx"
+prototype3/scripts/pepbi_native_score_exploratory.py:28:    "PEPBI Complex Name",
+prototype3/scripts/pepbi_native_score_exploratory.py:90:df["_c_score"] = df["_seq"].map(score_cache)
+prototype3/scripts/pepbi_native_score_exploratory.py:95:    & df["_c_score"].notna()
+prototype3/scripts/pepbi_native_score_exploratory.py:102:        "PEPBI Complex Name",
+prototype3/scripts/pepbi_native_score_exploratory.py:107:        "_c_score",
+prototype3/scripts/pepbi_native_score_exploratory.py:115:    "_c_score": "native_sequence_prior_score",
+prototype3/scripts/pepbi_native_score_exploratory.py:124:        native_sequence_prior_score=("_c_score", "first"),
+prototype3/scripts/pepbi_native_score_exploratory.py:161:        scored, "_c_score", "_dg", "spearman"
+prototype3/scripts/pepbi_strict_matched_benchmark.py:25:    "_seq", "_length", "_group", "_temp", "_c_score",
+prototype3/scripts/pepbi_strict_matched_benchmark.py:33:for col in ["_length", "_temp", "_c_score", "_calc_dg",
+prototype3/scripts/pepbi_strict_matched_benchmark.py:48:    & df["_c_score"].notna()
+prototype3/scripts/pepbi_strict_matched_benchmark.py:66:          native_score=("_c_score", "first"),
+prototype3/scripts/pepbi_strict_matched_benchmark.py:112:                    # Lower Rosetta dG_separated should correspond to lower ΔG.
+prototype3/scripts/pepbi_target_mutation_invariance.py:39:numeric_column(["_c_score"], "native_score")
+prototype3/scripts/pepbi_verified_single_substitution_audit.py:36:numeric(["_c_score"], "native_score")
+prototype3/scripts/ppikb_kd_benchmark.py:177:        pKd=("_p_affinity", "median"),
+prototype3/scripts/ppikb_kd_benchmark.py:186:    block = block.dropna(subset=["pKd", "native_score"])
+prototype3/scripts/ppikb_kd_benchmark.py:189:    if n_seq < 3 or block["pKd"].nunique() < 2 or block["native_score"].nunique() < 2:
+prototype3/scripts/ppikb_kd_benchmark.py:199:            block["native_score"].corr(block["pKd"], method="spearman")
+prototype3/scripts/ppikb_kd_benchmark.py:201:        "pearson_r": float(block["native_score"].corr(block["pKd"])),
+prototype3/scripts/ppikb_kd_benchmark.py:266:        "only and passes target=NULL. Higher pKd means stronger measured affinity."
+prototype3/scripts/run_grouped_sequence_pair_validation.py:4:This script does NOT evaluate the native c_score, the adaptive optimizer, or the
+prototype3/scripts/run_grouped_sequence_pair_validation.py:5:structural scorer. It builds experimental single-substitution pairs from the
+prototype3/scripts/run_grouped_sequence_pair_validation.py:6:filtered PPIKB table and evaluates a separate fixed-alpha Ridge regression on
+prototype3/scripts/run_grouped_sequence_pair_validation.py:11:optimizer. Model hyperparameters are fixed (Ridge alpha=10) before CV and are
+prototype3/scripts/run_grouped_sequence_pair_validation.py:31:from sklearn.linear_model import Ridge
+prototype3/scripts/run_grouped_sequence_pair_validation.py:32:from sklearn.model_selection import GroupKFold
+prototype3/scripts/run_grouped_sequence_pair_validation.py:92:    pkd_col = _resolve_col(df, ["_p_affinity", "pKd", "pkd", "p_affinity", "pKd_value"], "exact pKd")
+prototype3/scripts/run_grouped_sequence_pair_validation.py:98:        "pKd": pd.to_numeric(df[pkd_col], errors="coerce"),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:104:        & out["pKd"].notna()
+prototype3/scripts/run_grouped_sequence_pair_validation.py:105:        & np.isfinite(out["pKd"])
+prototype3/scripts/run_grouped_sequence_pair_validation.py:110:        raise ValueError("No eligible canonical 9-20 aa peptide rows with exact numeric pKd were found.")
+prototype3/scripts/run_grouped_sequence_pair_validation.py:114:        .agg(pKd=("pKd", "median"), source_measurement_rows=("pKd", "size"))
+prototype3/scripts/run_grouped_sequence_pair_validation.py:123:        records = block[["peptide", "pKd"]].drop_duplicates("peptide").to_dict("records")
+prototype3/scripts/run_grouped_sequence_pair_validation.py:132:            if not (math.isfinite(float(a["pKd"])) and math.isfinite(float(b["pKd"]))):
+prototype3/scripts/run_grouped_sequence_pair_validation.py:143:                "pKd_a": float(a["pKd"]),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:144:                "pKd_b": float(b["pKd"]),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:145:                "delta_pKd": float(b["pKd"] - a["pKd"]),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:164:    These connected components keep all assays/pairs for an exact target
+prototype3/scripts/run_grouped_sequence_pair_validation.py:192:    Pair orientation is lexical, and the target is pKd_b - pKd_a accordingly.
+prototype3/scripts/run_grouped_sequence_pair_validation.py:193:    No target ID, assay ID, affinity, native c_score, structural score, or fold
+prototype3/scripts/run_grouped_sequence_pair_validation.py:314:    y = pairs["delta_pKd"].to_numpy(dtype=float)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:315:    cv = GroupKFold(n_splits=folds)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:340:        model = Ridge(alpha=RIDGE_ALPHA)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:376:        "benchmark": "experimental_single_substitution_pKd_difference_sequence_only_grouped_validation",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:377:        "claim_scope": "separate sequence-only comparator; not native c_score, not the adaptive optimizer, and not target-aware structural score",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:386:        "split_rule": "GroupKFold over connected components; every exact target sequence, individual peptide sequence, and unordered peptide pair is confined to one fold",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:393:        "model": {"name": "Ridge", "alpha": RIDGE_ALPHA, "feature_count": int(X.shape[1]),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:397:            "zero_change_baseline": metric_dict(y, pred_zero),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:398:            "training_fold_mean_baseline": metric_dict(y, pred_fold_mean),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:402:            out, "delta_pKd", "prediction_sequence_only_ridge", "prediction_training_fold_mean",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:407:            "Sequence-only comparator is separate from the production native c_score and is not integrated into candidate generation.",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:409:            "Pair orientation is lexicographic; delta_pKd is pKd_b minus pKd_a and positive values mean peptide_b has stronger measured affinity.",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:423:        "- Split rule: connected components link all rows sharing a target sequence, an individual peptide sequence, or an exact unordered peptide pair.",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:425:        f"- Ridge alpha: **{RIDGE_ALPHA}**, fixed without tuning on held-out folds.",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:429:        "| Model | n | MAE (pKd units) | RMSE | Spearman rho | Informative direction coverage | Direction accuracy among covered | Direction score (ties half) |",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:432:    for label, key in [("Zero-change baseline", "zero_change_baseline"),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:433:                       ("Training-fold mean", "training_fold_mean_baseline"),
+prototype3/scripts/run_grouped_sequence_pair_validation.py:434:                       ("Sequence-only Ridge", "sequence_only_ridge")]:
+prototype3/scripts/run_grouped_sequence_pair_validation.py:443:        "This is a separate sequence-only research comparator. It does not validate the native `c_score`, prove the adaptive optimizer improves, or validate the target-aware structural scorer. A positive result supports only the reported held-out statistical relationship under this split and feature definition.",
+prototype3/scripts/run_grouped_sequence_pair_validation.py:456:    parser = argparse.ArgumentParser(description=__doc__)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:457:    parser.add_argument("--input", default=str(DEFAULT_INPUT), help="Filtered exact-Kd CSV produced by ppikb_kd_benchmark.py")
+prototype3/scripts/run_grouped_sequence_pair_validation.py:458:    parser.add_argument("--out-root", default=str(DEFAULT_OUTPUT))
+prototype3/scripts/run_grouped_sequence_pair_validation.py:459:    parser.add_argument("--folds", type=int, default=5)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:460:    parser.add_argument("--bootstrap-replicates", type=int, default=2000)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:461:    parser.add_argument("--seed", type=int, default=20261026)
+prototype3/scripts/run_grouped_sequence_pair_validation.py:462:    args = parser.parse_args(argv)
+prototype3/scripts/run_pepbi_corrected_benchmark.py:10:WORKBOOK = ROOT / "prototype3/data/raw/PEPBI.xlsx"
+prototype3/scripts/run_pepbi_corrected_benchmark.py:25:    "PEPBI Complex Name",
+prototype3/scripts/run_pepbi_corrected_benchmark.py:87:df["_c_score"] = df["_seq"].map(scores)
+prototype3/scripts/run_pepbi_corrected_benchmark.py:91:    & df["_c_score"].notna()
+prototype3/scripts/run_pepbi_corrected_benchmark.py:153:        primary, target, "_c_score",
+prototype3/scripts/run_pepbi_corrected_benchmark.py:156:        f"{label}: Rosetta RIA",
+prototype3/scripts/run_pepbi_corrected_benchmark.py:174:            native_score=("_c_score", "first"),
+prototype3/scripts/run_pepbi_corrected_benchmark.py:203:            ("ria_centered", "Rosetta RIA"),
+prototype3/scripts/run_pepbi_corrected_benchmark.py:253:print("===== PEPBI CORRECTED BENCHMARK =====")
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:9:    "prototype3/results/sequence_only_mutation_baseline/"
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:39:    df["abs_delta_pKd"] = df["delta_pKd"].abs()
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:40:    df["informative"] = df["abs_delta_pKd"] >= 0.3
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:50:    n_rows = grouped["abs_delta_pKd"].transform("size")
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:56:        out["abs_delta_pKd"]
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:57:        - out.groupby(keys, dropna=False)["abs_delta_pKd"].transform("mean")
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:107:    raw_hot = d.loc[in_window, "abs_delta_pKd"]
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:108:    raw_other = d.loc[~in_window, "abs_delta_pKd"]
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:175:        "raw_mean_abs_delta_pKd_in_window": float(raw_hot.mean()),
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:176:        "raw_mean_abs_delta_pKd_outside_window": float(raw_other.mean()),
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:177:        "raw_median_abs_delta_pKd_in_window": float(raw_hot.median()),
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:178:        "raw_median_abs_delta_pKd_outside_window": float(raw_other.median()),
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:201:    "sequence_b", "delta_pKd",
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:207:data["delta_pKd"] = pd.to_numeric(data["delta_pKd"], errors="coerce")
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:209:    subset=["target_group_id", "context_key", "delta_pKd"]
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:214:# Primary prediction: latest logged hotspot [0,3) zero-based = positions 1–3.
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:217:    label="latest_logged_hotspot_positions_1_to_3",
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:225:    label="previous_generation_hotspot_positions_2_to_3",
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:230:# Secondary analysis restricted to pairs with |delta pKd| >= 0.3.
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:233:    label="latest_hotspot_positions_1_to_3_informative_pairs",
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:243:    "n_informative_pairs_abs_delta_pKd_ge_0_3": int(data["informative"].sum()),
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:244:    "hotspot_coordinate_mapping": (
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:255:        "It does not evaluate target-aware structural contacts or prove that ARISE guided the mutations in the logged smoke run.",
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:262:    "# ARISE hotspot position-window audit\n\n"
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:263:    "This is a retrospective exploratory comparison of the logged hotspot "
+prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py:267:    "HERV-K-specific hotspot importance or causal benefit from adaptive search.\n\n"
+
+=== CONFIG / PIPELINE MODE DEFINITIONS ===
+src/config.py:351:    mutation_guidance_mode: str = MUTATION_GUIDANCE_MODE
+src/config.py:433:    mutation_guidance_mode = getattr(
+src/config.py:435:        "mutation_guidance_mode",
+src/config.py:494:    if mutation_guidance_mode not in {
+src/config.py:502:        "uniform_pair_matched",
+src/config.py:505:        "epistasis_entropy",
+src/config.py:506:        "hotspot_epistasis_entropy",
+src/config.py:507:        "hotspot_epistasis_entropy_exploratory",
+src/config.py:508:        "hotspot_entropy_substitution_epistasis_exploratory",
+src/config.py:509:        "hotspot_entropy_substitution_epistasis_exploratory_v2",
+src/config.py:510:        "uniform_random_reset",
+src/config.py:513:            "mutation_guidance_mode must be one of: "
+src/config.py:518:            "uniform_pair_matched, entropy_pair_matched, "
+src/config.py:519:            "epistasis_pair_matched, epistasis_entropy, "
+src/config.py:520:            "hotspot_epistasis_entropy, "
+src/config.py:521:            "hotspot_epistasis_entropy_exploratory. "
+src/config.py:522:            "Unknown mutation_guidance_mode: "
+src/config.py:523:            f"{mutation_guidance_mode!r}"
+src/population_runner.py:44:from src.epistasis_entropy import (
+src/population_runner.py:86:        numeric_scores = [float(score) for score in scores]
+src/population_runner.py:90:    if any(not math.isfinite(score) for score in numeric_scores):
+src/population_runner.py:102:    ordered = sorted(numeric_scores)
+src/population_runner.py:119:        for score in numeric_scores
+src/population_runner.py:200:def generate_candidates(
+src/population_runner.py:209:    mutation_guidance_mode: str = "legacy",
+src/population_runner.py:251:    if mutation_guidance_mode not in VALID_MODES:
+src/population_runner.py:253:            "Unknown mutation_guidance_mode: "
+src/population_runner.py:254:            f"{mutation_guidance_mode!r}. Valid modes: "
+src/population_runner.py:259:        mutation_guidance_mode == "mutation_credit"
+src/population_runner.py:274:    mode = mutation_guidance_mode
+src/population_runner.py:302:                "hotspot_epistasis_entropy",
+src/population_runner.py:303:                "hotspot_epistasis_entropy_exploratory",
+src/population_runner.py:304:                "hotspot_entropy_substitution_epistasis_exploratory",
+src/population_runner.py:305:                "hotspot_entropy_substitution_epistasis_exploratory_v2",
+src/population_runner.py:311:                    "hotspot_epistasis_entropy_exploratory",
+src/population_runner.py:312:                    "hotspot_entropy_substitution_epistasis_exploratory",
+src/population_runner.py:313:                    "hotspot_entropy_substitution_epistasis_exploratory_v2",
+src/population_runner.py:337:            "hotspot_weight_multiplier": (1.25 if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"} else 2.0) if apply_hotspot else 1.0,
+src/population_runner.py:430:                    "hotspot_epistasis_entropy",
+src/population_runner.py:431:                    "hotspot_epistasis_entropy_exploratory",
+src/population_runner.py:432:                    "hotspot_entropy_substitution_epistasis_exploratory",
+src/population_runner.py:433:                    "hotspot_entropy_substitution_epistasis_exploratory_v2",
+src/population_runner.py:441:                        "hotspot_epistasis_entropy_exploratory",
+src/population_runner.py:442:                        "hotspot_entropy_substitution_epistasis_exploratory",
+src/population_runner.py:443:                        "hotspot_entropy_substitution_epistasis_exploratory_v2",
+src/population_runner.py:460:                    if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}
+src/population_runner.py:628:        candidate.metadata["parent_sequence"] = seed_sequence
+src/population_runner.py:632:        candidate.metadata["mutation_guidance_mode"] = policy["mode"]
+src/population_runner.py:633:        candidate.metadata["requested_mutation_guidance_mode"] = (
+run_pipeline.py:18:from src.epistasis_entropy import EpistasisEntropyController, PAIRWISE_MODES
+run_pipeline.py:53:    generate_candidates,
+run_pipeline.py:240:        "parent_sequence": candidate.metadata.get("parent_sequence"),
+run_pipeline.py:242:        "mutation_guidance_mode": candidate.metadata.get(
+run_pipeline.py:243:            "mutation_guidance_mode"
+run_pipeline.py:282:        "native_fitness": candidate.c_score,
+run_pipeline.py:286:        "parent_sequence": candidate.metadata.get("parent_sequence"),
+run_pipeline.py:298:        "mutation_guidance_mode": candidate.metadata.get(
+run_pipeline.py:299:            "mutation_guidance_mode"
+run_pipeline.py:671:    epistasis_entropy_controller = EpistasisEntropyController(
+run_pipeline.py:768:    parent_sequence = seed_sequence
+run_pipeline.py:780:            if settings.mutation_guidance_mode == "uniform_random_reset"
+run_pipeline.py:781:            else parent_sequence
+run_pipeline.py:784:        candidates = generate_candidates(
+run_pipeline.py:792:                epistasis_entropy_controller
+run_pipeline.py:793:                if settings.mutation_guidance_mode in PAIRWISE_MODES
+run_pipeline.py:803:                    settings.mutation_guidance_mode == "mutation_credit"
+run_pipeline.py:806:                        and settings.mutation_guidance_mode == "legacy"
+run_pipeline.py:817:            mutation_guidance_mode=(
+run_pipeline.py:819:                if settings.mutation_guidance_mode == "uniform_random_reset"
+run_pipeline.py:820:                else settings.mutation_guidance_mode
+run_pipeline.py:826:                if settings.mutation_guidance_mode == "uniform_random_reset"
+run_pipeline.py:847:            if settings.mutation_guidance_mode == "uniform_random_reset":
+run_pipeline.py:848:                candidate.metadata["requested_mutation_guidance_mode"] = "uniform_random_reset"
+run_pipeline.py:904:        if settings.mutation_guidance_mode == "mutation_credit":
+run_pipeline.py:972:        if settings.mutation_guidance_mode in PAIRWISE_MODES:
+run_pipeline.py:973:            diagnostics = epistasis_entropy_controller.observe_generation(
+run_pipeline.py:975:                parent_sequence=generation_parent,
+run_pipeline.py:1009:        parent_sequence = (
+run_pipeline.py:1011:            if settings.mutation_guidance_mode == "uniform_random_reset"
+run_pipeline.py:1151:        if settings.mutation_guidance_mode == "uniform_random_reset":
+run_pipeline.py:1277:            "mutation_guidance_mode": settings.mutation_guidance_mode,
+run_pipeline.py:1289:                if settings.mutation_guidance_mode == "legacy"
+run_pipeline.py:1599:            "uniform_pair_matched",
+run_pipeline.py:1602:            "epistasis_entropy",
+run_pipeline.py:1603:            "hotspot_epistasis_entropy",
+run_pipeline.py:1604:            "hotspot_epistasis_entropy_exploratory",
+run_pipeline.py:1605:            "hotspot_entropy_substitution_epistasis_exploratory",
+run_pipeline.py:1606:            "hotspot_entropy_substitution_epistasis_exploratory_v2",
+run_pipeline.py:1607:            "uniform_random_reset",
+run_pipeline.py:1651:        ("mutation_guidance_mode", "mutation_guidance_mode"),
+run_pipeline.py:1702:        values.setdefault("mutation_guidance_mode", "uniform")
+run_pipeline.py:1708:        values.setdefault("mutation_guidance_mode", "hotspot_biased_annealed")
+run_pipeline.py:1711:        values.setdefault("mutation_guidance_mode", "hotspot_biased_annealed")
+
+=== LATEST P3 RERUN REPORT ===
+# P3 Baseline Comparison Report
+
+Generated: 2026-10-27T02:10:04.812201+00:00
+
+This report consolidates the current metrics. Check the run-status section below: if a rerun failed, the corresponding result file may still contain an earlier result. This report does not claim that failed steps were reproduced.
+
+## 1. ARISE mutation-position validation
+
+**Primary comparison — positions 1–3 vs. random equal-width windows**
+
+- All pairs: context-adjusted difference = -0.0115; 95% CI [-0.1690, 0.1543]; two-sided permutation p = 0.9218.
+- Informative subset: difference = 0.1716; 95% CI [0.0148, 0.3419]; two-sided permutation p = 0.0528.
+- Previous-window sensitivity check, positions 2–3: difference = -0.0184; two-sided p = 0.8454.
+
+Interpretation: the all-pairs result is the primary result. The filtered-subset finding is exploratory.
+
+## 2. Native C score vs. experimental mutation effects
+
+- Matched mutation pairs: 693.
+- Spearman correlation, score change vs. pKd change: -0.1071; 95% cluster-bootstrap CI [-0.2022, -0.0175].
+- Informative-pair direction accuracy: 0.4249; 95% CI [0.3655, 0.4777]; nominal direction reference = 50%.
+
+Interpretation: compare against the 50% direction reference; do not describe this as a target-aware score.
+
+## 3. Exact 21-amino-acid benchmark
+
+- Eligible measurement rows: 129.
+- Distinct scored peptides: 67.
+- Within-context mean Spearman rho: -0.4872; 95% group-bootstrap CI [-0.7714, -0.0301].
+- Informative mutation pairs: 0.1111111111111111 direction accuracy (one observed correct-direction pair out of nine in the recorded analysis); reference = 50%.
+
+Interpretation: the small informative-pair sample makes the direction estimate unstable.
+
+## 4. Grouped sequence-model baseline
+
+**training_fold_mean_baseline**
+- MAE: 0.8182; RMSE: 1.3656; Spearman rho: 0.0459; direction accuracy: 0.6266.
+
+**sequence_only_ridge**
+- MAE: 0.8643; RMSE: 1.3957; Spearman rho: 0.1087; direction accuracy: 0.5896.
+
+Source: `prototype3/results/sequence_only_grouped_target_validation/run_20261027T020510Z/metrics.json`.
+Interpretation: Ridge is a separate comparator, not the production native C score.
+
+## 5. PEPBI strict matched comparison
+
+**Target: Calculated ΔG from K_D**
+- native_score: mean group concordance 0.3762, 11 independent binding groups, 95% group-bootstrap CI [0.2110, 0.5315]; chance reference = 0.5000.
+- rosetta_dg: mean group concordance 0.3927, 11 independent binding groups, 95% group-bootstrap CI [0.2345, 0.5475]; chance reference = 0.5000.
+
+**Target: Reported experimental ΔG**
+- native_score: mean group concordance 0.0000, 1 independent binding groups, 95% group-bootstrap CI [0.0000, 0.0000]; chance reference = 0.5000.
+- rosetta_dg: mean group concordance 0.0000, 1 independent binding groups, 95% group-bootstrap CI [0.0000, 0.0000]; chance reference = 0.5000.
+
+Interpretation: preserve the strict matched result and the Rosetta comparison. Do not infer successful affinity prediction from the pooled PEPBI correlations alone.
+
+## 6. Receptor-context invariance control
+
+- Matched peptide contexts: 4.
+- Matched receptor-variant pairs: 24.
+- Pairs with any native-score change: 0.
+- Pairs with an experimental ΔG difference greater than 0.5 kcal/mol: 7.
+
+Interpretation: a peptide-only score is invariant when the peptide sequence remains unchanged; this is a limitation for receptor-specific prediction, not evidence of binding accuracy.
+
+## 7. Structural benchmark carried forward from existing results
+
+- Scored pairs: 18; target groups: 7.
+- Spearman rho: 0.0588; direction accuracy: 0.5000; chance reference = 50%.
+- Source: `prototype3/results/experimental_mutation_benchmark/structural_scoring_20261026T223525Z/benchmark_metrics.json`.
+- Status: existing result retained; it was not rerun because no corresponding standalone runner appears in the listed `prototype3/scripts` directory.
+
+## Run status
+
+```text
+PASS	ppikb_preprocessing
+PASS	grouped_sequence_validation
+PASS	native_score_mutation_pairs
+PASS	exact_21aa_benchmark
+PASS	arise_position_validation
+PASS	pepbi_corrected_benchmark
+PASS	pepbi_strict_matched
+PASS	pepbi_target_invariance
+PASS	pepbi_verified_substitutions
+PASS	pepbi_native_exploratory
+```
+
+## Overall interpretation
+
+Baselines make the comparison more interpretable; they do not change the observed metrics. These retrospective tests assess score/affinity relationships and mutation-position associations. They do not establish prospective HERV-K Env binding or biological efficacy.
+
+Preserve the backup and original logs. Do not replace a failed rerun with an older result without labeling it.

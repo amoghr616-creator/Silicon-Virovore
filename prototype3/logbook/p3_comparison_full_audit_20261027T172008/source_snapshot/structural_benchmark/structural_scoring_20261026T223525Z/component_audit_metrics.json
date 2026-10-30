@@ -1,0 +1,188 @@
+{
+  "all_scored_pairs": {
+    "n_pairs": 18,
+    "n_target_groups": 7,
+    "objectives": {
+      "composite_score": {
+        "n": 18,
+        "rho": 0.05882352941176471,
+        "exploratory_p": 0.8166542035684891,
+        "direction_agreement": 0.5,
+        "n_non_ties": 18
+      },
+      "contact_residue_pair_diversity_0_1": {
+        "n": 18,
+        "rho": 0.269221756196092,
+        "exploratory_p": 0.28000183799837114,
+        "direction_agreement": 0.75,
+        "n_non_ties": 4
+      },
+      "interface_residue_coverage_0_1": {
+        "n": 18,
+        "rho": -0.07012230125638468,
+        "exploratory_p": 0.7821751087521553,
+        "direction_agreement": 0.0,
+        "n_non_ties": 1
+      },
+      "near_contact_geometry_0_1": {
+        "n": 18,
+        "rho": -0.20330237358101136,
+        "exploratory_p": 0.4184467334719628,
+        "direction_agreement": 0.3888888888888889,
+        "n_non_ties": 18
+      },
+      "severe_clash_penalty_0_1": {
+        "n": 18,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      },
+      "contact_only": {
+        "n": 18,
+        "rho": 0.269221756196092,
+        "exploratory_p": 0.28000183799837114,
+        "direction_agreement": 0.75,
+        "n_non_ties": 4
+      },
+      "geometry_only": {
+        "n": 18,
+        "rho": -0.20330237358101136,
+        "exploratory_p": 0.4184467334719628,
+        "direction_agreement": 0.3888888888888889,
+        "n_non_ties": 18
+      },
+      "clash_only_no_clash_is_best": {
+        "n": 18,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      }
+    }
+  },
+  "informative_abs_delta_pKd_ge_0_3": {
+    "n_pairs": 14,
+    "n_target_groups": 6,
+    "objectives": {
+      "composite_score": {
+        "n": 14,
+        "rho": 0.059340659340659345,
+        "exploratory_p": 0.8403017626906826,
+        "direction_agreement": 0.5,
+        "n_non_ties": 14
+      },
+      "contact_residue_pair_diversity_0_1": {
+        "n": 14,
+        "rho": 0.3027579564157125,
+        "exploratory_p": 0.2927296955636273,
+        "direction_agreement": 1.0,
+        "n_non_ties": 3
+      },
+      "interface_residue_coverage_0_1": {
+        "n": 14,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      },
+      "near_contact_geometry_0_1": {
+        "n": 14,
+        "rho": -0.24835164835164836,
+        "exploratory_p": 0.39191953893845743,
+        "direction_agreement": 0.35714285714285715,
+        "n_non_ties": 14
+      },
+      "severe_clash_penalty_0_1": {
+        "n": 14,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      },
+      "contact_only": {
+        "n": 14,
+        "rho": 0.3027579564157125,
+        "exploratory_p": 0.2927296955636273,
+        "direction_agreement": 1.0,
+        "n_non_ties": 3
+      },
+      "geometry_only": {
+        "n": 14,
+        "rho": -0.24835164835164836,
+        "exploratory_p": 0.39191953893845743,
+        "direction_agreement": 0.35714285714285715,
+        "n_non_ties": 14
+      },
+      "clash_only_no_clash_is_best": {
+        "n": 14,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      }
+    }
+  },
+  "informative_same_observed_receptor": {
+    "n_pairs": 10,
+    "n_target_groups": 5,
+    "objectives": {
+      "composite_score": {
+        "n": 10,
+        "rho": 0.28484848484848485,
+        "exploratory_p": 0.42503815489214547,
+        "direction_agreement": 0.6,
+        "n_non_ties": 10
+      },
+      "contact_residue_pair_diversity_0_1": {
+        "n": 10,
+        "rho": 0.38029004338475825,
+        "exploratory_p": 0.2783431906089357,
+        "direction_agreement": 1.0,
+        "n_non_ties": 3
+      },
+      "interface_residue_coverage_0_1": {
+        "n": 10,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      },
+      "near_contact_geometry_0_1": {
+        "n": 10,
+        "rho": -0.006060606060606061,
+        "exploratory_p": 0.9867429111949892,
+        "direction_agreement": 0.4,
+        "n_non_ties": 10
+      },
+      "severe_clash_penalty_0_1": {
+        "n": 10,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      },
+      "contact_only": {
+        "n": 10,
+        "rho": 0.38029004338475825,
+        "exploratory_p": 0.2783431906089357,
+        "direction_agreement": 1.0,
+        "n_non_ties": 3
+      },
+      "geometry_only": {
+        "n": 10,
+        "rho": -0.006060606060606061,
+        "exploratory_p": 0.9867429111949892,
+        "direction_agreement": 0.4,
+        "n_non_ties": 10
+      },
+      "clash_only_no_clash_is_best": {
+        "n": 10,
+        "rho": null,
+        "exploratory_p": null,
+        "direction_agreement": null,
+        "n_non_ties": 0
+      }
+    }
+  }
+}

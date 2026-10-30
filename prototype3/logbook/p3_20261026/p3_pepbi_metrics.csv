@@ -1,0 +1,3 @@
+label,mean,low,high,independent_binding_groups,target
+Native sequence score,0.3762,0.211,0.5315,11,calculated ΔG from KD
+Rosetta dG,0.3927,0.2345,0.5475,11,calculated ΔG from KD

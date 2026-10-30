@@ -1,0 +1,19 @@
+target,binding_group,predictor,n_distinct_sequences,spearman_rho
+_calc_dg,APC - Amer1 Fragment,_c_score,3,1.0
+_calc_dg,APC - Amer1 Fragment,_ria_dg,3,0.5
+_calc_dg,CaVβ2a - AID,_c_score,3,-0.5
+_calc_dg,CaVβ2a - AID,_ria_dg,3,-0.5
+_calc_dg,SUMO1 - PIASX SIM,_c_score,5,-0.6
+_calc_dg,SUMO1 - PIASX SIM,_ria_dg,5,0.3
+_calc_dg,SUMO2 - PIASX SIM,_c_score,6,-0.6
+_calc_dg,SUMO2 - PIASX SIM,_ria_dg,6,0.48571428571428577
+_calc_dg,Tat_SF1 - SF3b1 ULM Fragment,_c_score,3,-0.5
+_calc_dg,Tat_SF1 - SF3b1 ULM Fragment,_ria_dg,3,-0.5
+_calc_dg,TtSlyD - S2 Fragment,_c_score,16,0.7058823529411764
+_calc_dg,TtSlyD - S2 Fragment,_ria_dg,16,0.4294117647058823
+_calc_dg,TtSlyDΔIF - S2 Fragment,_c_score,5,0.49999999999999994
+_calc_dg,TtSlyDΔIF - S2 Fragment,_ria_dg,5,-0.19999999999999998
+_calc_dg,α-adaptin - Motif Peptide,_c_score,13,0.2857142857142857
+_calc_dg,α-adaptin - Motif Peptide,_ria_dg,13,0.8516483516483516
+_calc_dg,β-adaptin - Motif Peptide,_c_score,5,-0.7999999999999999
+_calc_dg,β-adaptin - Motif Peptide,_ria_dg,5,-0.49999999999999994

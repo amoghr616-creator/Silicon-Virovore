@@ -1,0 +1,7 @@
+seed	arm	exit_code	output_dir	log
+2601	baseline	0	prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2601	prototype3/results/p3_paired_arm_20261027T022810Z/logs/baseline_seed2601.log
+2601	adaptive	0	prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2601	prototype3/results/p3_paired_arm_20261027T022810Z/logs/adaptive_seed2601.log
+2602	baseline	0	prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2602	prototype3/results/p3_paired_arm_20261027T022810Z/logs/baseline_seed2602.log
+2602	adaptive	0	prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2602	prototype3/results/p3_paired_arm_20261027T022810Z/logs/adaptive_seed2602.log
+2603	baseline	0	prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2603	prototype3/results/p3_paired_arm_20261027T022810Z/logs/baseline_seed2603.log
+2603	adaptive	0	prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2603	prototype3/results/p3_paired_arm_20261027T022810Z/logs/adaptive_seed2603.log

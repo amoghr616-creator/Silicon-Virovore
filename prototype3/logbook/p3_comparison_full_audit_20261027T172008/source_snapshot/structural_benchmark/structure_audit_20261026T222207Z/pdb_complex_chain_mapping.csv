@@ -1,0 +1,266 @@
+target_group_id,peptide_sequence,pdb_id,target_sequence_available,status,receptor_chain,peptide_chain,receptor_match_fraction,peptide_sequence_exact,details
+0076040428b7f909,ARTKQTARKSTGGKAPRKQL,3ASK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0076040428b7f909,ARTKQTARKSTGGKAPRKQL,3ASL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0076040428b7f909,ARTKQTARKSTGGKAPRKQL,3ZVY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+030f6d8aa508f657,KLVALGINAV,5JZI,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+0dddc5809db5a844,EEEDYIIILE,2L8J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0dddc5809db5a844,SEEDYIIILE,2L8J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0dddc5809db5a844,SSEDFIIILE,2L8J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0dddc5809db5a844,SSEDWIIILE,2L8J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0dddc5809db5a844,SSEDYIIILE,2L8J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+0e2a4212efe4db12,SNEWIQPRLPQH,2QBX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+106a8b3fd850c7c5,EDEWVNVQY,3X0W,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+157e57336ec87f9f,KKRYDREFLLGF,2W97,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+157e57336ec87f9f,KKRYSREFLLGF,4AZA,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+1b6cd7b23a583c23,TSNLQEQIGW,5T70,True,mapped_candidate,G,C,1.0,True,Sequence-level chain mapping only; review before scoring.
+1b6cd7b23a583c23,TSTLQEQIGW,5T6Z,True,mapped_candidate,G,C,1.0,True,Sequence-level chain mapping only; review before scoring.
+1cf806927613dab4,IPPAPNAPAPTPP,2LNH,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+1cf806927613dab4,IPPAPNWPAPTPP,2LNH,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+1d6058935c90487d,STVPVAPPRRRRGRNLT,5I22,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+20e8fc797c8f2615,ILENLKDCGLF,3DQB,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+299c474e44fa002b,EDEWVNVQY,5DPS,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+314831cbc6e4498d,VMAPKTLFL,3CII,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+314831cbc6e4498d,VMAPRTLFL,3CII,True,mapped_candidate,H,C,1.0,True,Sequence-level chain mapping only; review before scoring.
+3798fd5c05a29601,PKCYEAGMTLGARKLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGDTLGARKLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGAQKLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGARALKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGARKLAKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGARKLKAL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGARKLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGARTLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKCYEAGMTLGAWKLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,RKYYEAGMTLGARKLKKL,3BTR,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3798fd5c05a29601,SGKKRRRER,5UMZ,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3df723e8efbabb02,SCKTSWADAVREAAAQRR,2KT5,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3df723e8efbabb02,SCKTSWADRAREAAAQRR,2KT5,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+3df723e8efbabb02,SCKTSWADRVREAAAQRR,2KT5,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+4aceae74eeb2812d,MRIPNYQLAPTKL,5WQD,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+4aceae74eeb2812d,MRIPNYQLDPTKL,5WQD,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+4aceae74eeb2812d,MRIPNYQLEPTKL,5WQD,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+4aceae74eeb2812d,MRIPNYQLSPTKL,5WQD,True,mapped_candidate,C,I,1.0,True,Sequence-level chain mapping only; review before scoring.
+4cf30524790eb285,PEATAPPEE,3OBX,True,mapped_candidate,A,B,0.9857142857142858,True,Sequence-level chain mapping only; review before scoring.
+4cf30524790eb285,PEPTAPPEE,3OBU,True,mapped_candidate,A,B,0.9788732394366197,True,Sequence-level chain mapping only; review before scoring.
+511419cac27e4966,FEDLRLLSF,6MT5,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+511419cac27e4966,FEDLRVLSF,6MTM,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+511419cac27e4966,FEDLRVSSF,6MT4,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+53b054db88f740bc,SVATVSESFLTE,4Z2P,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+53b054db88f740bc,SVATVSESLLTE,4Z2O,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+549dc2f31d2981e3,LDEETGEFL,5WFV,True,mapped_candidate,A,P,0.9929577464788732,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,FLRGRAYGL,3FFC,True,mapped_candidate,A,C,0.9566787003610109,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVAEADYFEY,4PRB,True,mapped_candidate,A,C,0.9239130434782609,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGDADYFEY,4PRH,True,mapped_candidate,A,C,0.9166666666666666,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGEADYFEY,3MV7,True,mapped_candidate,A,C,0.9202898550724637,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGEADYFEY,3MV8,True,mapped_candidate,A,C,0.9202898550724637,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGEADYFEY,3MV9,True,mapped_candidate,A,C,0.9202898550724637,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGEADYFEY,4PRI,True,mapped_candidate,A,C,0.9239130434782609,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGQADYFEY,4PRE,True,mapped_candidate,A,C,0.9239130434782609,True,Sequence-level chain mapping only; review before scoring.
+5de81f208e7148a6,HPVGQADYFEY,4PRP,True,mapped_candidate,A,C,0.9202898550724637,True,Sequence-level chain mapping only; review before scoring.
+5f093c99db2aa40b,AKKHRKVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKQHRKVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRFRKVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHAKVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHERVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHQRVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHRKALRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHRKELRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHRKFLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHRKVFRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHRKVLRD,1ZKK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f093c99db2aa40b,AKRHRKVLRD,3F9W,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f83c7ecb5c2eb7f,HWKHLHNTKTFL,1BQQ,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+5f83c7ecb5c2eb7f,HWKRLHNTKTFL,1BQQ,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+6b8ff8f7b25c2a43,KPVARPILSLNRK,1U9L,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+6b8ff8f7b25c2a43,KPVNRPALSLNRK,1U9L,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+6b8ff8f7b25c2a43,KPVNRPILSANRK,1U9L,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+6b8ff8f7b25c2a43,KPVNRPILSLNRK,1U9L,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+6c038ed8f95e0248,PKYVKQNTLKLAT,1DLH,True,mapped_candidate,B,C,0.9308510638297872,True,Sequence-level chain mapping only; review before scoring.
+6ca8b89b8a573a51,ARTKQTARKS,5T8R,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+6eb756706b1a73df,SWESHKSGGETRL,2KQL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+741e248a9af7f9d1,EEEEAQVRKENQF,2OVP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+741e248a9af7f9d1,EEEEAQVRKENQH,2OVP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+741e248a9af7f9d1,EEEEAQVRKENQW,2OVP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+741e248a9af7f9d1,EEEEAQVRKENQY,2OVP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+77ed25650e717b3f,LTFLEYWAQLMQ,5UMM,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+77ed25650e717b3f,TSFAEYWALLSP,3LNZ,True,mapped_candidate,A,H,1.0,True,Sequence-level chain mapping only; review before scoring.
+77ed25650e717b3f,TSFAEYWNLLSP,3EQS,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+77fd420a0c2504d1,SQAPARPPKPRPRRTAY,2AK5,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7a7861a2f4b76659,HSKRPLPPLPSL,3I5S,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7afbd7065011f3c4,EDGGSFWYGAMKALYG,6OD0,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7b02f3d954c7c3f2,EAAGIGILTV,4QOK,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,ELAGIGILTV,3HG1,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,GTSGSPIINR,5WKH,True,mapped_candidate,A,C,0.9744525547445255,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,GTSGSPIVNR,5WKF,True,mapped_candidate,A,C,0.9744525547445255,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,RYPLTFGWCF,3VXR,True,mapped_candidate,A,C,0.9197080291970803,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,RYPLTFGWCF,5XOV,True,mapped_candidate,A,C,0.9197080291970803,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,RYPLTLGWCF,3VXS,True,mapped_candidate,A,C,0.9197080291970803,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLLMWITQC,2BNQ,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7b02f3d954c7c3f2,SLLMWITQC,2F53,True,mapped_candidate,A,C,0.9309090909090909,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLLMWITQC,2P5E,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLLMWITQC,2PYE,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLLMWITQC,3GJE,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7b02f3d954c7c3f2,SLLMWITQC,3GJF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7b02f3d954c7c3f2,SLLMWITQV,2BNQ,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLLMWITQV,3GJE,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7b02f3d954c7c3f2,SLLMWITQV,3GJF,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLYNTIATL,5NMF,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7b02f3d954c7c3f2,SLYNTVATL,5NME,True,mapped_candidate,A,C,0.9311594202898551,True,Sequence-level chain mapping only; review before scoring.
+7cfce2e0f534e9ee,GSVSRGTQTE,3P8M,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQAGRQLAIIGDDINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGAQLAIIGDDINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQAAIIGDDINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAAIGDDINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAIAGDDINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAIIADDINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAIIGADINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAIIGDAINR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAIIGDDANR,1BXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,GQVGRQLAIIGDDINR,1BXL,True,mapped_candidate,A,B,0.9392265193370166,True,Sequence-level chain mapping only; review before scoring.
+7ff04ddccf949e11,GQVGRQLAIIGDDINR,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QNLLAQLADLGV,2PIL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QQYGRELRRMSDEFVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRVGRELRRMSDEFVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELARMSDEFVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELRIMSDEFVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELRRISDEFVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELRRMSDEFND,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELRRMSDEFVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELRRMSDEFVR,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+7ff04ddccf949e11,QRYGRELRRMSDEIVD,1G5J,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+838bd1d1720a9be0,SPGEGPAGTG,4YSI,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+838bd1d1720a9be0,SPGEGPSGTG,4YSI,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+84740e39f0c74d7a,DTSRMEEVD,6FDP,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+90075634f6e58f79,AATKQTARKSY,2H13,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,ARLKQTARKSY,2H13,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,ARTKQTARKST,2H9M,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,ARTKQTARKSY,2H13,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,ARTKQTARKSY,3PSL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,ARTKQTLRKSY,2H13,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,ARVKQTARKSY,3PSL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,GRTKQTARKSY,3PSL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+90075634f6e58f79,SRTKQTARKSY,3PSL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAASIDRSTKPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIARSTKPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIDASTKPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIDRSTKAPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIDRSTKPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIDRSTKVPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIDRSTRPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIERSTKPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+92043fe21ca620bd,PAPSIKRSTKPPL,1OEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9410cfc048656f28,VMAPKTLFL,3CII,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9410cfc048656f28,VMAPRTLFL,3CII,True,mapped_candidate,H,C,0.9568965517241379,True,Sequence-level chain mapping only; review before scoring.
+9635f5e11bc2e95c,ELDLETLAPCIPMDGEDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLAPYIPIDGEDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLAPYIPMDGEDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLAPYIPMDGEDLQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLAPYIPMDGEEFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLAPYIPMDREDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLTPYIPMDGEDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETLVPYIPMDGEDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9635f5e11bc2e95c,ELDLETPAPYIPMDGEDFQ,6BVB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+96542f6cfd17c202,FNYESTDPFTAK,2KFG,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+96542f6cfd17c202,FNYESTGPFTAK,2KFH,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+96542f6cfd17c202,FNYESTNPFTAK,2KFF,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+96542f6cfd17c202,NPFAAAAAA,2KSP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+96542f6cfd17c202,NPFAEAAAA,2KSP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+96542f6cfd17c202,NPFEAAAAA,2KSP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+96542f6cfd17c202,NPFEEAAAA,2KSP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+96542f6cfd17c202,NPFEEEAAA,2KSP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,CAKKGLIDFYLMPSLST,2ZVK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,CAKKGLIDYYAMPSLST,2ZVK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,CAKKGLIDYYLMPSLST,2ZVK,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,KRRQTSMTDFYFHSK,7KQ1,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,KRRSNSHQNVLSNYFPRVS,5IY4,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,KRRSNSHQNVLSNYYPRVS,5IY4,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,KRRSNSHQVVLSNYFPRVS,5IY4,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,QHGKKDSAITDHFMRLPKA,5MAV,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,QHGKKDSKITDHFMRLPKA,5MAV,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9dec884956b52202,QHGKKDSRITDHFMRLPKA,5MAV,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9e7d7130805f2344,KETAACKFERQFMDCSTSAA,2E3W,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9e7d7130805f2344,KETAACKFERQHMDCSTSAA,2E3W,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+9f78fdccd40dfd93,ILAKFLHEL,5MER,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+9f78fdccd40dfd93,ILAKFLHTL,5MEQ,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+9f78fdccd40dfd93,ILAKFLHWL,5MEN,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+9f78fdccd40dfd93,ILGKFLHRL,5MEO,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+9f78fdccd40dfd93,ILGKFLHWL,5MEP,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+a1b102236d88295a,TAKQPPVPPPRKKRISR,3U23,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a296e13337b05107,LYGSAPQEELII,2KOH,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a296e13337b05107,LYGSDPQEELII,2KOH,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a5f256fc653515d1,EWVADVNPNSGGFIYNQRFK,1S78,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a5f256fc653515d1,EWVADVNPNSGGFIYNQYFK,1S78,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a5f256fc653515d1,EWVADVNPNSGGSIYNQRFK,1S78,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a5f256fc653515d1,EWVADVNPNSGGSIYNQYFK,1S78,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a5f256fc653515d1,EWVADVNPNVGGSIYNQRFK,1S78,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a5f256fc653515d1,EWVADVNPNVGGSIYNQYFK,1S78,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+a602d6a1ae16fe54,VSLARRPLPPLP,1QWF,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+b0a6d069a08ac3b8,MANERADLIAYLEQATK,3QIW,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+b0a6d069a08ac3b8,MANERADLIAYLKQATK,3QIB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+b0a6d069a08ac3b8,MANERADLIAYLKQATK,3QIU,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+b3a45124a0d4a00c,NEEGFFSARGHRPLD,1R17,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+b3a45124a0d4a00c,NEEGFFSARSHRPLD,1R17,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+ba7f73ab9a6a9a88,DEEDDDDEDEADDEDDDS,5GOW,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+ba7f73ab9a6a9a88,DEEDDDDEDEFDDEDDDS,5GOW,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+bf5ccc817349256c,APSYSPPPPP,1BBZ,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+c112aa9c99862dfe,ASPWATCDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PAPWATCDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSAWATCDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSPAATCDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSPFATCDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSPWAACDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSPWATCAF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSPWATCDA,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c112aa9c99862dfe,PSPWATCDF,4TKY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c2e9cc14b97d8582,YLEPGPVTV,5EU6,True,target_receptor_chain_not_identified,,C,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+c44ad4cd8d5338b0,VMAPRTLFL,3BZE,True,mapped_candidate,A,P,0.9963369963369964,True,Sequence-level chain mapping only; review before scoring.
+c44ad4cd8d5338b0,VMAPRTLIL,5W1V,True,mapped_candidate,A,C,0.9963235294117647,True,Sequence-level chain mapping only; review before scoring.
+c44ad4cd8d5338b0,VMAPRTLVL,5W1W,True,mapped_candidate,A,C,0.9963235294117647,True,Sequence-level chain mapping only; review before scoring.
+c7c41c696ccdc860,NQLAAFDTDL,3DIW,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+c7c41c696ccdc860,NQLAWFDTDL,3DIW,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d04d6b1f82546cc5,RSSRTRRETQV,2KPL,True,target_receptor_chain_not_identified,,B,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+d9038a28b26993b5,EFGPPPGRK,1GYF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9038a28b26993b5,EFGPPPGWK,1GYF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9038a28b26993b5,EFGPPPGWKG,1GYF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9038a28b26993b5,EFGPPPGWL,1GYF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9038a28b26993b5,EFGPPPGWLG,1GYF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9e46483ab37a7bb,FPSSFLQRYYLAKRR,2PZX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9e46483ab37a7bb,FPSSKLQRYYLAKRR,2PZX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9e46483ab37a7bb,FPSSWLQRFYLAKRR,2PZX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9e46483ab37a7bb,FPSSWLQRYYLAKRQ,2PZX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9e46483ab37a7bb,FPSSWLQRYYLAKRR,2PZX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+d9e46483ab37a7bb,FPSSWLQRYYQAKRR,2PZX,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+da732b5e8d2d70df,QNGPYENPTY,3MXC,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+da732b5e8d2d70df,QNGPYVNPTY,3MXY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQFSV,5HED,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQFSV,5HF1,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQFSV,5HFC,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQFSV,5HFF,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQTSV,5HEB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQTSV,5HEY,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+db3d0d3ffb286805,TKNYKQTSV,5HFB,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+de09c11bf583bbb0,LPFELRGHLV,5ZYS,True,mapped_candidate,A,B,1.0,True,Sequence-level chain mapping only; review before scoring.
+e579a0e392e4d8ca,QNLLAQLADLGV,3DVU,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+e579a0e392e4d8ca,QNLLAQLAELGV,4MI8,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+e8ebd86ae6e434c6,DKELYPLASLRSLFG,2R05,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+e8ebd86ae6e434c6,DKELYPLTSLRSLFG,2R02,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+e8ebd86ae6e434c6,PKVDADEEALKQLAEWVS,3C3O,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+e8ebd86ae6e434c6,PKVDEDEEALKQLAEWVS,3C3O,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+e8ebd86ae6e434c6,TQNLYPDLSEIKK,2R03,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+eb50e6379533a9a1,SQAPARPPKPRPRRTAY,2BZ8,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+eb720b10ca28b34c,PPGPAGPPG,6EVN,True,mapped_candidate,A,C,1.0,True,Sequence-level chain mapping only; review before scoring.
+eb720b10ca28b34c,PPGPEGPPG,6EVP,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+eb720b10ca28b34c,PPGPRGPPG,6EVO,True,mapped_candidate,A,C,1.0,True,Sequence-level chain mapping only; review before scoring.
+ebd6aeb019f34633,APRRLPIANRISVSE,4J8S,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+ebd6aeb019f34633,APRRLPIFNRISVSE,4J8S,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+f566bc16079b5de0,MRIPNYQLAPTKL,5WQD,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+f566bc16079b5de0,MRIPNYQLDPTKL,5WQD,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+f566bc16079b5de0,MRIPNYQLEPTKL,5WQD,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+f566bc16079b5de0,MRIPNYQLSPTKL,5WQD,True,target_receptor_chain_not_identified,,I,,True,Exact peptide chain found; no other chain passed the 0.80 target-sequence match screen.
+f7a42229147d2a5f,DNRLGLVYQF,1SOZ,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+f7a42229147d2a5f,DNRLGLVYWF,2R3Y,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+f8f5d961b72cef8c,QNGYENPTYKFFEQ,1X11,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+fb619a5b2a22bab9,LTFLEYWAQLMQ,5UML,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+fb619a5b2a22bab9,TSFAEYWNLLSP,3EQY,True,mapped_candidate,A,C,0.9642857142857143,True,Sequence-level chain mapping only; review before scoring.
+fd548cf534d2ac14,GAETFYVDGA,1KJG,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+fd548cf534d2ac14,GAEVFYVDGA,2NXL,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.
+fd548cf534d2ac14,GAQTFYVDGA,2NXM,True,peptide_chain_not_exact,,,,False,No chain exactly matches the experimental peptide sequence.

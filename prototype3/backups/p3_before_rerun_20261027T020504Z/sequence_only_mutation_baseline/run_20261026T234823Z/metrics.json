@@ -1,0 +1,129 @@
+{
+  "experiment": "Exploratory sequence-only mutation-effect comparator",
+  "input_csv": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/ppikb_kd_benchmark/filtered_kd_measurements.csv",
+  "detected_columns": {
+    "peptide": "Peptide_Sequence",
+    "target_grouping": "Protein_Sequence",
+    "p_affinity": "_p_affinity",
+    "context": [
+      "_assay",
+      "_affinity_type"
+    ]
+  },
+  "row_counts": {
+    "input_rows": 3439,
+    "valid_rows": 3439,
+    "unique_measurements_after_median_aggregation": 2496,
+    "single_substitution_pairs": 693,
+    "target_groups": 123,
+    "context_groups": 29,
+    "informative_pairs_abs_delta_pKd_ge_0_3": 466
+  },
+  "split": {
+    "method": "5-fold GroupKFold, grouped by target",
+    "all_targets_disjoint_between_train_and_test_each_fold": true,
+    "folds": [
+      {
+        "fold": 1,
+        "n_train_pairs": 554,
+        "n_test_pairs": 139,
+        "n_train_targets": 99,
+        "n_test_targets": 24,
+        "target_overlap": 0
+      },
+      {
+        "fold": 2,
+        "n_train_pairs": 554,
+        "n_test_pairs": 139,
+        "n_train_targets": 98,
+        "n_test_targets": 25,
+        "target_overlap": 0
+      },
+      {
+        "fold": 3,
+        "n_train_pairs": 554,
+        "n_test_pairs": 139,
+        "n_train_targets": 98,
+        "n_test_targets": 25,
+        "target_overlap": 0
+      },
+      {
+        "fold": 4,
+        "n_train_pairs": 555,
+        "n_test_pairs": 138,
+        "n_train_targets": 99,
+        "n_test_targets": 24,
+        "target_overlap": 0
+      },
+      {
+        "fold": 5,
+        "n_train_pairs": 555,
+        "n_test_pairs": 138,
+        "n_train_targets": 98,
+        "n_test_targets": 25,
+        "target_overlap": 0
+      }
+    ]
+  },
+  "model": {
+    "type": "Ridge regression",
+    "features": "directed amino-acid substitution + position + length + simple property deltas",
+    "alpha": 10.0,
+    "alpha_tuned_on_test_set": false
+  },
+  "out_of_fold_metrics": {
+    "zero_change_baseline": {
+      "n": 693,
+      "mae": 0.825359312626174,
+      "rmse": 1.3840433664872516,
+      "spearman_rho": null,
+      "informative_cutoff_abs_delta_pKd": 0.3,
+      "n_informative": 466,
+      "informative_direction_coverage": 0.0,
+      "informative_direction_accuracy": null,
+      "informative_direction_accuracy_ties_half": 0.5
+    },
+    "training_fold_mean_baseline": {
+      "n": 693,
+      "mae": 0.8204334597022305,
+      "rmse": 1.3733855596668847,
+      "spearman_rho": -0.08411059247873977,
+      "informative_cutoff_abs_delta_pKd": 0.3,
+      "n_informative": 466,
+      "informative_direction_coverage": 1.0,
+      "informative_direction_accuracy": 0.6266094420600858,
+      "informative_direction_accuracy_ties_half": 0.6266094420600858
+    },
+    "sequence_only_ridge": {
+      "n": 693,
+      "mae": 0.8417658436504739,
+      "rmse": 1.363396808778441,
+      "spearman_rho": 0.24293544687990765,
+      "informative_cutoff_abs_delta_pKd": 0.3,
+      "n_informative": 466,
+      "informative_direction_coverage": 1.0,
+      "informative_direction_accuracy": 0.6673819742489271,
+      "informative_direction_accuracy_ties_half": 0.6673819742489271
+    }
+  },
+  "cluster_bootstrap": {
+    "method": "target-cluster bootstrap; 2000 replicates",
+    "seed": 20261026,
+    "spearman_rho_95pct_ci": [
+      0.14729049978348047,
+      0.33721265232300474
+    ],
+    "informative_direction_accuracy_95pct_ci": [
+      0.601446451050644,
+      0.7329791099000909
+    ],
+    "valid_rho_replicates": 2000,
+    "valid_direction_replicates": 2000
+  },
+  "interpretation_limits": [
+    "This is a sequence-only comparator, not the project c_score.",
+    "It does not validate the target-aware structural score.",
+    "Affinity differences are compared only within the same target and detected assay context.",
+    "Results are retrospective and exploratory, not prospective biological validation."
+  ]
+}

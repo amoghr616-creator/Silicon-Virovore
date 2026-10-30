@@ -1,0 +1,31 @@
+{
+  "workbook_rows": 329,
+  "unique_canonical_sequences": 84,
+  "unique_sequences_scored_by_direct_C_api": 74,
+  "native_C_smoke_test_lengths": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    19,
+    20,
+    21,
+    23,
+    28
+  ],
+  "minimum_native_sequence_length": 9,
+  "production_bridge_modified": false,
+  "experimental_delta_g_rows_total": 54,
+  "experimental_rows_scored": 50,
+  "experimental_rows_excluded_due_to_short_sequence": 4,
+  "distinct_measured_sequences_scored": 14,
+  "row_level_spearman_rho_descriptive": -0.22642330160881313,
+  "sequence_mean_spearman_rho_descriptive": -0.3303972772557152,
+  "sequence_mean_pearson_r_descriptive": -0.344879732131606,
+  "interpretation": "Exploratory association only. The native score passes target=NULL; measurements span multiple protein targets, groups, mutations, and conditions. Row-level correlation is not independent validation. Sequence-level mean Delta G can also confound distinct targets."
+}

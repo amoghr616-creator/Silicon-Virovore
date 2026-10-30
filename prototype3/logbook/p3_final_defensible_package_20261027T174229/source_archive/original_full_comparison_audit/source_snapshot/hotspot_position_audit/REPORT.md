@@ -1,0 +1,109 @@
+# ARISE hotspot position-window audit
+
+This is a retrospective exploratory comparison of the logged hotspot positions with experimental mutation-affinity effects. It tests whether the predicted relative positions are associated with larger experimental effects than random equal-width contiguous windows. It does not establish HERV-K-specific hotspot importance or causal benefit from adaptive search.
+
+```json
+{
+  "benchmark": "Retrospective PPIKB position-window validation",
+  "input": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/sequence_only_mutation_baseline/run_20261026T234823Z/single_substitution_pairs.csv",
+  "n_single_substitution_pairs": 693,
+  "n_informative_pairs_abs_delta_pKd_ge_0_3": 466,
+  "hotspot_coordinate_mapping": "The logs specify zero-based start and end-exclusive indices; [0,3) maps to one-based positions 1,2,3; [1,3) maps to positions 2,3.",
+  "primary_window_test": {
+    "label": "latest_logged_hotspot_positions_1_to_3",
+    "positions_1based": [
+      1,
+      2,
+      3
+    ],
+    "informative_pairs_only": false,
+    "pairs_total": 693,
+    "pairs_in_window": 109,
+    "pairs_outside_window": 584,
+    "contexts_after_matching_filter": 86,
+    "unique_target_sequences": 123,
+    "raw_mean_abs_delta_pKd_in_window": 0.8582792040816429,
+    "raw_mean_abs_delta_pKd_outside_window": 0.8192150178168482,
+    "raw_median_abs_delta_pKd_in_window": 0.5201081171791433,
+    "raw_median_abs_delta_pKd_outside_window": 0.5237776248695273,
+    "centered_effect_difference_window_minus_elsewhere": -0.011501530384395456,
+    "target_cluster_bootstrap_95ci": [
+      -0.16901286911387303,
+      0.15432571704219142
+    ],
+    "bootstrap_valid_replicates": 2000,
+    "random_contiguous_window_permutation_p_greater": 0.5860827834433113,
+    "random_contiguous_window_permutation_p_two_sided": 0.9218156368726255,
+    "permutation_valid_replicates": 5000,
+    "permutation_count_requested": 5000,
+    "bootstrap_count_requested": 2000,
+    "interpretation": "Positive centered difference means mutations in the selected window have larger absolute measured affinity effects than the within-context expectation. This is retrospective and exploratory."
+  },
+  "previous_generation_window_sensitivity": {
+    "label": "previous_generation_hotspot_positions_2_to_3",
+    "positions_1based": [
+      2,
+      3
+    ],
+    "informative_pairs_only": false,
+    "pairs_total": 693,
+    "pairs_in_window": 72,
+    "pairs_outside_window": 621,
+    "contexts_after_matching_filter": 86,
+    "unique_target_sequences": 123,
+    "raw_mean_abs_delta_pKd_in_window": 0.8558699062833472,
+    "raw_mean_abs_delta_pKd_outside_window": 0.8218218524920089,
+    "raw_median_abs_delta_pKd_in_window": 0.49121637042493926,
+    "raw_median_abs_delta_pKd_outside_window": 0.5288841700741336,
+    "centered_effect_difference_window_minus_elsewhere": -0.018426000846649134,
+    "target_cluster_bootstrap_95ci": [
+      -0.20258150000062086,
+      0.1683673545532448
+    ],
+    "bootstrap_valid_replicates": 2000,
+    "random_contiguous_window_permutation_p_greater": 0.6196760647870426,
+    "random_contiguous_window_permutation_p_two_sided": 0.8454309138172366,
+    "permutation_valid_replicates": 5000,
+    "permutation_count_requested": 5000,
+    "bootstrap_count_requested": 2000,
+    "interpretation": "Positive centered difference means mutations in the selected window have larger absolute measured affinity effects than the within-context expectation. This is retrospective and exploratory."
+  },
+  "informative_subset_sensitivity": {
+    "label": "latest_hotspot_positions_1_to_3_informative_pairs",
+    "positions_1based": [
+      1,
+      2,
+      3
+    ],
+    "informative_pairs_only": true,
+    "pairs_total": 466,
+    "pairs_in_window": 68,
+    "pairs_outside_window": 398,
+    "contexts_after_matching_filter": 71,
+    "unique_target_sequences": 111,
+    "raw_mean_abs_delta_pKd_in_window": 1.3042212755964766,
+    "raw_mean_abs_delta_pKd_outside_window": 1.1423108474271246,
+    "raw_median_abs_delta_pKd_in_window": 0.9463189699149308,
+    "raw_median_abs_delta_pKd_outside_window": 0.7755395751650886,
+    "centered_effect_difference_window_minus_elsewhere": 0.17159960568330337,
+    "target_cluster_bootstrap_95ci": [
+      0.01481250014849741,
+      0.3418983806200788
+    ],
+    "bootstrap_valid_replicates": 2000,
+    "random_contiguous_window_permutation_p_greater": 0.01999600079984003,
+    "random_contiguous_window_permutation_p_two_sided": 0.052789442111577684,
+    "permutation_valid_replicates": 5000,
+    "permutation_count_requested": 5000,
+    "bootstrap_count_requested": 2000,
+    "interpretation": "Positive centered difference means mutations in the selected window have larger absolute measured affinity effects than the within-context expectation. This is retrospective and exploratory."
+  },
+  "limitations": [
+    "The experimental dataset was explored in prior analyses; this is not an untouched prospective test.",
+    "PPIKB peptides have different targets and sequences from the 21-aa search seed.",
+    "This tests a general peptide-position window, not HERV-K Env-specific residue importance.",
+    "It does not evaluate target-aware structural contacts or prove that ARISE guided the mutations in the logged smoke run.",
+    "The permutation test compares the observed window with random contiguous windows of equal width, stratified by peptide length."
+  ]
+}
+```

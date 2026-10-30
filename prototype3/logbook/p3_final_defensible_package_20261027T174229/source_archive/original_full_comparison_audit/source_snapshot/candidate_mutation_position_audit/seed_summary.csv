@@ -1,0 +1,7 @@
+arm,seed,candidate_records,valid_parent_child_comparisons,changed_comparisons,changed_comparison_pct,unchanged_comparisons,total_substitution_events,mean_substitutions_per_valid_comparison
+baseline,seed2601,160,160,160,100.0,0,160,1
+baseline,seed2602,160,160,160,100.0,0,160,1
+baseline,seed2603,160,160,160,100.0,0,160,1
+adaptive,seed2601,160,160,150,93.75,10,170,1.0625
+adaptive,seed2602,160,160,150,93.75,10,170,1.0625
+adaptive,seed2603,160,160,150,93.75,10,170,1.0625

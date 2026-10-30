@@ -1,0 +1,3 @@
+arm,unique_generated_sequences,exact_generated_sequences_with_measured_pKd,exact_candidate_native_score_vs_measured_pKd_spearman,external_pairs_at_arm_mutated_positions,scored_external_pairs_at_arm_mutated_positions,external_delta_score_vs_delta_pKd_spearman,external_informative_direction_accuracy,scope
+adaptive,450,0,,0,0,,,"Exact sequence matches measure generated-candidate association. Position-filtered external pairs are retrospective and exploratory, not measurements of the generated candidates."
+baseline,275,0,,0,0,,,"Exact sequence matches measure generated-candidate association. Position-filtered external pairs are retrospective and exploratory, not measurements of the generated candidates."

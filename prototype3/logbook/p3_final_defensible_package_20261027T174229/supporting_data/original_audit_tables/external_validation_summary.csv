@@ -1,0 +1,4 @@
+benchmark,n,spearman_rho,direction_accuracy,notes
+"Native C-score, broad matched mutation benchmark",693,-0.107139,0.424893,"621 unique peptides; 466 informative pairs; cluster-bootstrap rho CI [-0.2022,-0.0175]."
+"Structural scoring, all verified mapped pairs",18,0.058824,0.5,7 targets; only 18 of 693 input pairs were scored.
+"Structural scoring, same-receptor subset",10,0.28485,0.6,5 targets; rho p=.425; very small subset.

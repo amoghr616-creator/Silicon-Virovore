@@ -1,0 +1,3 @@
+method,mae,rmse,spearman_rho,direction_accuracy
+Training-fold mean,0.8182126,1.3655815,0.0458706,0.6266094
+Sequence-only Ridge,0.8643158,1.3956729,0.1087403,0.5896226

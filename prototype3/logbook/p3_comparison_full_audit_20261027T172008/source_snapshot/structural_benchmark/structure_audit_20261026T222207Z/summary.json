@@ -1,0 +1,25 @@
+{
+  "input_pair_file": "prototype3/results/experimental_mutation_benchmark/run_20261026T221936Z/single_substitution_pairs.csv",
+  "input_pair_file_sha256": "903462d8690013743d09eac9f9515716ce8e8303097476a3acfda1139065c6cc",
+  "pairs_total": 693,
+  "pairs_with_both_PDB_ID_fields": 195,
+  "unique_PDB_IDs_requested": 139,
+  "PDB_files_downloaded_and_parsed": 139,
+  "PDB_download_failures": 0,
+  "target_peptide_PDB_mappings_attempted": 265,
+  "mapping_status_counts": {
+    "peptide_chain_not_exact": 202,
+    "mapped_candidate": 51,
+    "target_receptor_chain_not_identified": 12
+  },
+  "pairs_with_mapped_structures_for_both_variants": 18,
+  "informative_pairs_abs_delta_pKd_at_least_0_3": 466,
+  "informative_pairs_with_both_mapped_structures": 14,
+  "mapping_rule": {
+    "peptide_chain": "exact observed canonical amino-acid sequence match",
+    "target_chain": "at least 0.80 of chain residues recovered as exact sequence matches to recorded target sequence",
+    "warning": "Mapping is a screening result, not proof of correct biological complex or structural correspondence."
+  },
+  "raw_structure_directory": "prototype3/data/raw/PPIKB/rcsb_structures_20261026T222207Z",
+  "output_directory": "prototype3/results/experimental_mutation_benchmark/structure_audit_20261026T222207Z"
+}

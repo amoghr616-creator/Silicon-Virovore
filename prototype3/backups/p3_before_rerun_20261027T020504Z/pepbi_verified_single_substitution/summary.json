@@ -1,0 +1,13 @@
+{
+  "source_rows_with_experimental_dg_and_protein_sequence": 50,
+  "distinct_peptide_protein_contexts": 27,
+  "exact_single_residue_receptor_variant_pairs": 4,
+  "pairs_with_explicit_mutation_annotation": 4,
+  "pairs_within_documented_peptide_length_range": 2,
+  "distinct_binding_groups": 2,
+  "experimental_dg_non_tied_pairs": 3,
+  "native_score_identical_pair_fraction": 1.0,
+  "native_pairwise_rank_concordance": null,
+  "rosetta_pairwise_rank_concordance": 0.6666666666666666,
+  "warning": "Small exploratory audit, not a generalizable affinity-validation study. Protein sequence indexing may refer to a fragment; verify annotations against source metadata. A peptide-only score is expected to be identical when the peptide sequence is held fixed."
+}

@@ -1,0 +1,66 @@
+Existing paired-run directory:
+/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/p3_paired_arm_20261027T022810Z
+
+Candidate files discovered:
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2601/p3_adaptive_2601/candidate_history.json
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2601/p3_adaptive_2601/top_candidates.csv
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2602/p3_adaptive_2602/candidate_history.json
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2602/p3_adaptive_2602/top_candidates.csv
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2603/p3_adaptive_2603/candidate_history.json
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2603/p3_adaptive_2603/top_candidates.csv
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2601/p3_baseline_2601/candidate_history.json
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2601/p3_baseline_2601/top_candidates.csv
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2602/p3_baseline_2602/candidate_history.json
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2602/p3_baseline_2602/top_candidates.csv
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2603/p3_baseline_2603/candidate_history.json
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2603/p3_baseline_2603/top_candidates.csv
+
+Candidate file schema inspection:
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2601/p3_adaptive_2601/candidate_history.json: JSON root=list
+  key examples: [0].candidate_id, [0].sequence, [0].generation, [0].run_id, [0].score, [0].generation_local_score, [0].generation_local_score_generation, [0].generation_local_score_source, [0].score_scope, [0].arise_comparable_score, [0].rank, [0].native_fitness, [0].consensus_docking, [0].vina_score, [0].structure_confidence, [0].parent_sequence, [0].mutation_count, [0].changed_positions_count, [0].mutation_event_budget, [0].hotspot_guided, [0].mutation_guidance_mode, [0].raw_objectives.fitness, [0].raw_objectives.docking, [0].raw_objectives.structure, [0].raw_objectives.helix, [0].raw_objectives.hydrophobicity, [0].raw_objectives.solvation, [0].raw_objectives.md, [0].raw_objectives.safety, [0].generation_normalized_objectives.fitness, [0].generation_normalized_objectives.docking, [0].generation_normalized_objectives.structure, [0].generation_normalized_objectives.helix, [0].generation_normalized_objectives.hydrophobicity, [0].generation_normalized_objectives.solvation
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2601/p3_adaptive_2601/top_candidates.csv: CSV rows=160
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2602/p3_adaptive_2602/candidate_history.json: JSON root=list
+  key examples: [0].candidate_id, [0].sequence, [0].generation, [0].run_id, [0].score, [0].generation_local_score, [0].generation_local_score_generation, [0].generation_local_score_source, [0].score_scope, [0].arise_comparable_score, [0].rank, [0].native_fitness, [0].consensus_docking, [0].vina_score, [0].structure_confidence, [0].parent_sequence, [0].mutation_count, [0].changed_positions_count, [0].mutation_event_budget, [0].hotspot_guided, [0].mutation_guidance_mode, [0].raw_objectives.fitness, [0].raw_objectives.docking, [0].raw_objectives.structure, [0].raw_objectives.helix, [0].raw_objectives.hydrophobicity, [0].raw_objectives.solvation, [0].raw_objectives.md, [0].raw_objectives.safety, [0].generation_normalized_objectives.fitness, [0].generation_normalized_objectives.docking, [0].generation_normalized_objectives.structure, [0].generation_normalized_objectives.helix, [0].generation_normalized_objectives.hydrophobicity, [0].generation_normalized_objectives.solvation
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2602/p3_adaptive_2602/top_candidates.csv: CSV rows=160
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2603/p3_adaptive_2603/candidate_history.json: JSON root=list
+  key examples: [0].candidate_id, [0].sequence, [0].generation, [0].run_id, [0].score, [0].generation_local_score, [0].generation_local_score_generation, [0].generation_local_score_source, [0].score_scope, [0].arise_comparable_score, [0].rank, [0].native_fitness, [0].consensus_docking, [0].vina_score, [0].structure_confidence, [0].parent_sequence, [0].mutation_count, [0].changed_positions_count, [0].mutation_event_budget, [0].hotspot_guided, [0].mutation_guidance_mode, [0].raw_objectives.fitness, [0].raw_objectives.docking, [0].raw_objectives.structure, [0].raw_objectives.helix, [0].raw_objectives.hydrophobicity, [0].raw_objectives.solvation, [0].raw_objectives.md, [0].raw_objectives.safety, [0].generation_normalized_objectives.fitness, [0].generation_normalized_objectives.docking, [0].generation_normalized_objectives.structure, [0].generation_normalized_objectives.helix, [0].generation_normalized_objectives.hydrophobicity, [0].generation_normalized_objectives.solvation
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/adaptive/seed2603/p3_adaptive_2603/top_candidates.csv: CSV rows=160
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2601/p3_baseline_2601/candidate_history.json: JSON root=list
+  key examples: [0].candidate_id, [0].sequence, [0].generation, [0].run_id, [0].score, [0].generation_local_score, [0].generation_local_score_generation, [0].generation_local_score_source, [0].score_scope, [0].arise_comparable_score, [0].rank, [0].native_fitness, [0].consensus_docking, [0].vina_score, [0].structure_confidence, [0].parent_sequence, [0].mutation_count, [0].changed_positions_count, [0].mutation_event_budget, [0].hotspot_guided, [0].mutation_guidance_mode, [0].raw_objectives.fitness, [0].raw_objectives.docking, [0].raw_objectives.structure, [0].raw_objectives.helix, [0].raw_objectives.hydrophobicity, [0].raw_objectives.solvation, [0].raw_objectives.md, [0].raw_objectives.safety, [0].generation_normalized_objectives.fitness, [0].generation_normalized_objectives.docking, [0].generation_normalized_objectives.structure, [0].generation_normalized_objectives.helix, [0].generation_normalized_objectives.hydrophobicity, [0].generation_normalized_objectives.solvation
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2601/p3_baseline_2601/top_candidates.csv: CSV rows=160
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2602/p3_baseline_2602/candidate_history.json: JSON root=list
+  key examples: [0].candidate_id, [0].sequence, [0].generation, [0].run_id, [0].score, [0].generation_local_score, [0].generation_local_score_generation, [0].generation_local_score_source, [0].score_scope, [0].arise_comparable_score, [0].rank, [0].native_fitness, [0].consensus_docking, [0].vina_score, [0].structure_confidence, [0].parent_sequence, [0].mutation_count, [0].changed_positions_count, [0].mutation_event_budget, [0].hotspot_guided, [0].mutation_guidance_mode, [0].raw_objectives.fitness, [0].raw_objectives.docking, [0].raw_objectives.structure, [0].raw_objectives.helix, [0].raw_objectives.hydrophobicity, [0].raw_objectives.solvation, [0].raw_objectives.md, [0].raw_objectives.safety, [0].generation_normalized_objectives.fitness, [0].generation_normalized_objectives.docking, [0].generation_normalized_objectives.structure, [0].generation_normalized_objectives.helix, [0].generation_normalized_objectives.hydrophobicity, [0].generation_normalized_objectives.solvation
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2602/p3_baseline_2602/top_candidates.csv: CSV rows=160
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2603/p3_baseline_2603/candidate_history.json: JSON root=list
+  key examples: [0].candidate_id, [0].sequence, [0].generation, [0].run_id, [0].score, [0].generation_local_score, [0].generation_local_score_generation, [0].generation_local_score_source, [0].score_scope, [0].arise_comparable_score, [0].rank, [0].native_fitness, [0].consensus_docking, [0].vina_score, [0].structure_confidence, [0].parent_sequence, [0].mutation_count, [0].changed_positions_count, [0].mutation_event_budget, [0].hotspot_guided, [0].mutation_guidance_mode, [0].raw_objectives.fitness, [0].raw_objectives.docking, [0].raw_objectives.structure, [0].raw_objectives.helix, [0].raw_objectives.hydrophobicity, [0].raw_objectives.solvation, [0].raw_objectives.md, [0].raw_objectives.safety, [0].generation_normalized_objectives.fitness, [0].generation_normalized_objectives.docking, [0].generation_normalized_objectives.structure, [0].generation_normalized_objectives.helix, [0].generation_normalized_objectives.hydrophobicity, [0].generation_normalized_objectives.solvation
+prototype3/results/p3_paired_arm_20261027T022810Z/runs/baseline/seed2603/p3_baseline_2603/top_candidates.csv: CSV rows=160
+
+PEPBI files scanned:
+prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/pepbi_exact_candidate_overlaps.csv
+prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/pepbi_summary.csv
+prototype3/results/pepbi_corrected_benchmark/benchmark_summary.json
+prototype3/results/pepbi_corrected_benchmark/correlation_results.csv
+prototype3/results/pepbi_corrected_benchmark/group_level_correlation_audit/group_level_summary.csv
+prototype3/results/pepbi_corrected_benchmark/group_level_correlation_audit/per_group_spearman.csv
+prototype3/results/pepbi_corrected_benchmark/pepbi_all_rows_with_native_scores.csv
+prototype3/results/pepbi_corrected_benchmark/score_repeatability.csv
+prototype3/results/pepbi_corrected_benchmark/within_group_calculated_DG_from_KD.csv
+prototype3/results/pepbi_corrected_benchmark/within_group_reported_experimental_DG.csv
+prototype3/results/pepbi_native_score_exploratory/pepbi_native_score_audit_summary.json
+prototype3/results/pepbi_native_score_exploratory/pepbi_native_score_rows.csv
+prototype3/results/pepbi_native_score_exploratory/pepbi_native_score_sequence_summary.csv
+prototype3/results/pepbi_preflight/pepbi_preflight_summary.json
+prototype3/results/pepbi_preflight/pepbi_sequence_temperature_summary.csv
+prototype3/results/pepbi_preflight/pepbi_single_substitution_pairs.csv
+prototype3/results/pepbi_strict_matched/matched_context_summary.csv
+prototype3/results/pepbi_strict_matched/matched_group_summary.csv
+prototype3/results/pepbi_strict_matched/matched_pair_predictions.csv
+prototype3/results/pepbi_strict_matched/summary.json
+prototype3/results/pepbi_target_mutation_invariance/same_peptide_target_mutation_pairs.csv
+prototype3/results/pepbi_target_mutation_invariance/summary.json
+prototype3/results/pepbi_target_mutation_invariance/target_context_invariance_summary.csv
+prototype3/results/pepbi_verified_single_substitution/single_residue_receptor_variant_pairs.csv
+prototype3/results/pepbi_verified_single_substitution/summary.json
+
+Potential candidate-related PDBs:
+NONE

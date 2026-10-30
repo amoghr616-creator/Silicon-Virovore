@@ -1,0 +1,48 @@
+{
+  "benchmark": "Native sequence fitness versus experimental mutation effects",
+  "pair_file": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/sequence_only_mutation_baseline/run_20261026T234823Z/single_substitution_pairs.csv",
+  "score_function": "native_score(sequence) -> c_evaluate_sequence -> fitness_score",
+  "n_matched_single_substitution_pairs": 693,
+  "n_unique_peptide_sequences_freshly_scored": 621,
+  "peptide_length_min": 9,
+  "peptide_length_max": 20,
+  "n_exact_21aa_pairs": 0,
+  "bootstrap_unit": "Connected components formed by shared target groups or individual peptide sequences",
+  "n_independent_components": 111,
+  "bootstrap_replicates_requested": 2000,
+  "observed_metrics": {
+    "n_pairs": 693,
+    "spearman_delta_score_vs_delta_pKd": -0.10713922442596775,
+    "n_informative_pairs": 466,
+    "direction_accuracy_ties_half": 0.4248927038626609,
+    "spearman_abs_delta_score_vs_abs_delta_pKd": -0.041827830390897214
+  },
+  "cluster_bootstrap_95ci": {
+    "spearman_delta_score_vs_delta_pKd": [
+      -0.20219641390743148,
+      -0.017549489786270734
+    ],
+    "direction_accuracy_ties_half": [
+      0.3654991147711051,
+      0.4777496065745759
+    ],
+    "spearman_abs_delta_score_vs_abs_delta_pKd": [
+      -0.12619585069276026,
+      0.05186891862131836
+    ]
+  },
+  "position_profile_test": {
+    "eligible_length_position_cells": 71,
+    "minimum_pairs_per_cell": 3,
+    "position_profile_spearman": -0.13543037752301498,
+    "position_shuffle_pvalue_two_sided": 0.22315536892621476,
+    "permutations": 5000
+  },
+  "interpretation_limits": [
+    "The C score is a sequence-property heuristic with no receptor input.",
+    "This benchmark tests the native score, not the adaptive optimizer.",
+    "The broad dataset includes peptide lengths 9-20; it is not an exact-21-aa-only result.",
+    "Position profiling is exploratory and is not validation of ARISE/ALE hotspot selection.",
+    "Pairs overlap in peptides and target groups; connected-component bootstrap partly addresses this dependence."
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "workbook_rows": 329,
+  "canonical_sequence_rows": 329,
+  "unique_canonical_sequences": 84,
+  "unique_sequences_scored": 74,
+  "score_failures": [],
+  "primary_length_range": [
+    9,
+    20
+  ],
+  "primary_eligible_rows": 290,
+  "primary_unique_sequences": 69,
+  "primary_groups": 29,
+  "reported_delta_g_numeric_rows": 54,
+  "calculated_delta_g_numeric_rows": 329,
+  "ria_dg_separated_numeric_rows": 329,
+  "score_repeatability_passed_for_tested_sequences": true,
+  "n_repeatability_sequences_tested": 10,
+  "production_bridge_modified": false,
+  "target_specific_binding_objective": false,
+  "correlations": [
+    {
+      "analysis": "calculated_DG_from_KD: native sequence prior",
+      "target": "_calc_dg",
+      "predictor": "_c_score",
+      "n_rows": 290,
+      "n_unique_sequences": 69,
+      "n_binding_groups": 29,
+      "spearman_rho": 0.11753870080476937,
+      "pearson_r": 0.20886243061520068
+    },
+    {
+      "analysis": "calculated_DG_from_KD: Rosetta RIA",
+      "target": "_calc_dg",
+      "predictor": "_ria_dg",
+      "n_rows": 290,
+      "n_unique_sequences": 69,
+      "n_binding_groups": 29,
+      "spearman_rho": -0.39648398378958205,
+      "pearson_r": -0.018914635093112073
+    },
+    {
+      "analysis": "reported_experimental_DG: native sequence prior",
+      "target": "_direct_dg",
+      "predictor": "_c_score",
+      "n_rows": 43,
+      "n_unique_sequences": 11,
+      "n_binding_groups": 9,
+      "spearman_rho": -0.15263594313677695,
+      "pearson_r": -0.154029184924161
+    },
+    {
+      "analysis": "reported_experimental_DG: Rosetta RIA",
+      "target": "_direct_dg",
+      "predictor": "_ria_dg",
+      "n_rows": 43,
+      "n_unique_sequences": 11,
+      "n_binding_groups": 9,
+      "spearman_rho": -0.050496952876669846,
+      "pearson_r": -0.011696190262835884
+    },
+    {
+      "analysis": "calculated_DG_from_KD: within-group native sequence prior",
+      "target": "_target_centered",
+      "predictor": "native_centered",
+      "n_rows": 71,
+      "n_unique_sequences": 56,
+      "n_binding_groups": 15,
+      "spearman_rho": 0.17119382964453386,
+      "pearson_r": 0.23934978087833197
+    },
+    {
+      "analysis": "calculated_DG_from_KD: within-group Rosetta RIA",
+      "target": "_target_centered",
+      "predictor": "ria_centered",
+      "n_rows": 71,
+      "n_unique_sequences": 56,
+      "n_binding_groups": 15,
+      "spearman_rho": -0.23470824949698185,
+      "pearson_r": -0.18041021226208728
+    },
+    {
+      "analysis": "reported_experimental_DG: within-group native sequence prior",
+      "target": "_target_centered",
+      "predictor": "native_centered",
+      "n_rows": 4,
+      "n_unique_sequences": 4,
+      "n_binding_groups": 2,
+      "spearman_rho": 0.0,
+      "pearson_r": -0.20347372391189092
+    },
+    {
+      "analysis": "reported_experimental_DG: within-group Rosetta RIA",
+      "target": "_target_centered",
+      "predictor": "ria_centered",
+      "n_rows": 4,
+      "n_unique_sequences": 4,
+      "n_binding_groups": 2,
+      "spearman_rho": 0.6000000000000001,
+      "pearson_r": 0.4557655500367577
+    }
+  ],
+  "interpretation": "Exploratory benchmark only. Native C fitness passes target=NULL. Rows within binding groups are related, and sequence-only scoring cannot respond to protein mutations for a fixed peptide. Correlations do not validate HERV-K Env binding or establish affinity prediction."
+}

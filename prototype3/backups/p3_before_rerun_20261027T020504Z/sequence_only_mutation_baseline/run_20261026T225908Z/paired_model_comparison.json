@@ -1,0 +1,68 @@
+{
+  "created_utc": "2026-10-26T22:59:14.532635+00:00",
+  "prediction_source": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/sequence_only_mutation_baseline/run_20261026T225908Z",
+  "bootstrap": {
+    "method": "2,000 target-cluster resamples of fixed out-of-fold predictions",
+    "seed": 20261027,
+    "note": "Intervals condition on the saved out-of-fold predictions; they do not include variation from refitting the model."
+  },
+  "observed_metrics": {
+    "n_pairs": 693,
+    "n_targets": 123,
+    "ridge_mae": 0.8417658436504739,
+    "fold_mean_mae": 0.8204334597022305,
+    "mae_delta_ridge_minus_fold_mean": 0.02133238394824344,
+    "ridge_rmse": 1.363396808778441,
+    "fold_mean_rmse": 1.3733855596668847,
+    "rmse_delta_ridge_minus_fold_mean": -0.009988750888443754,
+    "ridge_spearman": 0.24293544687990765,
+    "fold_mean_spearman": -0.08411059247873977,
+    "spearman_delta_ridge_minus_fold_mean": 0.3270460393586474,
+    "ridge_direction_score_ties_half": 0.6673819742489271,
+    "fold_mean_direction_score_ties_half": 0.6266094420600858,
+    "direction_delta_ridge_minus_fold_mean": 0.04077253218884125
+  },
+  "paired_differences": {
+    "mae_delta_ridge_minus_fold_mean": {
+      "observed_difference": 0.02133238394824344,
+      "target_cluster_bootstrap_95pct_ci": [
+        -0.019303175773485653,
+        0.05879212634703781
+      ],
+      "valid_replicates": 2000,
+      "fraction_bootstrap_draws_favoring_ridge": 0.1495
+    },
+    "rmse_delta_ridge_minus_fold_mean": {
+      "observed_difference": -0.009988750888443754,
+      "target_cluster_bootstrap_95pct_ci": [
+        -0.0511222094915401,
+        0.029835192122314665
+      ],
+      "valid_replicates": 2000,
+      "fraction_bootstrap_draws_favoring_ridge": 0.673
+    },
+    "spearman_delta_ridge_minus_fold_mean": {
+      "observed_difference": 0.3270460393586474,
+      "target_cluster_bootstrap_95pct_ci": [
+        0.18704398876296502,
+        0.4566933309328965
+      ],
+      "valid_replicates": 2000,
+      "fraction_bootstrap_draws_favoring_ridge": 1.0
+    },
+    "direction_delta_ridge_minus_fold_mean": {
+      "observed_difference": 0.04077253218884125,
+      "target_cluster_bootstrap_95pct_ci": [
+        -0.014059429206186401,
+        0.09512485481997673
+      ],
+      "valid_replicates": 2000,
+      "fraction_bootstrap_draws_favoring_ridge": 0.9245
+    }
+  },
+  "interpretation_rules": {
+    "mae_rmse": "Negative Ridge-minus-mean difference favors Ridge.",
+    "spearman_direction": "Positive Ridge-minus-mean difference favors Ridge.",
+    "uncertainty": "If the 95% interval for a difference includes zero, the direction of that difference remains uncertain."
+  }
+}

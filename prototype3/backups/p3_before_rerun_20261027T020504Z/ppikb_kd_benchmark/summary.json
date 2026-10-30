@@ -1,0 +1,40 @@
+{
+  "input_file": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/data/raw/PPIKB/PPIKB_Research.xlsx",
+  "input_rows": 19509,
+  "rows_with_canonical_peptide": 14437,
+  "rows_with_9_to_20_residue_peptides": 7133,
+  "rows_unmodified_and_linear": 5912,
+  "parsed_affinity_types": {
+    "KD": 8836,
+    "IC50": 8553,
+    "KI": 1650,
+    "UNPARSED": 470
+  },
+  "exact_uncensored_Kd_rows_before_scoring": 3439,
+  "eligible_rows_after_successful_native_scoring": 3439,
+  "distinct_peptides_scored": 2010,
+  "native_score_failures": [],
+  "distinct_target_assay_groups_with_correlations": 254,
+  "group_level_results_min_3_peptides": {
+    "minimum_distinct_peptides_per_group": 3,
+    "independent_target_assay_groups": 254,
+    "mean_group_spearman": -0.08212810366907092,
+    "median_group_spearman": -0.2248618796516374,
+    "groups_positive": 105,
+    "groups_negative": 142,
+    "bootstrap_95ci_low": -0.15331230745632066,
+    "bootstrap_95ci_high": -0.009288560163128387
+  },
+  "group_level_results_min_5_peptides": {
+    "minimum_distinct_peptides_per_group": 5,
+    "independent_target_assay_groups": 111,
+    "mean_group_spearman": -0.045099468955763576,
+    "median_group_spearman": -0.08571428571428573,
+    "groups_positive": 49,
+    "groups_negative": 60,
+    "bootstrap_95ci_low": -0.1287754607095413,
+    "bootstrap_95ci_high": 0.03981587895458024
+  },
+  "score_semantics": "Existing sequence-property heuristic; C API receives peptide sequence only and passes target=NULL. Higher pKd means stronger measured affinity.",
+  "interpretation": "Exploratory external benchmark. Correlations are computed within target sequence and assay, with replicate measurements collapsed per peptide. Bootstrap intervals resample target-assay groups, not raw rows. This does not validate target-specific binding prediction."
+}

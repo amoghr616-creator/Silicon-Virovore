@@ -1,0 +1,7 @@
+arm,seed,records_extracted,unique_sequences,parent_child_comparisons,mutation_events_extracted
+adaptive,2601,160,151,160,170
+adaptive,2602,160,151,160,170
+adaptive,2603,160,151,160,170
+baseline,2601,160,138,160,160
+baseline,2602,160,135,160,160
+baseline,2603,160,125,160,160

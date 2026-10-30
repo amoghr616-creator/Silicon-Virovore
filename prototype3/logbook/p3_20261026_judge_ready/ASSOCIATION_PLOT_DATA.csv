@@ -1,0 +1,13 @@
+label,rho,ci_low,ci_high
+"Native C: Δscore vs ΔpKd
+693 pairs",-0.107139,-0.2022,-0.01755
+"Native C: absolute changes
+informative pairs",-0.04183,-0.1262,0.0519
+"Exact 21-aa within-context
+mean Spearman",-0.4872,-0.7714,-0.0301
+"Structural score
+18 mapped pairs",0.0588235,,
+"Training-fold mean
+grouped predictions",0.0458706,,
+"Ridge
+grouped predictions",0.1087403,,

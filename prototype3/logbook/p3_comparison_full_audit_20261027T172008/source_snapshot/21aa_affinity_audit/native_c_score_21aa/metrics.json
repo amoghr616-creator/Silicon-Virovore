@@ -1,0 +1,27 @@
+{
+  "benchmark": "PPIKB exact canonical 21-aa native sequence-score audit",
+  "input_candidate_rows": 247,
+  "rows_passing_exact21_kd_linear_no_explicit_modification_filters": 129,
+  "unique_peptide_sequences_eligible": 67,
+  "unique_peptides_scored_successfully": 67,
+  "score_failures": {},
+  "filter_rejection_counts": {
+    "not_exact_canonical_21aa": 0,
+    "not_numeric_uncensored_Kd": 81,
+    "explicit_modification_or_not_linear": 37,
+    "missing_target_sequence": 0
+  },
+  "measurement_contexts": 73,
+  "contexts_with_at_least_3_distinct_scored_peptides_and_variable_values": 7,
+  "within_context_spearman_mean": -0.48719876297629444,
+  "within_context_spearman_median": -0.7999999999999999,
+  "within_context_spearman_group_bootstrap_95ci_for_mean": [
+    -0.7714285714285715,
+    -0.030055905833437393
+  ],
+  "single_substitution_pairs_same_context": 20,
+  "informative_single_substitution_pairs_abs_delta_pKd_ge_0_3": 9,
+  "informative_mutation_direction_accuracy_ties_half": 0.1111111111111111,
+  "informative_delta_score_vs_delta_pKd_spearman_exploratory": 0.6779661016949153,
+  "interpretation_warning": "These are retrospective associations, not prospective prediction. The native score is sequence-only and has no receptor input. Pairs overlap in peptides and are not independent observations. The position summary describes this filtered dataset, not a validated biological hotspot selector. The grouped correlations are exploratory."
+}

@@ -1,0 +1,68 @@
+{
+  "c_score": null,
+  "c_score_status": "not_computed_by_structural_scorer",
+  "target_aware_structural_score": 0.8454461621978403,
+  "structural_score_status": "success",
+  "score_valid": true,
+  "target_structure_id": "2KFH",
+  "peptide_sequence": "FNYESTGPFTAK",
+  "score_version": "target_aware_structural_score_v1.1_clash_gated",
+  "receptor_chain": "A",
+  "peptide_chain": "B",
+  "structure_provenance": {
+    "kind": "user_supplied_complex_pdb",
+    "path": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/data/raw/PPIKB/rcsb_structures_20261026T222207Z/2KFH.pdb",
+    "sha256": "40c8bed4f1a0d83f55d6a81c3d7d170dafd589b73f142b465f270ecee159e3a3",
+    "coordinate_frame": "single_complex_pdb_not_transformed",
+    "transformations_applied": [],
+    "receptor_chain_coordinate_sha256": "5193ff0b2c05a008cefb6d98c367695e0abe0470b496a4e347ce408f1d3de7e3",
+    "peptide_pose_coordinate_sha256": "bba88e1b17fa7ac3c1e3da888c8e6f79e61ecf6cb450815746f42a8ff1148745",
+    "cache_key": "b9394e64d4e3aaca2d637c53796dd4c6f7c784b1cba0b1858039a0f1e8386cdd",
+    "model_policy": "first_MODEL_only_if_multiple_models",
+    "altloc_policy": "blank_or_A_only",
+    "protonation_assumptions": "none; supplied heavy-atom coordinates used as-is"
+  },
+  "structural_metrics": {
+    "composite_score_diagnostic_before_clash_gate": 0.8454461621978403,
+    "units": "angstroms_for_distances",
+    "interchain_heavy_atom_contact_pairs": {
+      "3.5A": 4,
+      "4A": 38,
+      "5A": 151,
+      "8A": 1358
+    },
+    "distinct_interchain_residue_pairs": {
+      "3.5A": 4,
+      "4A": 10,
+      "5A": 14,
+      "8A": 80
+    },
+    "minimum_interchain_heavy_atom_distance_A": 2.8946105092049943,
+    "severe_clash_cutoff_A": 2.0,
+    "severe_clash_heavy_atom_pairs": 0,
+    "interface_receptor_residue_count_within_5A": 9,
+    "interface_peptide_residue_count_within_5A": 5,
+    "hotspot_metrics": [],
+    "buried_surface_area_A2": null,
+    "buried_surface_area_status": "not_calculated_no_SASA_method_used",
+    "components": {
+      "contact_residue_pair_diversity_0_1": 0.7,
+      "interface_residue_coverage_0_1": 1.0,
+      "near_contact_geometry_0_1": 0.9217846487913613,
+      "severe_clash_penalty_0_1": 0.0
+    },
+    "simple_baseline_objectives_0_1": {
+      "contact_only": 0.7,
+      "geometry_only": 0.9217846487913613,
+      "clash_only_no_clash_is_best": 1.0
+    },
+    "score_formula": "clip(0.45*min(residue_pairs_5A/20,1) + 0.3*min((receptor_interface_residues_5A+peptide_interface_residues_5A)/12,1) + 0.25*exp(-0.5*((min_distance_A-3.5)/1.5)^2) - 0.35*min(severe_clash_atom_pairs_lt_2A/5,1),0,1)",
+    "score_weights": {
+      "residue_pair_diversity": 0.45,
+      "interface_residue_coverage": 0.3,
+      "near_contact_geometry": 0.25,
+      "severe_clash_penalty": 0.35
+    }
+  },
+  "eligibility_reasons": []
+}

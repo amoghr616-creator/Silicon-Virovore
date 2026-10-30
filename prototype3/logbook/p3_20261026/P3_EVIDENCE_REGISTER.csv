@@ -1,0 +1,15 @@
+area,status,result,source
+PPIKB preprocessing,completed,693 single-substitution pairs; 123 target sequences,prototype3/scripts/ppikb_kd_benchmark.py
+Native C score vs mutation affinity,completed,"rho=-0.1071; 95% CI [-0.2022,-0.0176]; direction accuracy=42.49%",prototype3/results/native_score_all_mutation_pairs/scored_mutation_pairs.csv
+Exact 21-aa affinity subset,completed exploratory,129 rows; 67 peptides; 7 eligible contexts; 9 informative pairs,prototype3/results/p3_21aa_affinity_audit/native_c_score_21aa/
+Original ARISE position validation,completed retrospective,positions 1-3 all-pairs p=0.9218; no reliable primary advantage,prototype3/results/arise_experimental_position_audit/
+PEPBI strict matched,completed,11 groups; native concordance 0.3762; Rosetta 0.3927,prototype3/scripts/pepbi_strict_matched_benchmark.py
+PEPBI receptor-context invariance,completed,4 contexts; 24 pairs; 0 score changes; 7 experimental differences >0.5 kcal/mol,prototype3/scripts/pepbi_target_mutation_invariance.py
+Structural mutation benchmark,carried forward,18 mapped pairs; rho=0.0588; direction accuracy=50%; not rerun in latest batch,prototype3/results/experimental_mutation_benchmark/structural_scoring_20261026T223525Z/benchmark_metrics.json
+Grouped Ridge versus training-fold mean,rerun completed,grouped target/peptide/exact-pair overlap=0 across folds; Ridge worse on MAE,prototype3/results/p3_paired_arm_20261027T022810Z/grouped_sequence_validation/run_20261027T023029Z/metrics.json
+New adaptive-vs-baseline optimizer,completed exploratory,six runs; three matched seeds; 160 records per run,prototype3/results/p3_paired_arm_20261027T022810Z
+New mutation-position proxy audit,completed exploratory,"proxy positions 14,3,8; effect=-0.0828; permutation p=0.5495",prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/CORRECTED_MUTATION_POSITION_AUDIT.md
+Exact generated-candidate affinity validation,not estimable,zero exact generated-sequence matches to the measured pKd dataset,prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/P3_ADAPTIVE_BASELINE_VALIDATION.md
+PEPBI overlap for new optimizer candidates,not estimable,zero exact sequence matches in the workbook audit,prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/P3_ADAPTIVE_BASELINE_VALIDATION.md
+New candidate structural scoring,not estimable,zero candidate-run complex PDB files discovered; 0 new scoring attempts,prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/P3_ADAPTIVE_BASELINE_VALIDATION.md
+New run's explicitly logged ARISE hotspots,not recovered,"positions 14,3,8 are a mutation-frequency proxy, not recorded ARISE selections",prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/CORRECTED_MUTATION_POSITION_AUDIT.md

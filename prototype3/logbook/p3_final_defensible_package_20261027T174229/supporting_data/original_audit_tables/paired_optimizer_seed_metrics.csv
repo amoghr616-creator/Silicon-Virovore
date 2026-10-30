@@ -1,0 +1,7 @@
+seed,arm,mean_native_score,best_native_score,final_generation_mean,unique_sequences
+2601,baseline,0.65109,0.70555,0.64102,138
+2601,adaptive,0.75933,0.8433,0.80516,151
+2602,baseline,0.65268,0.71454,0.64842,135
+2602,adaptive,0.75315,0.84553,0.80448,151
+2603,baseline,0.65295,0.7072,0.65695,125
+2603,adaptive,0.73549,0.83327,0.792,151

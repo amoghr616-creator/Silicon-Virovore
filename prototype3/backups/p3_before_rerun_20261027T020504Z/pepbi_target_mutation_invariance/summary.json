@@ -1,0 +1,10 @@
+{
+  "input": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/pepbi_corrected_benchmark/pepbi_all_rows_with_native_scores.csv",
+  "measured_rows_examined": 50,
+  "matched_peptide_contexts": 4,
+  "matched_target_variant_pairs": 24,
+  "pairs_with_native_score_difference_over_1e-12": 0,
+  "pairs_with_experimental_delta_g_difference_over_0_5_kcal_mol": 7,
+  "largest_observed_experimental_delta_g_difference": 2.2,
+  "interpretation": "This measures whether a sequence-only score is invariant to receptor context. It is not a test of causal mutation effects, binding prediction accuracy, or HERV-K Env interaction."
+}

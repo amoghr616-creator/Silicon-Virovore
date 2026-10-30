@@ -1,0 +1,27 @@
+{
+  "source_file": "prototype3/results/ppikb_kd_benchmark/filtered_kd_measurements.csv",
+  "source_sha256": "48aafbf55007d258b07c6075820c7dd3a2b01491fa8a8e322789ab193792e418",
+  "input_rows": 3439,
+  "eligible_measurement_rows": 3439,
+  "unique_peptide_target_assay_records": 2496,
+  "single_substitution_pairs": 693,
+  "target_assay_groups_with_mutation_pairs": 147,
+  "independent_target_sequence_groups_with_pairs": 123,
+  "pairs_with_PDB_IDs_for_both_peptides": 195,
+  "score_column_used": null,
+  "min_abs_delta_pKd_for_directional_test": 0.3,
+  "score_tie_epsilon": 1e-09,
+  "bootstrap_seed": 20261027,
+  "bootstrap_replicates": 10000,
+  "interpretation": [
+    "Higher pKd means stronger measured affinity.",
+    "Pair sequence ordering is lexical and does not imply wild type versus mutant.",
+    "Only same-target, same-assay, equal-length peptides differing at one position are compared.",
+    "Repeated records of the same target/assay/peptide are summarized using median pKd.",
+    "Mutation pairs can share peptide sequences and are not all independent.",
+    "Presence of a PDB ID does not prove the corresponding structure file is locally available or correctly chain-mapped.",
+    "This is a retrospective benchmark, not prospective experimental validation."
+  ],
+  "score_direction_test": null,
+  "score_note": "No recognized sequence-score column found in this affinity CSV. Mutation pairs were still enumerated, but score-vs-experiment directional concordance was not computed."
+}

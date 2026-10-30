@@ -1,0 +1,4 @@
+arm,hotspot_guided_value,mutation_guidance_mode,record_count
+adaptive,False,hotspot_entropy_substitution_epistasis_exploratory_v2,48
+adaptive,True,hotspot_entropy_substitution_epistasis_exploratory_v2,432
+baseline,False,uniform_matched,480

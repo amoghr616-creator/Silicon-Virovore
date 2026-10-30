@@ -1,0 +1,9 @@
+analysis,target,predictor,n_rows,n_unique_sequences,n_binding_groups,spearman_rho,pearson_r
+calculated_DG_from_KD: native sequence prior,_calc_dg,_c_score,290,69,29,0.11753870080476937,0.20886243061520068
+calculated_DG_from_KD: Rosetta RIA,_calc_dg,_ria_dg,290,69,29,-0.39648398378958205,-0.018914635093112073
+reported_experimental_DG: native sequence prior,_direct_dg,_c_score,43,11,9,-0.15263594313677695,-0.154029184924161
+reported_experimental_DG: Rosetta RIA,_direct_dg,_ria_dg,43,11,9,-0.050496952876669846,-0.011696190262835884
+calculated_DG_from_KD: within-group native sequence prior,_target_centered,native_centered,71,56,15,0.17119382964453386,0.23934978087833197
+calculated_DG_from_KD: within-group Rosetta RIA,_target_centered,ria_centered,71,56,15,-0.23470824949698185,-0.18041021226208728
+reported_experimental_DG: within-group native sequence prior,_target_centered,native_centered,4,4,2,0.0,-0.20347372391189092
+reported_experimental_DG: within-group Rosetta RIA,_target_centered,ria_centered,4,4,2,0.6000000000000001,0.4557655500367577

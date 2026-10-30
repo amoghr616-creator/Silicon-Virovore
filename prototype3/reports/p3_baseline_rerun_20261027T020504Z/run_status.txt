@@ -1,0 +1,10 @@
+PASS	ppikb_preprocessing
+PASS	grouped_sequence_validation
+PASS	native_score_mutation_pairs
+PASS	exact_21aa_benchmark
+PASS	arise_position_validation
+PASS	pepbi_corrected_benchmark
+PASS	pepbi_strict_matched
+PASS	pepbi_target_invariance
+PASS	pepbi_verified_substitutions
+PASS	pepbi_native_exploratory

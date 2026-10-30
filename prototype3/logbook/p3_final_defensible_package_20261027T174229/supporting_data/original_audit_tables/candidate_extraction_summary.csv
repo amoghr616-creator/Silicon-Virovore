@@ -1,0 +1,4 @@
+arm,extracted_sequence_records,unique_sequences_extracted,records_with_numeric_score,mean_extracted_score,sd_extracted_score,max_extracted_score,min_extracted_score,warning
+baseline,1459,275,966,0.652593602534449,0.0362703935011557,0.7145354444591977,0.474725,Counts describe only sequence-bearing records the parser found; consult raw snapshots for omitted schemas/representations.
+adaptive,1457,450,966,0.7498927642129303,0.058497444215480324,0.8455310975436344,0.544206,Counts describe only sequence-bearing records the parser found; consult raw snapshots for omitted schemas/representations.
+unknown,0,0,0,,,,,Counts describe only sequence-bearing records the parser found; consult raw snapshots for omitted schemas/representations.

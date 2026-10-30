@@ -1,0 +1,67 @@
+{
+  "source": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/pepbi_corrected_benchmark/pepbi_all_rows_with_native_scores.csv",
+  "filter": "canonical peptides length 9-20; exact match on binding group, protein sequence, protein mutation annotation, binding site, temperature, and peptide length",
+  "eligible_rows": 290,
+  "distinct_sequences": 69,
+  "strict_matched_contexts_with_pairwise_data": 18,
+  "pairwise_comparisons": 382,
+  "target_ties_excluded": {
+    "calculated_dg": 1,
+    "experimental_dg": 0
+  },
+  "results": [
+    {
+      "target": "Calculated \u0394G from K_D",
+      "predictor": "native_score",
+      "independent_binding_groups": 11,
+      "mean_group_concordance": 0.3761970352879444,
+      "median_group_concordance": 0.3333333333333333,
+      "groups_above_chance": 4,
+      "groups_below_chance": 7,
+      "group_sign_test_one_sided_p": 0.88671875,
+      "group_bootstrap_95ci_low": 0.2109733700642792,
+      "group_bootstrap_95ci_high": 0.5314874393283475,
+      "total_matched_pairs": 190
+    },
+    {
+      "target": "Calculated \u0394G from K_D",
+      "predictor": "rosetta_dg",
+      "independent_binding_groups": 11,
+      "mean_group_concordance": 0.39271065634702,
+      "median_group_concordance": 0.4,
+      "groups_above_chance": 5,
+      "groups_below_chance": 6,
+      "group_sign_test_one_sided_p": 0.7255859375,
+      "group_bootstrap_95ci_low": 0.2344516047925139,
+      "group_bootstrap_95ci_high": 0.5475468975468976,
+      "total_matched_pairs": 190
+    },
+    {
+      "target": "Reported experimental \u0394G",
+      "predictor": "native_score",
+      "independent_binding_groups": 1,
+      "mean_group_concordance": 0.0,
+      "median_group_concordance": 0.0,
+      "groups_above_chance": 0,
+      "groups_below_chance": 1,
+      "group_sign_test_one_sided_p": 1.0,
+      "group_bootstrap_95ci_low": 0.0,
+      "group_bootstrap_95ci_high": 0.0,
+      "total_matched_pairs": 1
+    },
+    {
+      "target": "Reported experimental \u0394G",
+      "predictor": "rosetta_dg",
+      "independent_binding_groups": 1,
+      "mean_group_concordance": 0.0,
+      "median_group_concordance": 0.0,
+      "groups_above_chance": 0,
+      "groups_below_chance": 1,
+      "group_sign_test_one_sided_p": 1.0,
+      "group_bootstrap_95ci_low": 0.0,
+      "group_bootstrap_95ci_high": 0.0,
+      "total_matched_pairs": 1
+    }
+  ],
+  "interpretation": "Pairwise ranking diagnostic, not target-binding validation. A lack of matched contexts means this dataset cannot estimate within-context sequence-ranking performance under these strict rules."
+}

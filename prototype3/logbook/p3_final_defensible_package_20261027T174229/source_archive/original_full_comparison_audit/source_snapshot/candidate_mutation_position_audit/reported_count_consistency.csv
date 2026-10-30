@@ -1,0 +1,5 @@
+arm,check,records_with_comparable_reported_value,matches,mismatches,match_pct
+baseline,mutation_count_matches_observed,480,480,0,100.0
+baseline,changed_positions_count_matches_observed,480,480,0,100.0
+adaptive,mutation_count_matches_observed,480,480,0,100.0
+adaptive,changed_positions_count_matches_observed,480,480,0,100.0

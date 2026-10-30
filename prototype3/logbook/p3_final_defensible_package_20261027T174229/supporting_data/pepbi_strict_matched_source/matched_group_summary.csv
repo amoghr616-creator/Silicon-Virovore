@@ -1,0 +1,25 @@
+target,predictor,binding_group,group_concordance,matched_contexts,evaluated_pairs
+Calculated ΔG from K_D,native_score,APC - Amer1 Fragment,0.0,1,1
+Calculated ΔG from K_D,native_score,CaVβ2a - AID,0.6666666666666666,1,3
+Calculated ΔG from K_D,native_score,ClpV-N - P-VipB,0.0,1,1
+Calculated ΔG from K_D,native_score,DD Construct - Pro Peptides,0.0,1,1
+Calculated ΔG from K_D,native_score,SUMO1 - PIASX SIM,0.7,1,10
+Calculated ΔG from K_D,native_score,SUMO2 - PIASX SIM,0.6666666666666666,1,15
+Calculated ΔG from K_D,native_score,Tat_SF1 - SF3b1 ULM Fragment,0.6666666666666666,1,3
+Calculated ΔG from K_D,native_score,TtSlyD - S2 Fragment,0.3207070707070707,2,109
+Calculated ΔG from K_D,native_score,TtSlyDΔIF - S2 Fragment,0.3,1,10
+Calculated ΔG from K_D,native_score,α-adaptin - Motif Peptide,0.48412698412698413,6,33
+Calculated ΔG from K_D,native_score,β-adaptin - Motif Peptide,0.3333333333333333,2,4
+Calculated ΔG from K_D,rosetta_dg,APC - Amer1 Fragment,0.0,1,1
+Calculated ΔG from K_D,rosetta_dg,CaVβ2a - AID,0.3333333333333333,1,3
+Calculated ΔG from K_D,rosetta_dg,ClpV-N - P-VipB,0.0,1,1
+Calculated ΔG from K_D,rosetta_dg,DD Construct - Pro Peptides,0.0,1,1
+Calculated ΔG from K_D,rosetta_dg,SUMO1 - PIASX SIM,0.6,1,10
+Calculated ΔG from K_D,rosetta_dg,SUMO2 - PIASX SIM,0.6666666666666666,1,15
+Calculated ΔG from K_D,rosetta_dg,Tat_SF1 - SF3b1 ULM Fragment,0.3333333333333333,1,3
+Calculated ΔG from K_D,rosetta_dg,TtSlyD - S2 Fragment,0.6968013468013468,2,109
+Calculated ΔG from K_D,rosetta_dg,TtSlyDΔIF - S2 Fragment,0.4,1,10
+Calculated ΔG from K_D,rosetta_dg,α-adaptin - Motif Peptide,0.623015873015873,6,33
+Calculated ΔG from K_D,rosetta_dg,β-adaptin - Motif Peptide,0.6666666666666666,2,4
+Reported experimental ΔG,native_score,DD Construct - Pro Peptides,0.0,1,1
+Reported experimental ΔG,rosetta_dg,DD Construct - Pro Peptides,0.0,1,1

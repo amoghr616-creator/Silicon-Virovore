@@ -1,0 +1,5 @@
+binding_group,peptide_sequence,temperature_K,binding_site,length,protein_contexts,experimental_dg_min,experimental_dg_max,experimental_dg_range,native_score_min,native_score_max,native_score_range,score_invariant_to_protein_context
+ATG8-like Protein - KBTBD6 AIM,SSSLSDDDFWVRVAPQ,298.15,X,16,3,-7.3,-7.11,0.1899999999999995,0.6676021191641955,0.6676021191641955,0.0,True
+ATG8-like Proteins - KBTBD7 AIM,SSSFSDDEVWVQVAPQ,298.15,X,16,6,-7.73,-7.05,0.6800000000000006,0.5990230694209016,0.5990230694209016,0.0,True
+Proflin IIa - VASP,GPPPPPGPPPPPGPPPPPGL,303.15,X,20,3,-6.4,-4.2,2.2,0.3991754972534064,0.3991754972534064,0.0,True
+Proflin IIa - mDia1,IPPPPPLPGVASIPPPPPLPG,303.15,X,21,3,-6.6,-4.5,2.0999999999999996,0.5066771689319619,0.5066771689319619,0.0,True

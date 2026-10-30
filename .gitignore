@@ -57,3 +57,7 @@ structures/
 
 # Large generated diagnostic output
 /prototype2/target_aware_audit/target_contact_failure_diagnostic.json
+prototype3/logbook/p3_comparison_full_audit_20261027T172008/json_scalar_inventory.csv
+
+# Large generated audit inventories
+**/json_scalar_inventory.csv

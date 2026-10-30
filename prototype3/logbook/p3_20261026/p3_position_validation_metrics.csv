@@ -1,0 +1,9 @@
+label,effect,low,high
+"Original positions 1–3
+all pairs; p=0.9218",-0.0115015,-0.169,0.1543
+"Positions 1–3
+informative-only subset; p=0.0528",0.1715996,0.0148125,0.3418984
+"Previous positions 2–3
+sensitivity; p=0.8454",-0.018426,-0.2026,0.1684
+"New adaptive-observed proxy
+positions 14, 3, 8; p=0.5495",-0.0828259,,

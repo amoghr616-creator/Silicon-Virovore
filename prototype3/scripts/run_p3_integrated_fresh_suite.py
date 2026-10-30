@@ -1,0 +1,1750 @@
+from __future__ import annotations
+
+import ast
+import csv
+import hashlib
+import importlib.util
+import inspect
+import itertools
+import json
+import math
+import os
+import random
+import re
+import shutil
+import subprocess
+import sys
+import time
+import traceback
+from collections import Counter, defaultdict
+from datetime import datetime
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+# Fresh optimizer seeds; distinct from the previous P3 paired run.
+NEW_SEEDS = [710101, 710102, 710103, 710104, 710105]
+REFERENCE_SEED_SEQUENCE = "MKLAVFALLVFFAGSSDLIRR"
+N_STRUCTURAL_CANDIDATES_PER_ARM_SEED = 1
+BOOTSTRAP_REPLICATES = 5000
+
+STAMP = datetime.now().strftime("%Y%m%dT%H%M%S")
+OUT = ROOT / "prototype3" / "results" / f"p3_integrated_fresh_{STAMP}"
+GEN_OUT = OUT / "fresh_generation"
+DOCK_OUT = OUT / "fresh_9sya_vina"
+CONTROL_OUT = OUT / "positive_control_1ycr"
+HIST_OUT = OUT / "rerun_validation_tests"
+
+for p in (OUT, GEN_OUT, DOCK_OUT, CONTROL_OUT, HIST_OUT):
+    p.mkdir(parents=True, exist_ok=False)
+
+GENERATOR = ROOT / "prototype2" / "run_uniform_random_reset_vs_v2_100.py"
+VINA_SCRIPT = ROOT / "prototype2" / "run_vina_top10_panel.py"
+RECEPTOR = ROOT / "prototype2" / "target_aware_audit" / "9SYA_chainA_repaired.pdb"
+TEMPLATE_MANIFEST = ROOT / "prototype2" / "structural_validation" / "pose_manifest.csv"
+VINA_BINARY_CANDIDATES = [
+    ROOT / "vina_1.2.7_mac_aarch64",
+    ROOT / "vina",
+]
+
+AA = set("ACDEFGHIKLMNPQRSTVWY")
+EXECUTION = []
+TESTS = {}
+START = time.time()
+
+
+def record(name, status, detail="", **extra):
+    item = {
+        "test": name,
+        "status": status,
+        "detail": str(detail)[:1500],
+        **extra,
+    }
+    TESTS[name] = item
+    print(f"[{status.upper():10}] {name}: {str(detail)[:230]}")
+
+
+def sha256(path):
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def normkey(value):
+    return re.sub(r"[^a-z0-9]", "", str(value).lower())
+
+
+def normseq(value):
+    return re.sub(r"\s+", "", str(value or "")).upper()
+
+
+def as_number(value):
+    try:
+        x = float(str(value).strip())
+        return x if math.isfinite(x) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def pick(row, aliases):
+    m = {normkey(k): v for k, v in row.items()}
+    for alias in aliases:
+        v = m.get(normkey(alias))
+        if v is not None and str(v).strip() and str(v).lower() != "nan":
+            return v
+    return None
+
+
+def arm_from_text(value):
+    s = str(value or "").lower()
+    # Check baseline terms before adaptive terms.
+    if "uniform_baseline" in s or "uniform baseline" in s or "baseline" in s:
+        return "baseline"
+    if "adaptive_substitution" in s or "adaptive" in s or "hotspot_guided" in s:
+        return "adaptive"
+    return None
+
+
+def arm_from_path(path):
+    for part in reversed(Path(path).parts):
+        label = arm_from_text(part)
+        if label:
+            return label
+    return None
+
+
+def seed_from_path(path):
+    text = Path(path).as_posix()
+    for seed in NEW_SEEDS:
+        if re.search(rf"(?<!\d){seed}(?!\d)", text):
+            return seed
+    return None
+
+
+def seed_from_row(row):
+    for key, value in row.items():
+        k = normkey(key)
+        if k in {"seed", "optimizerseed", "runseed", "searchseed"}:
+            n = as_number(value)
+            if n is not None and int(n) in NEW_SEEDS:
+                return int(n)
+    return None
+
+
+def read_json_records(value, inherited=None):
+    """Flatten nested JSON objects while retaining ancestor metadata."""
+    inherited = dict(inherited or {})
+    if isinstance(value, dict):
+        scalar = {
+            k: v for k, v in value.items()
+            if not isinstance(v, (dict, list))
+        }
+        merged = {**inherited, **scalar}
+        if any(normkey(k) in {
+            "sequence", "peptidesequence", "candidatesequence", "peptide", "seq"
+        } for k in merged):
+            yield merged
+        for child in value.values():
+            if isinstance(child, (dict, list)):
+                yield from read_json_records(child, merged)
+    elif isinstance(value, list):
+        for child in value:
+            yield from read_json_records(child, inherited)
+
+
+def read_records(path):
+    suffix = path.suffix.lower()
+    if suffix in {".csv", ".tsv"}:
+        delim = "\t" if suffix == ".tsv" else ","
+        try:
+            with path.open("r", newline="", encoding="utf-8-sig", errors="replace") as f:
+                yield from csv.DictReader(f, delimiter=delim)
+        except Exception:
+            return
+    elif suffix in {".json", ".jsonl", ".ndjson"}:
+        try:
+            if suffix == ".json":
+                obj = json.loads(path.read_text(errors="replace"))
+                yield from read_json_records(obj)
+            else:
+                with path.open(errors="replace") as f:
+                    for line in f:
+                        try:
+                            obj = json.loads(line)
+                        except Exception:
+                            continue
+                        if isinstance(obj, dict):
+                            yield obj
+        except Exception:
+            return
+
+
+def score_from_row(row, aliases=None):
+    aliases = aliases or [
+        "overall_score", "original_fitness_score", "native_fitness",
+        "native_score", "c_score", "fitness_score", "fitness",
+        "posthoc_recomputed_score", "generation_local_score", "score",
+    ]
+    return as_number(pick(row, aliases))
+
+
+def output_related(name):
+    n = name.upper()
+    if n in {"ROOT", "PROJECT_ROOT", "REPO_ROOT", "DATA_ROOT", "INPUT_ROOT"}:
+        return False
+    if any(x in n for x in ("INPUT", "SOURCE", "RECEPTOR", "TARGET_PDB")):
+        return False
+    return bool(re.search(
+        r"(^OUT$|OUT_|_OUT$|OUTROOT|OUTDIR|OUTPUT|REPORT|METRICS|"
+        r"SUMMARY|GRAPH|PLOT|LOGBOOK|CSV_OUT|JSON_OUT|RESULT_DIR)",
+        n,
+    ))
+
+
+def load_module(path, module_name):
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load Python module: {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def relocate_output_globals(module, target_dir, allow_old_path_marker=None):
+    """
+    Redirect output Path/string globals before calling main().
+    Input/data/receptor globals are intentionally not changed.
+    """
+    changed = []
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    for name, value in list(vars(module).items()):
+        if not isinstance(value, (Path, str)):
+            continue
+
+        value_text = str(value)
+        if not value_text or value_text.startswith(("http://", "https://")):
+            continue
+
+        old_marker = bool(
+            allow_old_path_marker
+            and allow_old_path_marker in value_text
+        )
+        if not output_related(name) and not old_marker:
+            continue
+
+        path = Path(value_text)
+        is_file_like = path.suffix.lower() in {
+            ".csv", ".tsv", ".json", ".jsonl", ".ndjson", ".md",
+            ".txt", ".png", ".svg", ".fasta", ".fa", ".pdb", ".log",
+        }
+
+        if name.upper() in {"OUT", "OUT_ROOT", "OUTPUT_ROOT", "OUT_DIR", "OUTPUT_DIR"}:
+            new_path = target_dir
+        elif is_file_like:
+            new_path = target_dir / path.name
+        else:
+            new_path = target_dir
+
+        setattr(module, name, str(new_path) if isinstance(value, str) else new_path)
+        changed.append((name, value_text, str(new_path)))
+
+    return changed
+
+
+def call_main(module, script_path, args=None):
+    fn = getattr(module, "main", None)
+    if not callable(fn):
+        fn = getattr(module, "run", None)
+    if not callable(fn):
+        raise RuntimeError(f"{script_path.name} exposes neither main() nor run().")
+
+    sig = inspect.signature(fn)
+    required = [
+        p.name for p in sig.parameters.values()
+        if p.default is inspect.Parameter.empty
+        and p.kind not in {
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        }
+    ]
+    if required:
+        raise RuntimeError(
+            f"{script_path.name} requires function parameters {required}; "
+            "the wrapper will not guess these values."
+        )
+
+    old_argv = sys.argv[:]
+    sys.argv = [str(script_path)] + list(args or [])
+    try:
+        return fn()
+    except SystemExit as exc:
+        if exc.code in (None, 0):
+            return 0
+        raise
+    finally:
+        sys.argv = old_argv
+
+
+# ---------------------------------------------------------------------------
+# TEST 1 / 2: Generate genuinely fresh adaptive and baseline candidate data.
+# ---------------------------------------------------------------------------
+cohort = []
+generation_ok = False
+
+try:
+    if not GENERATOR.is_file():
+        raise FileNotFoundError(f"Generation runner not found: {GENERATOR}")
+
+    gen = load_module(
+        GENERATOR,
+        f"p3_fresh_generator_{STAMP}",
+    )
+
+    # Do not guess which list is the optimizer's seed list.
+    if not hasattr(gen, "SEEDS") or not isinstance(gen.SEEDS, (list, tuple, range)):
+        raise RuntimeError(
+            "The generation runner does not expose a top-level SEEDS list. "
+            "No generation was launched."
+        )
+
+    old_seeds = list(gen.SEEDS)
+    if not all(isinstance(x, int) for x in old_seeds):
+        raise RuntimeError("SEEDS contains non-integer entries; fresh run aborted.")
+
+    gen.SEEDS = list(NEW_SEEDS)
+
+    # Redirect output globals, including the known previous P2 run root.
+    old_marker = "p2_uniform_random_reset_vs_v2_100_20261023"
+    output_changes = relocate_output_globals(
+        gen,
+        GEN_OUT,
+        allow_old_path_marker=old_marker,
+    )
+    unresolved = [
+        (name, str(value))
+        for name, value in vars(gen).items()
+        if isinstance(value, (str, Path)) and old_marker in str(value)
+    ]
+    if not output_changes:
+        raise RuntimeError(
+            "No output path globals were safely redirected. "
+            "Generation was not launched."
+        )
+    if unresolved:
+        raise RuntimeError(
+            f"Old P2 output path still referenced by globals: {unresolved}. "
+            "Generation was not launched."
+        )
+
+    # Confirm no original result directory was selected as the new target.
+    if GEN_OUT.resolve() == (ROOT / "prototype2" / old_marker).resolve():
+        raise RuntimeError("Fresh output path unexpectedly resolves to the old P2 directory.")
+
+    with (OUT / "generation_configuration.json").open("w") as f:
+        json.dump({
+            "run_id": OUT.name,
+            "generator_script": str(GENERATOR.relative_to(ROOT)),
+            "generator_sha256": sha256(GENERATOR),
+            "old_seed_list": old_seeds,
+            "new_seed_list": NEW_SEEDS,
+            "old_output_marker": old_marker,
+            "new_generation_output": str(GEN_OUT),
+            "redirected_output_globals": [
+                {"name": n, "before": str(a), "after": str(b)}
+                for n, a, b in output_changes
+            ],
+            "purpose": (
+                "Fresh candidate cohort for P3 arm-specific evaluation. "
+                "Internal-score comparisons are secondary QC, not a repeated "
+                "report of the old P2 seed experiment."
+            ),
+        }, f, indent=2)
+
+    print("\nLaunching fresh optimizer cohort using seeds:", NEW_SEEDS)
+    call_main(gen, GENERATOR)
+
+    # Extract 21-aa sequences + objective scores only from files under GEN_OUT.
+    # This intentionally excludes the previous P2/P3 directories.
+    dedup = {}
+    files_scanned = 0
+    for path in GEN_OUT.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in {
+            ".csv", ".tsv", ".json", ".jsonl", ".ndjson"
+        }:
+            continue
+        files_scanned += 1
+        for row in read_records(path):
+            seq = normseq(pick(row, [
+                "sequence", "candidate_sequence", "peptide_sequence",
+                "Peptide_Sequence", "peptide", "seq",
+            ]))
+            if len(seq) != 21 or not set(seq) <= AA:
+                continue
+
+            arm = arm_from_text(pick(row, [
+                "arm", "method", "condition", "optimizer", "policy",
+                "mutation_guidance_mode",
+            ]))
+            if arm is None:
+                arm = arm_from_path(path)
+
+            seed = seed_from_row(row)
+            if seed is None:
+                seed = seed_from_path(path)
+
+            score = score_from_row(row)
+            if arm not in {"adaptive", "baseline"} or seed not in NEW_SEEDS or score is None:
+                continue
+
+            rec = {
+                "arm": arm,
+                "method": "adaptive_substitution" if arm == "adaptive" else "uniform_baseline",
+                "seed": int(seed),
+                "sequence": seq,
+                "internal_score": float(score),
+                "source_file": str(path.relative_to(ROOT)),
+            }
+            key = (arm, int(seed), seq)
+            if key not in dedup or score > dedup[key]["internal_score"]:
+                dedup[key] = rec
+
+    cohort = list(dedup.values())
+    if not cohort:
+        raise RuntimeError(
+            f"Generator returned, but no eligible fresh 21-aa candidate records "
+            f"were extractable below {GEN_OUT}. No older data were substituted."
+        )
+
+    present = {(r["seed"], r["arm"]) for r in cohort}
+    absent = [
+        f"{seed}/{arm}" for seed in NEW_SEEDS
+        for arm in ("adaptive", "baseline")
+        if (seed, arm) not in present
+    ]
+    if absent:
+        raise RuntimeError(
+            "Fresh cohort is not fully paired; missing new seed/arm output: "
+            + ", ".join(absent)
+        )
+
+    with (OUT / "fresh_candidate_cohort.csv").open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(cohort[0].keys()))
+        w.writeheader()
+        w.writerows(sorted(cohort, key=lambda x: (x["seed"], x["arm"], -x["internal_score"])))
+
+    generation_ok = True
+    record(
+        "fresh_candidate_generation",
+        "completed",
+        f"{len(cohort)} unique fresh arm/seed/sequence records extracted from {files_scanned} new-run files.",
+        seeds=NEW_SEEDS,
+    )
+
+except (Exception, SystemExit) as exc:
+    record(
+        "fresh_candidate_generation",
+        "failed",
+        f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}",
+    )
+
+
+# ---------------------------------------------------------------------------
+# TEST 1 / 2: Per-seed internal-score and mutation-behavior comparisons.
+# These metrics use only the new cohort extracted above.
+# ---------------------------------------------------------------------------
+per_seed = []
+mutation_rows = []
+position_counts = defaultdict(Counter)
+paired_internal_deltas = []
+
+if generation_ok:
+    for seed in NEW_SEEDS:
+        for arm in ("baseline", "adaptive"):
+            block = [r for r in cohort if r["seed"] == seed and r["arm"] == arm]
+            scores = [r["internal_score"] for r in block]
+            unique_sequences = {r["sequence"] for r in block}
+            if scores:
+                per_seed.append({
+                    "seed": seed,
+                    "arm": arm,
+                    "n_candidate_records": len(block),
+                    "n_unique_sequences": len(unique_sequences),
+                    "mean_internal_score": sum(scores) / len(scores),
+                    "median_internal_score": sorted(scores)[len(scores) // 2],
+                    "best_internal_score": max(scores),
+                })
+
+            for r in block:
+                changed = [
+                    i + 1
+                    for i, (old, new) in enumerate(
+                        zip(REFERENCE_SEED_SEQUENCE, r["sequence"])
+                    )
+                    if old != new
+                ]
+                mutation_rows.append({
+                    **r,
+                    "mutation_count_vs_reference_seed": len(changed),
+                    "changed_positions_1_based": ";".join(map(str, changed)),
+                })
+                for pos in changed:
+                    position_counts[(arm, seed)][pos] += 1
+
+    with (OUT / "fresh_internal_and_diversity_by_seed.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as f:
+        w = csv.DictWriter(f, fieldnames=list(per_seed[0].keys()))
+        w.writeheader()
+        w.writerows(per_seed)
+
+    with (OUT / "fresh_mutation_behavior.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as f:
+        w = csv.DictWriter(f, fieldnames=list(mutation_rows[0].keys()))
+        w.writeheader()
+        w.writerows(mutation_rows)
+
+    for seed in NEW_SEEDS:
+        b = [r["internal_score"] for r in cohort if r["seed"] == seed and r["arm"] == "baseline"]
+        a = [r["internal_score"] for r in cohort if r["seed"] == seed and r["arm"] == "adaptive"]
+        if b and a:
+            paired_internal_deltas.append(sum(a) / len(a) - sum(b) / len(b))
+
+    record(
+        "fresh_internal_scores_and_diversity",
+        "completed",
+        "Fresh arm-specific score means, best scores, unique-sequence counts, and paired-seed deltas calculated.",
+        n_paired_seeds=len(paired_internal_deltas),
+    )
+    record(
+        "fresh_mutation_behavior",
+        "completed",
+        "Mutation counts and changed positions were extracted from fresh candidates relative to the 21-aa reference seed.",
+    )
+else:
+    record("fresh_internal_scores_and_diversity", "blocked", "Fresh generation failed.")
+    record("fresh_mutation_behavior", "blocked", "Fresh generation failed.")
+
+
+# ---------------------------------------------------------------------------
+# Build a random, balanced structural panel from the fresh candidates.
+# Selection is random within each arm/seed, not top-ranked by native score.
+# ---------------------------------------------------------------------------
+panel = []
+rank_to_panel = {}
+rank_by_arm = Counter()
+
+if generation_ok:
+    for seed in NEW_SEEDS[:10]:
+        for arm in ("baseline", "adaptive"):
+            block = sorted({
+                r["sequence"]: r for r in cohort
+                if r["seed"] == seed and r["arm"] == arm
+            }.values(), key=lambda r: r["sequence"])
+
+            if not block:
+                continue
+
+            rng = random.Random(seed + (107 if arm == "adaptive" else 211))
+            chosen = rng.sample(
+                block,
+                min(N_STRUCTURAL_CANDIDATES_PER_ARM_SEED, len(block)),
+            )
+            for cand in chosen:
+                row = dict(cand)
+                rank_by_arm[arm] += 1
+                row["rank"] = rank_by_arm[arm]
+                row["panel_id"] = f"{arm}_seed{seed}_rank{row['rank']}"
+                panel.append(row)
+                rank_to_panel[(arm, row["rank"])] = row
+
+    with (OUT / "fresh_structural_panel_selection.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as f:
+        w = csv.DictWriter(f, fieldnames=list(panel[0].keys()))
+        w.writeheader()
+        w.writerows(panel)
+
+    record(
+        "fresh_structural_panel_selection",
+        "completed",
+        f"Selected {len(panel)} candidates randomly from the fresh cohort, balanced by arm and seed.",
+    )
+else:
+    record("fresh_structural_panel_selection", "blocked", "Fresh generation failed.")
+
+
+# ---------------------------------------------------------------------------
+# Find an RDKit/Meeko-capable Python and Vina binary.
+# ---------------------------------------------------------------------------
+def detect_docking_environment():
+    py_candidates = [
+        Path(sys.executable),
+        ROOT / ".venv" / "bin" / "python",
+        Path("/opt/homebrew/Caskroom/miniforge/base/envs/sv-docking/bin/python"),
+        Path.home() / "miniforge3" / "envs" / "sv-docking" / "bin" / "python",
+    ]
+    python_path = None
+    meeko_path = None
+
+    for candidate in py_candidates:
+        if not candidate.is_file():
+            continue
+        probe = subprocess.run(
+            [str(candidate), "-c", "import numpy, Bio, rdkit, meeko"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if probe.returncode != 0:
+            continue
+
+        sibling = candidate.parent / "mk_prepare_receptor.py"
+        if sibling.is_file():
+            python_path = candidate
+            meeko_path = sibling
+            break
+
+    vina_path = next(
+        (p for p in VINA_BINARY_CANDIDATES if p.is_file()),
+        None,
+    )
+    if vina_path is None:
+        which_vina = shutil.which("vina")
+        if which_vina:
+            vina_path = Path(which_vina)
+
+    if python_path is None or meeko_path is None or vina_path is None:
+        return None, None, None
+
+    if os.name != "nt":
+        try:
+            vina_path.chmod(vina_path.stat().st_mode | 0o111)
+        except OSError:
+            pass
+
+    return python_path, meeko_path, vina_path
+
+
+DOCK_PY, MEEKO_PREP, VINA_BIN = detect_docking_environment()
+if DOCK_PY and MEEKO_PREP and VINA_BIN:
+    record(
+        "docking_environment",
+        "available",
+        f"Python={DOCK_PY}; Meeko={MEEKO_PREP}; Vina={VINA_BIN}",
+    )
+else:
+    record(
+        "docking_environment",
+        "unavailable",
+        "A Python environment importing numpy, BioPython, RDKit, and Meeko, its mk_prepare_receptor.py, and a Vina binary were not all found.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# TEST 8: Fresh 9SYA Vina comparison on the new candidate panel.
+# One pose per selected sequence; not a calibrated affinity measurement.
+# ---------------------------------------------------------------------------
+vina_scores = []
+
+def prepare_manifest():
+    if not panel:
+        raise RuntimeError("Fresh structural panel is empty.")
+
+    template_row = {}
+    headers = ["method", "rank", "sequence", "seed", "docking_seed", "candidate_id"]
+    if TEMPLATE_MANIFEST.is_file():
+        with TEMPLATE_MANIFEST.open(newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            headers = reader.fieldnames or headers
+            template_row = next(reader, {}) or {}
+
+    path = OUT / "fresh_pose_manifest.csv"
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore")
+        w.writeheader()
+        for index, cand in enumerate(panel, 1):
+            row = dict(template_row)
+            # Always overwrite candidate-defining information.
+            for key in headers:
+                nk = normkey(key)
+                if nk in {"method", "arm", "condition"}:
+                    row[key] = cand["method"] if nk == "method" else cand["arm"]
+                elif nk in {"rank", "candidaterank"}:
+                    row[key] = cand["rank"]
+                elif nk in {"sequence", "peptidesequence", "candidatesequence", "peptide"}:
+                    row[key] = cand["sequence"]
+                elif nk in {"optimizerseed", "searchseed"}:
+                    row[key] = cand["seed"]
+                elif nk in {"seed", "vinaseed", "dockingseed", "poseseed", "randomseed"}:
+                    row[key] = 710500 + index
+                elif nk in {"candidateid", "panelid", "runid", "jobid"}:
+                    row[key] = cand["panel_id"]
+                elif "receptor" in nk and "chain" not in nk:
+                    row[key] = str(RECEPTOR)
+                elif nk in {"target", "targetid"}:
+                    row[key] = "HERV-K Env 9SYA"
+            # Always create minimum fields even if absent in template.
+            row.update({
+                "method": cand["method"],
+                "rank": cand["rank"],
+                "sequence": cand["sequence"],
+            })
+            w.writerow(row)
+    return path
+
+
+def status_json_ok(outdir):
+    for p in outdir.rglob("*.json"):
+        try:
+            d = json.loads(p.read_text(errors="replace"))
+        except Exception:
+            continue
+        blob = json.dumps(d).lower()
+        if any(x in blob for x in (
+            '"status": "completed"', '"status": "success"',
+            '"state": "completed"', '"success": true',
+        )):
+            return True
+    return False
+
+
+def extract_vina_scores(outdir):
+    output = {}
+    score_aliases = [
+        "vina_score_kcal_mol", "best_affinity_kcal_mol",
+        "binding_affinity_kcal_mol", "affinity_kcal_mol",
+        "vina_energy", "vina_score", "best_affinity",
+        "best_energy", "docking_score", "energy_kcal_mol", "score",
+    ]
+    for p in outdir.rglob("*"):
+        if not p.is_file() or p.suffix.lower() not in {
+            ".csv", ".tsv", ".json", ".jsonl", ".ndjson"
+        }:
+            continue
+        if p.name in {"vina_protocol.json", "fresh_pose_manifest.csv"}:
+            continue
+        for row in read_records(p):
+            score = as_number(pick(row, score_aliases))
+            if score is None:
+                continue
+            # Reject scores that appear to be native fitness / pKd rather than Vina.
+            key_names = {normkey(k) for k in row}
+            if not any(
+                x in key_names for x in (
+                    "vina", "vinaenergy", "vinascore", "bestaffinity",
+                    "bindingaffinitykcalmol", "docking score".replace(" ", ""),
+                    "energykcalmol",
+                )
+            ):
+                continue
+            arm = arm_from_text(pick(row, ["method", "arm", "condition"]))
+            if arm is None:
+                arm = arm_from_path(p)
+
+            rank = as_number(pick(row, ["rank", "candidate_rank"]))
+            seq = normseq(pick(row, [
+                "sequence", "candidate_sequence", "peptide_sequence", "peptide"
+            ]))
+
+            match = None
+            if seq:
+                match = next(
+                    (r for r in panel if r["sequence"] == seq
+                     and (arm is None or r["arm"] == arm)),
+                    None,
+                )
+            if match is None and arm and rank is not None:
+                match = rank_to_panel.get((arm, int(rank)))
+            if match is None:
+                continue
+
+            rec = {
+                "panel_id": match["panel_id"],
+                "arm": match["arm"],
+                "seed": match["seed"],
+                "sequence": match["sequence"],
+                "internal_score": match["internal_score"],
+                "vina_score_kcal_mol": float(score),
+                "source_file": str(p.relative_to(ROOT)),
+            }
+            old = output.get(match["panel_id"])
+            # Lower/more-negative Vina score is the conventional favorable direction.
+            if old is None or score < old["vina_score_kcal_mol"]:
+                output[match["panel_id"]] = rec
+
+    return list(output.values())
+
+
+if panel and DOCK_PY and MEEKO_PREP and VINA_BIN and VINA_SCRIPT.is_file():
+    try:
+        if not RECEPTOR.is_file():
+            raise FileNotFoundError(f"Receptor is missing: {RECEPTOR}")
+
+        manifest = prepare_manifest()
+        vina = load_module(VINA_SCRIPT, f"p3_fresh_vina_{STAMP}")
+
+        if not hasattr(vina, "main") or not hasattr(vina, "SV"):
+            raise RuntimeError("Vina runner does not expose the expected main()/SV interface.")
+
+        # Redirect Vina output globals before running; set manifest explicitly.
+        relocate_output_globals(vina, DOCK_OUT)
+        vina.SV = DOCK_OUT
+        if hasattr(vina, "RECEPTOR_PDB"):
+            vina.RECEPTOR_PDB = RECEPTOR
+
+        manifest_globals = [
+            n for n, v in vars(vina).items()
+            if "MANIFEST" in n.upper() and isinstance(v, (Path, str))
+        ]
+        if not manifest_globals:
+            raise RuntimeError("Vina runner exposes no manifest path variable.")
+        for name in manifest_globals:
+            setattr(
+                vina, name,
+                str(manifest) if isinstance(getattr(vina, name), str) else manifest,
+            )
+
+        vina_args_common = [
+            "--workers", "2",
+            "--exhaustiveness", "4",
+            "--num-modes", "3",
+            "--python", str(DOCK_PY),
+            "--meeko-receptor-prep", str(MEEKO_PREP),
+            "--vina", str(VINA_BIN),
+        ]
+
+        print("\nRunning fresh Vina smoke test (first fresh candidate).")
+        call_main(vina, VINA_SCRIPT, ["--smoke-test"] + vina_args_common)
+
+        vina_scores = extract_vina_scores(DOCK_OUT)
+        if not vina_scores and not status_json_ok(DOCK_OUT):
+            raise RuntimeError(
+                "Smoke test did not yield an extractable Vina score or completed status. "
+                "Full structural panel was not launched."
+            )
+
+        print("Smoke test produced a result; launching the remaining fresh panel.")
+        call_main(vina, VINA_SCRIPT, ["--run-all"] + vina_args_common)
+        vina_scores = extract_vina_scores(DOCK_OUT)
+
+        if vina_scores:
+            with (OUT / "fresh_vina_candidate_scores.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as f:
+                w = csv.DictWriter(f, fieldnames=list(vina_scores[0].keys()))
+                w.writeheader()
+                w.writerows(vina_scores)
+
+        record(
+            "fresh_receptor_aware_structural_comparison",
+            "completed" if vina_scores else "partial",
+            f"Fresh 9SYA Vina scoring attempted for {len(panel)} candidates; "
+            f"{len(vina_scores)} candidate scores could be extracted.",
+            candidates_requested=len(panel),
+            candidates_scored=len(vina_scores),
+        )
+
+    except Exception as exc:
+        record(
+            "fresh_receptor_aware_structural_comparison",
+            "failed",
+            f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}",
+        )
+else:
+    record(
+        "fresh_receptor_aware_structural_comparison",
+        "blocked",
+        "Fresh panel, Vina environment, or scoring script is unavailable.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# TEST 8: Quick 1YCR known-complex control, if the software environment permits.
+# This tests the scoring workflow; it does not validate HERV-K binding affinity.
+# ---------------------------------------------------------------------------
+CONTROL_SCRIPT = ROOT / "prototype2" / "run_1ycr_vina_positive_control.py"
+control_script_temp = None
+
+if DOCK_PY and MEEKO_PREP and VINA_BIN and CONTROL_SCRIPT.is_file():
+    try:
+        source = CONTROL_SCRIPT.read_text()
+        if '"exhaustiveness": 64' not in source or '"num_modes": 20' not in source:
+            raise RuntimeError(
+                "Expected scoring-budget declarations not found. "
+                "Original positive-control script will remain unchanged."
+            )
+
+        # Use a temporary copy with explicitly reduced compute, preserving the original.
+        source = source.replace('"exhaustiveness": 64', '"exhaustiveness": 8', 1)
+        source = source.replace('"num_modes": 20', '"num_modes": 3', 1)
+
+        control_script_temp = ROOT / "prototype2" / f".p3_quick_1ycr_{STAMP}.py"
+        if control_script_temp.exists():
+            raise RuntimeError(f"Refusing to overwrite {control_script_temp}")
+        control_script_temp.write_text(source)
+
+        cmd = [
+            str(DOCK_PY), str(control_script_temp),
+            "--output-dir", str(CONTROL_OUT),
+            "--python", str(DOCK_PY),
+            "--vina", str(VINA_BIN),
+            "--meeko-receptor-prep", str(MEEKO_PREP),
+        ]
+        print("\nRunning quick 1YCR positive-control diagnostic.")
+        try:
+            proc = subprocess.run(
+                cmd, cwd=ROOT, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                timeout=150,
+            )
+            (CONTROL_OUT / "stdout.log").write_text(proc.stdout or "")
+            record(
+                "quick_1ycr_scoring_control",
+                "completed" if proc.returncode == 0 else "failed",
+                f"Exit code {proc.returncode}; see {CONTROL_OUT / 'stdout.log'}. "
+                "Completion alone is not a control pass; inspect pose validity and RMSD.",
+            )
+        except subprocess.TimeoutExpired as exc:
+            (CONTROL_OUT / "stdout.log").write_text(str(exc))
+            record(
+                "quick_1ycr_scoring_control",
+                "timed_out",
+                "Quick positive-control run hit its 150-second limit.",
+            )
+    except Exception as exc:
+        record("quick_1ycr_scoring_control", "failed", f"{type(exc).__name__}: {exc}")
+    finally:
+        if control_script_temp and control_script_temp.exists():
+            control_script_temp.unlink()
+else:
+    record(
+        "quick_1ycr_scoring_control",
+        "blocked",
+        "Vina/Meeko environment or the 1YCR control script was unavailable.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Rerun historical validation scripts in distinct fresh output folders.
+# They are controls/retrospective tests, not fresh candidate measurements.
+# ---------------------------------------------------------------------------
+def run_historical_module(test_name, relpath):
+    path = ROOT / relpath
+    target = HIST_OUT / test_name
+    target.mkdir(parents=True, exist_ok=False)
+
+    if not path.is_file():
+        record(test_name, "missing", f"Script not found: {path}")
+        return
+
+    try:
+        mod = load_module(path, f"p3_hist_{test_name}_{STAMP}")
+        changes = relocate_output_globals(mod, target)
+        if not changes:
+            record(
+                test_name,
+                "blocked",
+                "No output path global could be redirected safely; script was not run to prevent overwriting earlier results.",
+            )
+            return
+
+        print(f"\nRerunning retrospective test: {test_name}")
+        call_main(mod, path, [])
+        record(
+            test_name,
+            "completed",
+            f"Script reran with output paths redirected to {target.relative_to(ROOT)}. "
+            "Input data remain retrospective and must not be described as newly measured.",
+            output_dir=str(target.relative_to(ROOT)),
+        )
+    except Exception as exc:
+        record(
+            test_name,
+            "failed",
+            f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}",
+        )
+
+
+historical_scripts = [
+    ("broad_native_c_score_validation",
+     "prototype3/scripts/benchmark_native_score_all_mutation_pairs.py"),
+    ("exact_21aa_native_c_score_validation",
+     "prototype3/scripts/benchmark_native_c_score_21aa.py"),
+    ("historical_mutation_position_validation",
+     "prototype3/scripts/validate_arise_hotspot_vs_experimental_positions.py"),
+    ("pepbi_strict_matched_validation",
+     "prototype3/scripts/pepbi_strict_matched_benchmark.py"),
+    ("pepbi_receptor_context_control",
+     "prototype3/scripts/pepbi_target_mutation_invariance.py"),
+    ("pepbi_corrected_historical_benchmark",
+     "prototype3/scripts/run_pepbi_corrected_benchmark.py"),
+    ("historical_structural_translation_control",
+     "prototype3/scripts/run_existing_structural_translation_test.py"),
+]
+
+for name, path in historical_scripts:
+    run_historical_module(name, path)
+
+
+# Ridge versus training-fold mean has a documented CLI. Use a fresh output directory
+# and seed; its input is still an external retrospective dataset.
+RIDGE_SCRIPT = ROOT / "prototype3" / "scripts" / "run_grouped_sequence_pair_validation.py"
+RIDGE_OUT = HIST_OUT / "ridge_vs_training_fold_mean"
+RIDGE_OUT.mkdir(parents=True, exist_ok=False)
+
+if RIDGE_SCRIPT.is_file():
+    try:
+        cmd = [
+            sys.executable, str(RIDGE_SCRIPT),
+            "--out-root", str(RIDGE_OUT),
+            "--folds", "5",
+            "--bootstrap-replicates", "1000",
+            "--seed", "710199",
+        ]
+        print("\nRerunning grouped Ridge-versus-training-fold-mean benchmark.")
+        proc = subprocess.run(
+            cmd, cwd=ROOT, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            timeout=240,
+        )
+        (RIDGE_OUT / "stdout.log").write_text(proc.stdout or "")
+        record(
+            "ridge_vs_training_fold_mean",
+            "completed" if proc.returncode == 0 else "failed",
+            f"Exit code {proc.returncode}. This is a retrospective predictor comparison, "
+            "not evidence of adaptive-versus-baseline binding.",
+            output_dir=str(RIDGE_OUT.relative_to(ROOT)),
+        )
+    except subprocess.TimeoutExpired:
+        record("ridge_vs_training_fold_mean", "timed_out", "Timed out after 240 seconds.")
+else:
+    record("ridge_vs_training_fold_mean", "missing", f"Missing {RIDGE_SCRIPT}")
+
+
+# ---------------------------------------------------------------------------
+# Direct fresh candidate-to-measurement matching.
+# Exact sequence + traceable source are required. A match to another receptor
+# is not a verified HERV-K/9SYA affinity measurement.
+# ---------------------------------------------------------------------------
+measurement_matches = []
+data_source_files = []
+measured_seq_set = set()
+measurement_scan_notes = []
+
+try:
+    import pandas as pd
+except Exception:
+    pd = None
+
+
+def infer_pkd(row):
+    # Numeric values in explicitly named pKd / p-affinity fields.
+    for key, val in row.items():
+        nk = normkey(key)
+        if nk in {"pkd", "paffinity", "paffinityvalue", "pkdvalue", "paffinitynumeric"}:
+            n = as_number(val)
+            if n is not None:
+                return n, str(key), str(val)
+
+    # Convert only an explicitly reported Kd with explicit units.
+    raw = pick(row, ["Affinity", "affinity_raw", "Kd", "KD", "binding_affinity"])
+    if raw is None:
+        return None, "", ""
+    text = str(raw).strip()
+    m = re.search(
+        r"(?i)\bK[d]\b\s*(?:=|:|is)?\s*"
+        r"([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*(pM|nM|uM|µM|μM|mM|M)\b",
+        text,
+    )
+    if not m:
+        return None, "raw_affinity_unparsed", text
+    val = float(m.group(1))
+    unit = m.group(2).lower().replace("μ", "µ")
+    scale = {
+        "m": 1.0, "mm": 1e-3, "um": 1e-6, "µm": 1e-6,
+        "nm": 1e-9, "pm": 1e-12,
+    }.get(unit)
+    if scale is None or val <= 0:
+        return None, "raw_affinity_unparsed", text
+    return -math.log10(val * scale), "explicit_Kd_converted_to_pKd", text
+
+
+def context_description(row):
+    bits = []
+    for key, val in row.items():
+        nk = normkey(key)
+        if any(term in nk for term in (
+            "target", "receptor", "proteinname", "proteinid", "uniprot",
+            "assay", "source", "complex", "organism", "gene",
+        )):
+            if val is not None and str(val).strip() and str(val).lower() != "nan":
+                bits.append(f"{key}={str(val)[:250]}")
+    return " | ".join(bits)
+
+
+def verified_hervk_context(context):
+    return bool(re.search(r"9\s*SYA|HERV[\s-]*K|HML[\s-]*2", context, re.I))
+
+
+def measurement_sources():
+    # Treat "data/" as source data. Under results/, only allow recognizable
+    # experimental source tables, not prior reports, metrics, or match-audit outputs.
+    candidates = set()
+    roots = [ROOT / "data", ROOT / "prototype3" / "results"]
+    excluded_words = (
+        "summary", "metrics", "audit", "report", "graph", "logbook",
+        "match_audit", "exact_match_audit", "strict_matched", "benchmark_metrics",
+    )
+    allowed_result_names = ("ppi_kb_exact21_candidates", "pepbi_raw", "pepbi_measurements")
+
+    for base in roots:
+        if not base.exists():
+            continue
+        for p in base.rglob("*"):
+            if not p.is_file() or p.suffix.lower() not in {
+                ".csv", ".tsv", ".xlsx", ".xls"
+            }:
+                continue
+            if OUT in p.parents or any(
+                part in {".venv", ".git", "__pycache__", "node_modules"}
+                for part in p.parts
+            ):
+                continue
+            if p.stat().st_size > 60_000_000:
+                continue
+            if base.name == "results":
+                lower = p.name.lower()
+                if not any(k in lower for k in allowed_result_names):
+                    continue
+                if any(k in lower for k in excluded_words):
+                    continue
+            candidates.add(p)
+    return sorted(candidates)
+
+
+if generation_ok:
+    if pd is None:
+        record(
+            "fresh_candidate_experimental_measurement_join",
+            "blocked",
+            "pandas is unavailable; raw measurement files could not be read.",
+        )
+    else:
+        arm_sequence_rows = defaultdict(list)
+        for r in cohort:
+            arm_sequence_rows[(r["arm"], r["sequence"])].append(r)
+            measured_seq_set.add(r["sequence"])
+
+        sources = measurement_sources()
+        for src in sources:
+            try:
+                if src.suffix.lower() == ".csv":
+                    df = pd.read_csv(src, low_memory=False)
+                elif src.suffix.lower() == ".tsv":
+                    df = pd.read_csv(src, sep="\t", low_memory=False)
+                else:
+                    df = pd.read_excel(src)
+            except Exception as exc:
+                measurement_scan_notes.append(f"{src.name}: read failed: {exc}")
+                continue
+
+            seq_col = next(
+                (c for c in df.columns if normkey(c) in {
+                    "sequence", "peptide", "peptidesequence",
+                    "peptideseq", "candidatesequence",
+                }),
+                None,
+            )
+            if seq_col is None:
+                continue
+
+            # Exclude non-measurement tables unless an affinity field is present.
+            affinity_field = any(
+                normkey(c) in {
+                    "pkd", "paffinity", "paffinityvalue", "pkdvalue",
+                    "affinity", "affinityraw", "kd", "bindingaffinity",
+                }
+                for c in df.columns
+            )
+            if not affinity_field:
+                continue
+
+            data_source_files.append(str(src.relative_to(ROOT)))
+            for index, series in df.iterrows():
+                row = series.to_dict()
+                seq = normseq(row.get(seq_col))
+                if seq not in measured_seq_set:
+                    continue
+
+                pkd, affinity_col, affinity_raw = infer_pkd(row)
+                context = context_description(row)
+                target_ok = verified_hervk_context(context)
+
+                for arm in ("adaptive", "baseline"):
+                    keys = arm_sequence_rows.get((arm, seq), [])
+                    for cand in keys:
+                        measurement_matches.append({
+                            "arm": arm,
+                            "seed": cand["seed"],
+                            "sequence": seq,
+                            "sequence_length": len(seq),
+                            "internal_score": cand["internal_score"],
+                            "measurement_source_file": str(src.relative_to(ROOT)),
+                            "measurement_source_row": int(index) + 2,
+                            "affinity_field": affinity_col,
+                            "affinity_raw": affinity_raw,
+                            "numeric_pKd": pkd,
+                            "context_fields": context,
+                            "explicit_hervk_or_9sya_context": target_ok,
+                            "valid_candidate_level_target_context_measurement":
+                                bool(pkd is not None and target_ok),
+                        })
+
+        with (OUT / "fresh_candidate_measurement_matches.csv").open(
+            "w", newline="", encoding="utf-8"
+        ) as f:
+            fields = [
+                "arm", "seed", "sequence", "sequence_length", "internal_score",
+                "measurement_source_file", "measurement_source_row",
+                "affinity_field", "affinity_raw", "numeric_pKd",
+                "context_fields", "explicit_hervk_or_9sya_context",
+                "valid_candidate_level_target_context_measurement",
+            ]
+            w = csv.DictWriter(f, fieldnames=fields)
+            w.writeheader()
+            w.writerows(measurement_matches)
+
+        # Build a de-duplicated sequence-level summary; duplicate source rows
+        # remain in the match table for provenance inspection.
+        shared = {
+            s for s in set(r["sequence"] for r in cohort if r["arm"] == "adaptive")
+            if any(x["sequence"] == s and x["arm"] == "baseline" for x in cohort)
+        }
+        arm_summaries = []
+        for arm in ("baseline", "adaptive"):
+            seqs = {r["sequence"] for r in cohort if r["arm"] == arm}
+            hits = [m for m in measurement_matches if m["arm"] == arm]
+            valid = [m for m in hits if m["valid_candidate_level_target_context_measurement"]]
+            arm_summaries.append({
+                "arm": arm,
+                "fresh_unique_candidate_sequences": len(seqs),
+                "fresh_sequences_with_any_exact_measurement_match":
+                    len({x["sequence"] for x in hits}),
+                "fresh_sequences_with_numeric_pKd": len({
+                    x["sequence"] for x in hits if x["numeric_pKd"] is not None
+                }),
+                "fresh_sequences_with_explicit_hervk_or_9sya_numeric_pKd": len({
+                    x["sequence"] for x in valid
+                }),
+                "shared_candidate_sequences_between_arms": len(shared),
+                "source_tables_scanned_with_affinity_columns": len(set(data_source_files)),
+            })
+
+        with (OUT / "fresh_measurement_match_summary.csv").open(
+            "w", newline="", encoding="utf-8"
+        ) as f:
+            w = csv.DictWriter(f, fieldnames=list(arm_summaries[0].keys()))
+            w.writeheader()
+            w.writerows(arm_summaries)
+
+        # Compare arm means only within matched contexts and exclude sequences
+        # present in both arms. If no such groups exist, biological comparison
+        # is explicitly not estimable.
+        context_rows = defaultdict(lambda: {"adaptive": {}, "baseline": {}})
+        for m in measurement_matches:
+            if not m["valid_candidate_level_target_context_measurement"]:
+                continue
+            ctx = m["context_fields"].strip()
+            if not ctx:
+                continue
+            if m["sequence"] in shared:
+                continue
+            context_rows[ctx][m["arm"]][m["sequence"]] = m["numeric_pKd"]
+
+        matched_context_differences = []
+        context_comparison_rows = []
+        for ctx, sides in context_rows.items():
+            aa = list(sides["adaptive"].values())
+            bb = list(sides["baseline"].values())
+            if not aa or not bb:
+                continue
+            delta = sum(aa) / len(aa) - sum(bb) / len(bb)
+            matched_context_differences.append(delta)
+            context_comparison_rows.append({
+                "context": ctx,
+                "n_unique_adaptive_sequences": len(aa),
+                "mean_adaptive_pKd": sum(aa) / len(aa),
+                "n_unique_baseline_sequences": len(bb),
+                "mean_baseline_pKd": sum(bb) / len(bb),
+                "adaptive_minus_baseline_pKd": delta,
+                "interpretation": "exploratory measured result; inspect assay/context provenance",
+            })
+
+        with (OUT / "fresh_measured_affinity_arm_comparison.csv").open(
+            "w", newline="", encoding="utf-8"
+        ) as f:
+            fields = [
+                "context", "n_unique_adaptive_sequences", "mean_adaptive_pKd",
+                "n_unique_baseline_sequences", "mean_baseline_pKd",
+                "adaptive_minus_baseline_pKd", "interpretation",
+            ]
+            w = csv.DictWriter(f, fieldnames=fields)
+            w.writeheader()
+            w.writerows(context_comparison_rows)
+
+        valid_rows = [
+            m for m in measurement_matches
+            if m["valid_candidate_level_target_context_measurement"]
+        ]
+        if len({m["sequence"] for m in valid_rows if m["arm"] == "adaptive"}) >= 2 \
+                and len({m["sequence"] for m in valid_rows if m["arm"] == "baseline"}) >= 2 \
+                and matched_context_differences:
+            status = "exploratory_estimable"
+            detail = (
+                "At least one explicit target-context group had distinct measured candidate sequences "
+                "from both arms. Inspect the source rows and assay provenance before drawing conclusions."
+            )
+        else:
+            status = "not_estimable"
+            detail = (
+                "No adequate matched measured-affinity comparison was found for fresh candidates. "
+                "A sequence match without verified target context does not count as HERV-K/9SYA affinity evidence."
+            )
+
+        record(
+            "fresh_candidate_experimental_measurement_join",
+            status,
+            detail,
+            measurement_match_rows=len(measurement_matches),
+            raw_source_tables_with_affinity_columns=len(set(data_source_files)),
+            target_context_verified_match_rows=len(valid_rows),
+        )
+else:
+    record(
+        "fresh_candidate_experimental_measurement_join",
+        "blocked",
+        "Fresh candidate generation failed.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fresh structural-score paired-seed statistics.
+# A Vina result is not pKd and is not treated as measured affinity.
+# ---------------------------------------------------------------------------
+def paired_stats(deltas, boot_seed=710777, reps=BOOTSTRAP_REPLICATES):
+    if not deltas:
+        return {
+            "n_paired_seeds": 0,
+            "mean_delta": None,
+            "bootstrap_95_ci": None,
+            "exact_signflip_p": None,
+        }
+
+    mean_delta = sum(deltas) / len(deltas)
+    rng = random.Random(boot_seed)
+    boots = []
+    for _ in range(reps):
+        sample = [deltas[rng.randrange(len(deltas))] for _ in deltas]
+        boots.append(sum(sample) / len(sample))
+    boots.sort()
+    lo = boots[int(0.025 * (len(boots) - 1))]
+    hi = boots[int(0.975 * (len(boots) - 1))]
+
+    if len(deltas) <= 16:
+        null = [
+            sum(d * sign for d, sign in zip(deltas, signs)) / len(deltas)
+            for signs in itertools.product((-1, 1), repeat=len(deltas))
+        ]
+        p = sum(abs(x) >= abs(mean_delta) for x in null) / len(null)
+    else:
+        p = None
+
+    return {
+        "n_paired_seeds": len(deltas),
+        "mean_delta": mean_delta,
+        "bootstrap_95_ci": [lo, hi],
+        "exact_signflip_p": p,
+    }
+
+
+vina_seed_means = {}
+for seed in NEW_SEEDS:
+    vina_seed_means[seed] = {}
+    for arm in ("adaptive", "baseline"):
+        scores = [
+            r["vina_score_kcal_mol"] for r in vina_scores
+            if r["seed"] == seed and r["arm"] == arm
+        ]
+        vina_seed_means[seed][arm] = (
+            sum(scores) / len(scores) if scores else None
+        )
+
+vina_deltas = [
+    vina_seed_means[s]["adaptive"] - vina_seed_means[s]["baseline"]
+    for s in NEW_SEEDS
+    if vina_seed_means[s]["adaptive"] is not None
+    and vina_seed_means[s]["baseline"] is not None
+]
+vina_stats = paired_stats(vina_deltas)
+
+with (OUT / "fresh_vina_paired_seed_comparison.csv").open(
+    "w", newline="", encoding="utf-8"
+) as f:
+    fields = [
+        "seed", "adaptive_mean_vina_score", "baseline_mean_vina_score",
+        "adaptive_minus_baseline_vina_score",
+    ]
+    w = csv.DictWriter(f, fieldnames=fields)
+    w.writeheader()
+    for seed in NEW_SEEDS:
+        a = vina_seed_means[seed]["adaptive"]
+        b = vina_seed_means[seed]["baseline"]
+        w.writerow({
+            "seed": seed,
+            "adaptive_mean_vina_score": a,
+            "baseline_mean_vina_score": b,
+            "adaptive_minus_baseline_vina_score":
+                (a - b) if a is not None and b is not None else None,
+        })
+
+
+# ---------------------------------------------------------------------------
+# Graphs from fresh data only.
+# ---------------------------------------------------------------------------
+graph_status = []
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    baseline_scores = [
+        r["internal_score"] for r in cohort if r["arm"] == "baseline"
+    ]
+    adaptive_scores = [
+        r["internal_score"] for r in cohort if r["arm"] == "adaptive"
+    ]
+    if baseline_scores and adaptive_scores:
+        plt.figure(figsize=(7, 4.5))
+        plt.boxplot([baseline_scores, adaptive_scores],
+                    labels=["Uniform baseline", "Adaptive"])
+        plt.ylabel("Internal optimization score")
+        plt.title("Fresh P3 cohort: internal score by arm")
+        plt.tight_layout()
+        plt.savefig(OUT / "01_fresh_internal_scores.png", dpi=180)
+        plt.close()
+        graph_status.append("01_fresh_internal_scores.png")
+
+    mutation_counts = {
+        arm: [r["mutation_count_vs_reference_seed"] for r in mutation_rows
+              if r["arm"] == arm]
+        for arm in ("baseline", "adaptive")
+    }
+    if mutation_counts["baseline"] and mutation_counts["adaptive"]:
+        plt.figure(figsize=(7, 4.5))
+        plt.boxplot([
+            mutation_counts["baseline"], mutation_counts["adaptive"]
+        ], labels=["Uniform baseline", "Adaptive"])
+        plt.ylabel("Substitutions vs. reference seed")
+        plt.title("Fresh P3 cohort: mutation behavior")
+        plt.tight_layout()
+        plt.savefig(OUT / "02_fresh_mutation_counts.png", dpi=180)
+        plt.close()
+        graph_status.append("02_fresh_mutation_counts.png")
+
+    if vina_scores:
+        plt.figure(figsize=(7, 4.5))
+        plt.boxplot([
+            [r["vina_score_kcal_mol"] for r in vina_scores if r["arm"] == "baseline"],
+            [r["vina_score_kcal_mol"] for r in vina_scores if r["arm"] == "adaptive"],
+        ], labels=["Uniform baseline", "Adaptive"])
+        plt.ylabel("Vina score (kcal/mol; lower is conventionally favorable)")
+        plt.title("Fresh 9SYA panel: docking score by arm")
+        plt.tight_layout()
+        plt.savefig(OUT / "03_fresh_vina_scores.png", dpi=180)
+        plt.close()
+        graph_status.append("03_fresh_vina_scores.png")
+
+    if vina_deltas:
+        plt.figure(figsize=(7, 4.5))
+        plt.axhline(0)
+        plt.bar(range(1, len(vina_deltas) + 1), vina_deltas)
+        plt.xlabel("Paired optimizer seed")
+        plt.ylabel("Adaptive − baseline Vina score (kcal/mol)")
+        plt.title("Fresh P3: paired receptor-aware score difference")
+        plt.tight_layout()
+        plt.savefig(OUT / "04_fresh_vina_paired_differences.png", dpi=180)
+        plt.close()
+        graph_status.append("04_fresh_vina_paired_differences.png")
+
+except Exception as exc:
+    graph_status.append(f"graph generation failed: {type(exc).__name__}: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Integrated status, logbooks, and scientific limitations.
+# ---------------------------------------------------------------------------
+def json_safe(value):
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(k): json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(v) for v in value]
+    return value
+
+
+manifest = {
+    "run_id": OUT.name,
+    "created_at": datetime.now().isoformat(timespec="seconds"),
+    "project_root": str(ROOT),
+    "fresh_seeds": NEW_SEEDS,
+    "generator_script": str(GENERATOR.relative_to(ROOT)),
+    "generator_sha256": sha256(GENERATOR) if GENERATOR.is_file() else None,
+    "vina_script": str(VINA_SCRIPT.relative_to(ROOT)),
+    "vina_script_sha256": sha256(VINA_SCRIPT) if VINA_SCRIPT.is_file() else None,
+    "receptor": str(RECEPTOR.relative_to(ROOT)),
+    "receptor_sha256": sha256(RECEPTOR) if RECEPTOR.is_file() else None,
+    "fresh_candidate_count": len(cohort),
+    "fresh_structural_panel_size": len(panel),
+    "fresh_vina_scores_extracted": len(vina_scores),
+    "fresh_candidate_measurement_matches": len(measurement_matches),
+    "fresh_vina_paired_seed_statistics": vina_stats,
+    "fresh_native_internal_paired_seed_deltas": paired_internal_deltas,
+    "historical_test_statuses": list(TESTS.values()),
+    "measurement_source_files_scanned": sorted(set(data_source_files)),
+    "measurement_scan_notes": measurement_scan_notes,
+    "graphs": graph_status,
+    "elapsed_seconds": round(time.time() - START, 2),
+    "scientific_limits": [
+        "Native C-score remains sequence-only; this experiment does not rewrite or recalibrate its implementation.",
+        "Fresh Vina scores are computational docking scores, not experimental binding affinities.",
+        "A positive-control run must be inspected for pose validity and RMSD; exit code 0 alone is not a control pass.",
+        "The 21-aa and other historical benchmarks remain retrospective unless linked to fresh candidate sequences and valid target-context measurements.",
+        "If candidate-level HERV-K/9SYA measured affinity is unavailable, the biological adaptive-versus-baseline comparison is not estimable.",
+        "The native-score versus measured-affinity concern is not resolved merely by a favorable Vina comparison.",
+    ],
+}
+(OUT / "p3_integrated_run_manifest.json").write_text(json.dumps(json_safe(manifest), indent=2))
+
+
+def status_for(name):
+    item = TESTS.get(name)
+    if not item:
+        return "not_run"
+    return item["status"]
+
+
+test_matrix = [
+    ("Internal scores and candidate diversity",
+     "Fresh candidate score/distribution/diversity comparison",
+     status_for("fresh_internal_scores_and_diversity")),
+    ("Mutation behavior",
+     "Fresh candidate mutation counts/positions by arm",
+     status_for("fresh_mutation_behavior")),
+    ("Broad native C-score validation",
+     "Retrospective score-versus-measured-mutation benchmark rerun in a new output folder",
+     status_for("broad_native_c_score_validation")),
+    ("Exact-21-amino-acid validation",
+     "Retrospective exact-21-aa score benchmark rerun in a new output folder",
+     status_for("exact_21aa_native_c_score_validation")),
+    ("Mutation-position validation",
+     "Historical mutation-position benchmark rerun; separate from fresh observed mutation pattern",
+     status_for("historical_mutation_position_validation")),
+    ("Ridge versus training-fold mean",
+     "Grouped, out-of-fold historical prediction benchmark rerun with a new seed and output directory",
+     status_for("ridge_vs_training_fold_mean")),
+    ("PEPBI strict-matched validation",
+     "Retrospective strict-matched benchmark rerun in a new output folder",
+     status_for("pepbi_strict_matched_validation")),
+    ("Structural-scoring benchmark",
+     "Fresh balanced adaptive/baseline Vina panel + attempted 1YCR positive control",
+     status_for("fresh_receptor_aware_structural_comparison")),
+    ("Receptor-context control",
+     "PEPBI receptor-context invariance script rerun as a historical control",
+     status_for("pepbi_receptor_context_control")),
+]
+
+with (OUT / "P3_TEST_MATRIX.csv").open("w", newline="", encoding="utf-8") as f:
+    w = csv.writer(f)
+    w.writerow(["test", "analysis", "execution_status", "scope"])
+    for name, analysis, status in test_matrix:
+        if name in {
+            "Internal scores and candidate diversity", "Mutation behavior",
+            "Structural-scoring benchmark",
+        }:
+            scope = "fresh candidate cohort"
+        else:
+            scope = "retrospective control; not fresh experimental data"
+        w.writerow([name, analysis, status, scope])
+
+
+data_log = [
+    "# P3 Integrated Fresh Experiment — Data and Results",
+    "",
+    f"**Date/time:** {manifest['created_at']}",
+    f"**Run ID:** `{OUT.name}`",
+    f"**Output directory:** `{OUT.relative_to(ROOT)}`",
+    "",
+    "## Objective",
+    "Generate a new matched adaptive/baseline candidate cohort, compare its mutation behavior and internal scores, run a common receptor-aware structural-scoring protocol on a balanced sample, rerun the available retrospective validation tests in isolated output directories, and attempt exact-sequence linking to measured-affinity data.",
+    "",
+    "## Fresh cohort design",
+    f"- New seeds requested: {', '.join(map(str, NEW_SEEDS))}.",
+    f"- Fresh candidate records extracted: {len(cohort)}.",
+    f"- Fresh structural candidates selected: {len(panel)}.",
+    f"- Vina scores extracted: {len(vina_scores)}.",
+    "- Structural panel sampling was randomized within seed and arm instead of selecting only the highest native-score sequences.",
+    f"- Receptor: `{RECEPTOR.relative_to(ROOT)}`.",
+    "",
+    "## Fresh data files",
+    "- `fresh_candidate_cohort.csv`: fresh extracted sequences, arm, seed, and internal score.",
+    "- `fresh_internal_and_diversity_by_seed.csv`: score and unique-sequence counts by arm/seed.",
+    "- `fresh_mutation_behavior.csv`: fresh candidate mutation count and position records.",
+    "- `fresh_structural_panel_selection.csv`: new structural panel selection.",
+    "- `fresh_pose_manifest.csv`: generated manifest for the new candidate panel, when prepared.",
+    "- `fresh_vina_candidate_scores.csv`: candidate-level Vina scores, if extraction succeeded.",
+    "- `fresh_vina_paired_seed_comparison.csv`: paired arm differences using available fresh Vina results.",
+    "- `fresh_candidate_measurement_matches.csv`: exact-sequence match rows with measurement provenance.",
+    "- `fresh_measurement_match_summary.csv`: arm-wise exact-match counts and explicit target-context counts.",
+    "- `fresh_measured_affinity_arm_comparison.csv`: matched-context comparison, only where eligible values were found.",
+    "- `P3_TEST_MATRIX.csv`: execution status for the nine specified evidence tests.",
+    "- `p3_integrated_run_manifest.json`: source hashes, seeds, paths, outcomes, and limitations.",
+    "",
+    "## Retrospective test reruns",
+    "Historical score-validation scripts were directed to separate folders under `rerun_validation_tests/`. These are repeated analyses of existing experimental datasets, not new experimental measurements.",
+    "",
+    "## Execution status",
+]
+for name, item in TESTS.items():
+    data_log.append(f"- **{name}: {item['status']}** — {item['detail'].splitlines()[0][:400]}")
+
+(OUT / "P3_DATA_LOGBOOK.md").write_text("\n".join(data_log) + "\n")
+
+
+analysis_log = [
+    "# P3 Integrated Fresh Experiment — Analysis and Interpretation",
+    "",
+    f"**Run ID:** `{OUT.name}`",
+    "",
+    "## Direct fresh adaptive-versus-baseline comparison",
+]
+if generation_ok:
+    analysis_log += [
+        f"- The fresh cohort contained {len(cohort)} unique arm/seed/sequence records.",
+        f"- The fresh structural panel contained {len(panel)} candidate entries.",
+        f"- The Vina pipeline returned {len(vina_scores)} extractable candidate scores.",
+        f"- Mean paired internal-score difference (adaptive − baseline), across available seeds: "
+        + (
+            f"{sum(paired_internal_deltas)/len(paired_internal_deltas):.5f}."
+            if paired_internal_deltas else "not estimable."
+        ),
+        f"- Mean paired Vina-score difference (adaptive − baseline): "
+        + (
+            f"{vina_stats['mean_delta']:.5f} kcal/mol."
+            if vina_stats["mean_delta"] is not None else "not estimable."
+        ),
+        f"- Paired Vina-seed count: {vina_stats['n_paired_seeds']}; "
+        f"seed-bootstrap interval: {vina_stats['bootstrap_95_ci']}; "
+        f"exact sign-flip p-value: {vina_stats['exact_signflip_p']}.",
+        "",
+        "A negative Vina difference favors adaptive under Vina's score convention. This remains a computational structural-score comparison, not a measured binding-affinity result.",
+    ]
+else:
+    analysis_log += [
+        "Fresh generation did not complete or the new candidate cohort could not be extracted. No direct fresh-cohort conclusion is justified.",
+        "No older cohort is substituted for the missing fresh data.",
+    ]
+
+analysis_log += [
+    "",
+    "## The nine required P3 tests",
+]
+for name, analysis, status in test_matrix:
+    analysis_log.append(f"- **{name} — {status}.** {analysis}")
+
+analysis_log += [
+    "",
+    "## Five weaknesses and what this run does about them",
+    "",
+    "### 1. Native C-score does not reliably track affinity",
+    "The native score is retained as an internal optimization metric, not interpreted as pKd. The retrospective broad and exact-21-aa tests are rerun when their actual scripts and inputs are available. The new receptor-aware comparison tests whether the fresh arm difference persists under Vina. This does not rewrite or recalibrate the native score; if Vina is also weakly validated, the score-to-affinity gap remains.",
+    "",
+    "### 2. Validation is mostly shared, not arm-specific",
+    "The fresh generation, candidate mutation analysis, and Vina panel use newly generated adaptive and baseline sequences. The historical benchmarks are explicitly separated and do not count as prospective or fresh candidate evidence.",
+    "",
+    "### 3. Candidate-to-measurement link is missing",
+    "The new exact-sequence join writes source file, source row, affinity column/raw value, numeric pKd where explicitly supported, and context fields. A match without a numeric measurement and explicit HERV-K/9SYA target context is not counted as a valid biological match. The conflicting worksheet count is not treated as truth without raw-source provenance.",
+    "",
+    "### 4. Structural scoring needs validation",
+    "The run attempts the same Vina protocol for both fresh arms and a quick 1YCR positive-control diagnostic when the required environment is available. The control must be checked for structural validity and RMSD; successful execution alone is insufficient. Docking scores are not measured affinities.",
+    "",
+    "### 5. No direct experimental affinity comparison of generated candidates",
+    "The exact measurement join attempts to establish that comparison. If few or no fresh candidates have valid target-context measurements, the biological arm comparison remains not estimable. Only a suitable experimental assay of comparable candidates from both arms can resolve this weakness.",
+    "",
+    "## Interpretation rules",
+    "- Do not describe native score as affinity or a probability of binding.",
+    "- Do not label Vina scores as measured pKd.",
+    "- Do not call historical results new candidate validation.",
+    "- Do not report a positive control as passed without checking pose geometry and alignment.",
+    "- Do not treat the 0-versus-125 PEPBI discrepancy as resolved unless the sequence-level source rows reproduce a count.",
+    "- If data or a supported executable interface is missing, report the specific test as blocked or not estimable.",
+    "",
+    "## Graphs generated from fresh data",
+]
+analysis_log.extend(f"- `{x}`" for x in graph_status)
+(OUT / "P3_ANALYSIS_LOGBOOK.md").write_text("\n".join(analysis_log) + "\n")
+
+
+final_report = [
+    f"# P3 Integrated Fresh Direct Comparison — {OUT.name}",
+    "",
+    "## Run summary",
+    f"- Fresh generation status: `{status_for('fresh_candidate_generation')}`.",
+    f"- Fresh candidate records: {len(cohort)}.",
+    f"- Fresh balanced structural panel entries: {len(panel)}.",
+    f"- Extractable candidate-level Vina scores: {len(vina_scores)}.",
+    f"- Exact sequence measurement match rows: {len(measurement_matches)}.",
+    "",
+    "## Direct comparisons",
+    f"- Fresh internal score/diversity: `{status_for('fresh_internal_scores_and_diversity')}`.",
+    f"- Fresh mutation behavior: `{status_for('fresh_mutation_behavior')}`.",
+    f"- Fresh receptor-aware Vina comparison: `{status_for('fresh_receptor_aware_structural_comparison')}`.",
+    f"- Fresh candidate-to-measurement join: `{status_for('fresh_candidate_experimental_measurement_join')}`.",
+    f"- Quick 1YCR scoring control: `{status_for('quick_1ycr_scoring_control')}`.",
+    "",
+    "## Required scientific conclusion",
+    "This run only supports claims for tests whose execution and output checks succeeded. It can compare newly generated candidate sequences under a common computational scoring protocol, but cannot establish stronger real-world binding without valid experimental measurements for comparable candidates from both arms.",
+    "",
+    "## Outputs",
+    "- `P3_TEST_MATRIX.csv`",
+    "- `P3_DATA_LOGBOOK.md`",
+    "- `P3_ANALYSIS_LOGBOOK.md`",
+    "- `p3_integrated_run_manifest.json`",
+    "- `fresh_candidate_cohort.csv` (if generation completed)",
+    "- `fresh_vina_candidate_scores.csv` (if Vina scores were extractable)",
+    "- `fresh_candidate_measurement_matches.csv` (if generation completed)",
+    "- `rerun_validation_tests/`",
+    "",
+    "The source scripts were not edited. Missing or unsupported interfaces are reported in the run manifest rather than inferred as successful results.",
+]
+(OUT / "P3_INTEGRATED_REPORT.md").write_text("\n".join(final_report) + "\n")
+
+print("\n" + "=" * 78)
+print("P3 INTEGRATED FRESH SUITE FINISHED")
+print("Run directory:", OUT)
+print("Fresh generation:", status_for("fresh_candidate_generation"))
+print("Fresh candidates:", len(cohort))
+print("Structural panel:", len(panel))
+print("Vina scores extracted:", len(vina_scores))
+print("Exact sequence measurement matches:", len(measurement_matches))
+print("Fresh Vina paired statistics:", vina_stats)
+print("Report:", OUT / "P3_INTEGRATED_REPORT.md")
+print("=" * 78)

@@ -1,0 +1,620 @@
+========== CONFIGURATION DEFINITIONS ==========
+"""
+config.py
+
+Central configuration for the Silicon Virovore pipeline.
+
+All global parameters should be defined here instead of
+being hardcoded throughout the codebase.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import math
+from pathlib import Path
+
+
+# ============================================================
+# Project Directories
+# ============================================================
+
+ROOT = Path(__file__).resolve().parent.parent
+
+DATA_DIR = ROOT / "data"
+
+RESULTS_DIR = ROOT / "results"
+
+FIGURES_DIR = RESULTS_DIR / "figures"
+
+REPORT_DIR = RESULTS_DIR / "report"
+
+STRUCTURE_DIR = RESULTS_DIR / "structures"
+
+DOCKING_DIR = RESULTS_DIR / "docking"
+
+RECEPTOR_DIR = DATA_DIR / "receptor"
+
+PEPTIDE_DIR = DATA_DIR / "peptides"
+
+
+# ============================================================
+# Receptor
+# ============================================================
+
+RECEPTOR_PDB = RECEPTOR_DIR / "herv_k_env.pdb"
+
+RECEPTOR_PDBQT = RECEPTOR_DIR / "receptor.pdbqt"
+
+CLEAN_RECEPTOR = RESULTS_DIR / "receptor" / "clean_env.pdb"
+
+# ============================================================
+# Initial Peptide
+# ============================================================
+
+# This input is user-editable, but must contain only the 20 canonical residues.
+DEFAULT_SEED_SEQUENCE = "MKLAVFALLVFFAGSSDLIRR"
+
+PILOT_SEED_SEQUENCE = "MKLAVFALLVFFAGSSDLIRR"
+
+PEPTIDE_LENGTH = 21
+
+AMINO_ACIDS = (
+    "ACDEFGHIKLMNPQRSTVWY"
+)
+
+# ============================================================
+# Evolutionary Algorithm
+# ============================================================
+
+POPULATION_SIZE = 10
+
+GENERATIONS = 10
+
+MUTATION_RATE = 0.05
+
+ELITE_COUNT = 10
+
+TOURNAMENT_SIZE = 7
+
+ARISE_ENABLED = True
+
+ALE_ENABLED = True
+
+ADAPTIVE_ENABLED = True
+
+RANDOM_SEED: int | None = None
+
+EXPERIMENT_CONDITION = "adaptive"
+
+RUN_ID = ""
+
+STRUCTURE_WORKERS = 1
+
+DOCKING_WORKERS = 1
+
+CACHE_ENABLED = True
+
+# ============================================================
+# ARISE / ALE hotspot experiments
+# ============================================================
+
+HOTSPOT_ENABLED = True
+
+HOTSPOT_START = None
+
+# ============================================================
+# Persistent ARISE memory
+# ============================================================
+
+ARISE_MEMORY_ENABLED = False
+
+# Store previous runs, but do not automatically use them for
+# new discovery. Cross-run use must be explicitly requested.
+ARISE_MEMORY_USE_HISTORY = False
+
+ARISE_MEMORY_MAX_RECORDS = 5000
+
+ARISE_MEMORY_MAX_RUNS = 50
+
+ARISE_MEMORY_PATH = RESULTS_DIR / "arise_memory.json"
+
+HOTSPOT_END = None
+
+HOTSPOT_DISCOVERY_WINDOW_MIN = 2
+
+HOTSPOT_DISCOVERY_WINDOW_MAX = 6
+
+HOTSPOT_UPDATE_INTERVAL = 1
+
+HOTSPOT_TOP_QUANTILE = 0.25
+
+
+========== PIPELINE ENTRY / CONFIG LOADING ==========
+        run_status["total_candidates"],
+        run_status["tier2_validated_count"],
+        run_status["total_candidates"],
+    )
+    logger.info("=" * 50)
+    logger.info("Pipeline Complete")
+    logger.info("Generations: %d", len(best_scores))
+    logger.info("Best Overall Score: %.4f", report_ranked[0].overall_score)
+    logger.info("Runtime: %.2f sec", runtime)
+    logger.info("=" * 50)
+
+
+def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
+    """Build an experiment configuration without changing source defaults."""
+
+    parser = argparse.ArgumentParser(
+        description="Run a reproducible Silicon Virovore experiment."
+    )
+    parser.add_argument("--pilot", action="store_true")
+    parser.add_argument("--population-size", type=int)
+    parser.add_argument("--generations", type=int)
+    parser.add_argument("--mutation-rate", type=float)
+    parser.add_argument("--elite-count", type=int)
+    parser.add_argument("--tournament-size", type=int)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Explicit RNG seed. Omit for a fresh randomly generated seed.",
+    )
+    parser.add_argument("--seed-sequence")
+    parser.add_argument(
+        "--condition",
+        choices=("baseline", "adaptive", "pilot"),
+    )
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--run-id")
+    parser.add_argument(
+        "--adaptive-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--arise-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--ale-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--arise-memory-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--arise-memory-use-history",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--arise-memory-max-records",
+        type=int,
+    )
+    parser.add_argument(
+        "--arise-memory-max-runs",
+        type=int,
+    )
+    parser.add_argument("--structure-workers", type=int)
+    parser.add_argument("--docking-workers", type=int)
+    parser.add_argument(
+        "--hotspot-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument("--hotspot-start", type=int)
+    parser.add_argument("--hotspot-end", type=int)
+    parser.add_argument("--hotspot-discovery-window-min", type=int)
+    parser.add_argument("--hotspot-discovery-window-max", type=int)
+    parser.add_argument("--hotspot-update-interval", type=int)
+    parser.add_argument("--hotspot-top-quantile", type=float)
+    parser.add_argument("--hotspot-bootstrap-iterations", type=int)
+    parser.add_argument(
+        "--preserve-best",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument("--score-threshold", type=float)
+    parser.add_argument(
+        "--mutation-guidance-mode",
+        choices=(
+            "uniform",
+            "hotspot_only",
+            "hotspot_biased",
+            "hotspot_biased_annealed",
+            "hotspot_biased_annealed_exploratory",
+            "uniform_matched",
+            "mutation_credit",
+            "uniform_pair_matched",
+            "entropy_pair_matched",
+            "epistasis_pair_matched",
+            "epistasis_entropy",
+            "hotspot_epistasis_entropy",
+            "hotspot_epistasis_entropy_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2",
+            "uniform_random_reset",
+        ),
+    )
+    parser.add_argument(
+        "--enable-vina-tier2",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Opt in to standalone AutoDock Vina scoring for diagnostics. "
+            "It never contributes to the primary ranking objective."
+        ),
+    )
+    parser.add_argument(
+        "--cache-enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--generate-plots",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    args = parser.parse_args(argv)
+
+    values: dict[str, object] = {}
+    for field_name, argument_name in (
+        ("population_size", "population_size"),
+        ("generations", "generations"),
+        ("mutation_rate", "mutation_rate"),
+        ("elite_count", "elite_count"),
+        ("tournament_size", "tournament_size"),
+        ("random_seed", "seed"),
+        ("seed_sequence", "seed_sequence"),
+        ("output_directory", "output_dir"),
+        ("run_id", "run_id"),
+        ("structure_workers", "structure_workers"),
+        ("docking_workers", "docking_workers"),
+        ("hotspot_start", "hotspot_start"),
+        ("hotspot_end", "hotspot_end"),
+        ("hotspot_discovery_window_min", "hotspot_discovery_window_min"),
+        ("hotspot_discovery_window_max", "hotspot_discovery_window_max"),
+        ("hotspot_update_interval", "hotspot_update_interval"),
+        ("hotspot_top_quantile", "hotspot_top_quantile"),
+        ("hotspot_bootstrap_iterations", "hotspot_bootstrap_iterations"),
+        ("mutation_guidance_mode", "mutation_guidance_mode"),
+        ("score_threshold", "score_threshold"),
+        ("arise_memory_max_records", "arise_memory_max_records"),
+        ("arise_memory_max_runs", "arise_memory_max_runs"),
+    ):
+        value = getattr(args, argument_name)
+        if value is not None:
+            values[field_name] = value
+
+    if args.condition is not None:
+        values["condition"] = args.condition
+    if args.adaptive_enabled is not None:
+        values["adaptive_enabled"] = args.adaptive_enabled
+    if args.arise_enabled is not None:
+        values["arise_enabled"] = args.arise_enabled
+    if args.ale_enabled is not None:
+        values["ale_enabled"] = args.ale_enabled
+    if args.arise_memory_enabled is not None:
+        values["arise_memory_enabled"] = args.arise_memory_enabled
+    if args.arise_memory_use_history is not None:
+        values["arise_memory_use_history"] = args.arise_memory_use_history
+    if args.enable_vina_tier2 is not None:
+        values["enable_vina_tier2"] = args.enable_vina_tier2
+    if args.cache_enabled is not None:
+        values["cache_enabled"] = args.cache_enabled
+    if args.generate_plots is not None:
+        values["generate_plots"] = args.generate_plots
+    if args.hotspot_enabled is not None:
+        values["hotspot_enabled"] = args.hotspot_enabled
+    if args.preserve_best is not None:
+        values["preserve_best"] = args.preserve_best
+
+    if args.pilot:
+        values.update({
+            "population_size": 16,
+            "generations": 3,
+            "random_seed": 1001,
+            "condition": "pilot",
+            "seed_sequence": values.get(
+                "seed_sequence",
+                PILOT_SEED_SEQUENCE,
+            ),
+        })
+        values.setdefault("run_id", "pilot-1001")
+
+    condition = values.get("condition")
+    if condition == "baseline":
+        values.setdefault("adaptive_enabled", False)
+        values.setdefault("arise_enabled", False)
+        values.setdefault("ale_enabled", False)
+        values.setdefault("hotspot_enabled", False)
+        values.setdefault("mutation_guidance_mode", "uniform")
+    elif condition == "adaptive":
+        values.setdefault("adaptive_enabled", True)
+        values.setdefault("arise_enabled", True)
+        values.setdefault("ale_enabled", True)
+        values.setdefault("hotspot_enabled", True)
+        values.setdefault("mutation_guidance_mode", "hotspot_biased_annealed")
+    elif condition == "pilot":
+        values.setdefault("hotspot_enabled", True)
+        values.setdefault("mutation_guidance_mode", "hotspot_biased_annealed")
+
+    return PipelineSettings(**values)
+
+
+if __name__ == "__main__":
+    run_pipeline(parse_settings())
+
+========== STRUCTURAL SCORING IMPLEMENTATIONS ==========
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:2:"""Small reproducible geometry-control pilot for target_aware_structural_score_v1.
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:139:            "target_aware_structural_score": rec["target_aware_structural_score"],
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:140:            "structural_score_status": rec["structural_score_status"], "score_valid": rec["score_valid"],
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:146:    _write_csv(run_dir / "structural_scores.csv", score_rows)
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:168:    valid_decoys = [r for r in decoys if r["score_valid"] and r["target_aware_structural_score"] is not None]
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:169:    valid_reference = ref["score_valid"] and ref["target_aware_structural_score"] is not None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:181:            float(ref["target_aware_structural_score"]), [float(r["target_aware_structural_score"]) for r in valid_decoys]
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:213:    (run_dir / "benchmark_metrics.json").write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/prototype3/run_target_aware_pilot.py:277:        "Generated files: `benchmark_manifest.csv`, `split_manifest.csv`, `structural_scores.csv`, `benchmark_metrics.json`, `run_config.json`, `environment.json`, and translated control PDBs.",
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:43:    assert a["structural_score_status"] == "success"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:45:    assert 0.0 <= a["target_aware_structural_score"] <= 1.0
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:46:    assert a["target_aware_structural_score"] == b["target_aware_structural_score"]
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:48:    assert a["c_score_status"] == "not_computed_by_structural_scorer"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:49:    assert a["score_version"] == "target_aware_structural_score_v1"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:55:    assert result["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:57:    assert result["structural_score_status"] == "preparation_failure"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:64:    assert missing["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:65:    assert missing["structural_score_status"] == "invalid_input"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:66:    assert wrong["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:67:    assert wrong["structural_score_status"] == "invalid_input"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:74:    assert same_chain["structural_score_status"] == "invalid_input"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:75:    assert separate["structural_score_status"] == "invalid_input"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:76:    assert separate["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:87:    assert result["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:88:    assert result["structural_score_status"] == "invalid_input"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:104:    assert result["structural_score_status"] == "success"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:106:    assert result["target_aware_structural_score"] is not None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:108:    assert result["target_aware_structural_score"] < 0.05
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:132:    assert bad["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:142:    assert a["target_aware_structural_score"] > b["target_aware_structural_score"]
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:169:    assert result["target_aware_structural_score"] is None
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/tests/test_target_aware_scoring.py:170:    assert result["structural_score_status"] == "invalid_input"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:5:Scoring version: target_aware_structural_score_v1.
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:18:SCORE_VERSION = "target_aware_structural_score_v1"
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:259:        "c_score_status": "not_computed_by_structural_scorer",
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:260:        "target_aware_structural_score": None,
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:261:        "structural_score_status": status,
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:426:            "c_score_status": "not_computed_by_structural_scorer",
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:427:            "target_aware_structural_score": score,
+./prototype3/results/target_aware_structural_v1/patch_backups/20261026T220048Z/src/target_aware_scoring.py:428:            "structural_score_status": "success",
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:2:"""Small geometry-control pilot for target_aware_structural_score_v1.1_clash_gated.
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:139:            "target_aware_structural_score": rec["target_aware_structural_score"],
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:140:            "structural_score_status": rec["structural_score_status"], "score_valid": rec["score_valid"],
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:146:    _write_csv(run_dir / "structural_scores.csv", score_rows)
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:168:    valid_decoys = [r for r in decoys if r["score_valid"] and r["target_aware_structural_score"] is not None]
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:169:    valid_reference = ref["score_valid"] and ref["target_aware_structural_score"] is not None
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:179:                                   if not r["score_valid"] or r["target_aware_structural_score"] is None],
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:184:            float(ref["target_aware_structural_score"]), [float(r["target_aware_structural_score"]) for r in valid_decoys]
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:216:    (run_dir / "benchmark_metrics.json").write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+./prototype3/results/target_aware_structural_v1/patch_backups/far_control_patch_20261026T220456Z/run_target_aware_pilot.py:282:        "Generated files: `benchmark_manifest.csv`, `split_manifest.csv`, `structural_scores.csv`, `benchmark_metrics.json`, `run_config.json`, `environment.json`, and translated control PDBs.",
+./prototype3/build_p3_final_evidence_report.py:32:    "prototype3/results/experimental_mutation_benchmark/"
+./prototype3/build_p3_final_evidence_report.py:33:    "structural_scoring_*/benchmark_metrics.json"
+./prototype3/run_target_aware_pilot.py:2:"""Small geometry-control pilot for target_aware_structural_score_v1.1_clash_gated.
+./prototype3/run_target_aware_pilot.py:210:            "target_aware_structural_score": rec["target_aware_structural_score"],
+./prototype3/run_target_aware_pilot.py:211:            "structural_score_status": rec["structural_score_status"], "score_valid": rec["score_valid"],
+./prototype3/run_target_aware_pilot.py:217:    _write_csv(run_dir / "structural_scores.csv", score_rows)
+./prototype3/run_target_aware_pilot.py:239:    valid_decoys = [r for r in decoys if r["score_valid"] and r["target_aware_structural_score"] is not None]
+./prototype3/run_target_aware_pilot.py:240:    valid_reference = ref["score_valid"] and ref["target_aware_structural_score"] is not None
+./prototype3/run_target_aware_pilot.py:252:                                   if not r["score_valid"] or r["target_aware_structural_score"] is None],
+./prototype3/run_target_aware_pilot.py:257:            float(ref["target_aware_structural_score"]), [float(r["target_aware_structural_score"]) for r in valid_decoys]
+./prototype3/run_target_aware_pilot.py:289:    (run_dir / "benchmark_metrics.json").write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+./prototype3/run_target_aware_pilot.py:358:        "Generated files: `benchmark_manifest.csv`, `split_manifest.csv`, `structural_scores.csv`, `benchmark_metrics.json`, `run_config.json`, `environment.json`, and translated control PDBs.",
+./prototype3/scripts/pepbi_strict_matched_benchmark.py:69:          rosetta_dg=("_ria_dg", "mean"),
+./prototype3/scripts/pepbi_strict_matched_benchmark.py:80:predictors = ["native_score", "rosetta_dg"]
+./prototype3/scripts/pepbi_target_mutation_invariance.py:40:numeric_column(["_ria_dg", "dG_separated"], "rosetta_dg")
+./prototype3/scripts/pepbi_target_mutation_invariance.py:63:        rosetta_dg=("rosetta_dg", "mean"),
+./prototype3/scripts/pepbi_target_mutation_invariance.py:121:            "rosetta_dg_A": a["rosetta_dg"],
+./prototype3/scripts/pepbi_target_mutation_invariance.py:122:            "rosetta_dg_B": b["rosetta_dg"],
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:37:numeric(["_ria_dg", "dG_separated"], "rosetta_dg")
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:62:        rosetta_dg=("rosetta_dg", "mean"),
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:76:        rosetta_dg=("rosetta_dg", "mean"),
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:102:        r_delta = a["rosetta_dg"] - b["rosetta_dg"]
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:131:            "rosetta_dg_A": a["rosetta_dg"],
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:132:            "rosetta_dg_B": b["rosetta_dg"],
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:133:            "rosetta_dg_A_minus_B": r_delta,
+./prototype3/scripts/pepbi_verified_single_substitution_audit.py:204:        "rosetta_dg_A", "rosetta_dg_B",
+./hybridock-pep/experiments/e22_ensemble_eval.py:5:  vina on real poses (rigid score_only, /tmp/e22_vina_real.json) -> "good part" (no torsion penalty)
+./hybridock-pep/experiments/e22_ensemble_eval.py:6:  vina flexible benchmark (data/benchmark_crystal.json vina_docked) -> size-biased "all of vina"
+./hybridock-pep/experiments/e22_ensemble_eval.py:12:  4. size-bias check: corr(each vina, length)
+./hybridock-pep/experiments/e22_ensemble_eval.py:86:    vr = json.loads(Path("/tmp/e22_vina_real.json").read_text())
+./hybridock-pep/experiments/e22_ensemble_eval.py:96:                         vina_rigid=vr[pdb]["vina_total"], vina_flex=meta["vina_docked"], **g))
+./hybridock-pep/experiments/e22_ensemble_eval.py:100:    v_rigid = np.array([r["vina_rigid"] for r in rows])
+./hybridock-pep/experiments/e22_ensemble_eval.py:101:    v_flex = np.array([r["vina_flex"] for r in rows])
+./hybridock-pep/experiments/e22_ensemble_eval.py:104:    print("=== size-bias check: corr(vina, peptide length) ===")
+./hybridock-pep/experiments/e22_ensemble_eval.py:113:    print(f"  vina flexible (bench) r={rr(pvf,y)[0]:+.3f}  RMSE {rr(pvf,y)[1]:.2f}")
+./hybridock-pep/experiments/e22_ensemble_eval.py:114:    print(f"  vina rigid (good part)r={rr(pvr,y)[0]:+.3f}  RMSE {rr(pvr,y)[1]:.2f}")
+./hybridock-pep/experiments/e22_ensemble_eval.py:118:    print("\n=== ENSEMBLE geometry + vina (z-blend) ===")
+./hybridock-pep/experiments/e22_ensemble_eval.py:120:    for label, pv in [("flex(all-vina)", pvf), ("rigid(good-part)", pvr)]:
+./hybridock-pep/experiments/e22_ensemble_eval.py:131:    # fit + save production calibration for the winning variant (use total vina from real poses)
+./hybridock-pep/experiments/e22_ensemble_eval.py:133:    recs = [dict(r, vina=r["vina_rigid"] if "rigid" in best[2] else r["vina_flex"]) for r in rows]
+./hybridock-pep/experiments/e22_ensemble_eval.py:134:    cal = fit_ensemble_calibration(recs, blend=best[3], vina_mode="total")
+./hybridock-pep/experiments/e22_ensemble_eval.py:137:    print(f"\n  saved production calibration -> {out} (blend={best[3]}, vina={best[2]})")
+./hybridock-pep/experiments/e22_vina_realpose.py:5:(vina.score() returns [total, inter, intra, torsion, intra_best]). Mean over top-5.
+./hybridock-pep/experiments/e22_vina_realpose.py:6:Writes /tmp/e22_vina_real.json: {pdb: {vina_total, vina_inter}}. Crash-safe.
+./hybridock-pep/experiments/e22_vina_realpose.py:50:    from vina import Vina
+./hybridock-pep/experiments/e22_vina_realpose.py:51:    v = Vina(sf_name="vina", verbosity=0)
+./hybridock-pep/experiments/e22_vina_realpose.py:54:    v.compute_vina_maps(center=[float(c) for c in center], box_size=[30, 30, 30])
+./hybridock-pep/experiments/e22_vina_realpose.py:70:    out_path = Path("/tmp/e22_vina_real.json")
+./hybridock-pep/experiments/e22_vina_realpose.py:101:        out[pdb] = dict(vina_total=float(np.mean(totals)), vina_inter=float(np.mean(inters)),
+./hybridock-pep/experiments/e22_vina_realpose.py:104:        print(f"  {pdb}: vina_total={np.mean(totals):+.2f} vina_inter={np.mean(inters):+.2f} "
+./hybridock-pep/experiments/e0_residualization_gate.py:136:    "vina", "dh", "n_contact", "bsa", "ic_cc", "ic_pp", "ic_aa", "ic_mix",
+./hybridock-pep/experiments/e0_residualization_gate.py:154:            vina=r.get("vina_docked"), dh=s.get("mmgbsa_dh"), ie=s.get("ie"),
+./hybridock-pep/experiments/e0c_sign_and_ci.py:1:"""E0c — is the nis+vina win HONEST physics or the backwards-Vina artifact?
+./hybridock-pep/experiments/e0c_sign_and_ci.py:5:     more-negative Vina => more-negative ΔG => POSITIVE weight on vina. The
+./hybridock-pep/experiments/e0c_sign_and_ci.py:6:     verdict's artifact is a NEGATIVE vina weight (backwards slope).
+./hybridock-pep/experiments/e0c_sign_and_ci.py:7:  2. HONEST variant: constrain vina weight >= 0 (physically correct sign) via
+./hybridock-pep/experiments/e0c_sign_and_ci.py:69:    feats = ["nis_c_frac", "nis_p_frac", "vina"]
+./hybridock-pep/experiments/e0c_sign_and_ci.py:87:            if f == "vina":
+./hybridock-pep/experiments/e0c_sign_and_ci.py:91:        # ---- 2. HONEST variant: force physically-correct vina sign ----
+./hybridock-pep/experiments/e0c_sign_and_ci.py:92:        # physical: positive weight on vina (more negative vina -> lower dG).
+./hybridock-pep/experiments/e0c_sign_and_ci.py:93:        # Use NNLS on standardized features with vina kept, nis free via +/- split.
+./hybridock-pep/experiments/e0c_sign_and_ci.py:96:        # nis features into +/- columns, but vina ONLY allowed its physical (+) dir
+./hybridock-pep/experiments/e0c_sign_and_ci.py:98:        # vina physical direction: want coef>=0 on vina meaning predict more
+./hybridock-pep/experiments/e0c_sign_and_ci.py:99:        # negative dG for more negative vina -> include +vina, target y.
+./hybridock-pep/experiments/e0c_sign_and_ci.py:100:        cols.append(Xs[:, 2]); labels.append("vina(+only)")
+./hybridock-pep/experiments/e0c_sign_and_ci.py:108:        print("  HONEST (vina sign-constrained physical) weights:")
+./hybridock-pep/experiments/e0c_sign_and_ci.py:142:        print(f"  free nis+vina grouped-oof r = {base_r:.3f}  "
+./hybridock-pep/experiments/e21_failure_autopsy.py:37:    # attach vina + length + extra raw terms
+./hybridock-pep/experiments/e21_failure_autopsy.py:44:        r["vina"] = b.get("vina_docked")
+./hybridock-pep/experiments/e21_failure_autopsy.py:49:    vina = np.array([r["vina"] for r in rows], float)
+./hybridock-pep/experiments/e21_failure_autopsy.py:53:    pred_vina = loo_pred(vina.reshape(-1, 1), y)
+./hybridock-pep/experiments/e21_failure_autopsy.py:55:    res_vina = pred_vina - y
+./hybridock-pep/experiments/e21_failure_autopsy.py:57:    r_vina = pearsonr(pred_vina, y).statistic
+./hybridock-pep/experiments/e21_failure_autopsy.py:59:          f"Vina-fit r={r_vina:+.3f} RMSE={np.sqrt((res_vina**2).mean()):.2f}")
+./hybridock-pep/experiments/e21_failure_autopsy.py:60:    print(f"corr(our residual, Vina residual) = {pearsonr(res_us,res_vina).statistic:+.3f}  "
+./hybridock-pep/experiments/e21_failure_autopsy.py:66:    print(f"{'pdb':<6}{'L':>3}{'exp':>7}{'pred':>7}{'|err|':>7}{'vina_err':>9}  seq")
+./hybridock-pep/experiments/e21_failure_autopsy.py:70:              f"{abs(res_us[i]):>7.1f}{abs(res_vina[i]):>9.1f}  {r['seq'][:24]}")
+./hybridock-pep/experiments/e21_failure_autopsy.py:92:        "+ vina raw": np.column_stack([Xg, vina]),
+./hybridock-pep/experiments/e21_failure_autopsy.py:93:        "+ length + vina": np.column_stack([Xg, L, vina]),
+./hybridock-pep/experiments/e21_failure_autopsy.py:99:    # ensemble us + vina (z-average of two LOO preds)
+./hybridock-pep/experiments/e21_failure_autopsy.py:101:    zv = (pred_vina - pred_vina.mean()) / pred_vina.std()
+./hybridock-pep/experiments/e21_failure_autopsy.py:104:        print(f"  ENSEMBLE {w:.1f}*us+{1-w:.1f}*vina   r={pearsonr(ze,y).statistic:+.3f}")
+./hybridock-pep/experiments/e3c_family_mean.py:67:                 "bsa", "nis_p_frac", "nis_c_frac", "vina"]
+./hybridock-pep/experiments/e0b_nis_grouped_cv.py:83:        "vina (artifact baseline)": ["vina"],
+./hybridock-pep/experiments/e0b_nis_grouped_cv.py:88:        "nis + vina": ["nis_c_frac", "nis_p_frac", "vina"],
+./hybridock-pep/experiments/e0b_nis_grouped_cv.py:89:        "full physics": ["vina", "dh", "n_contact", "bsa",
+./hybridock-pep/experiments/e66_recalibrate_rgperL.py:37:        f["vina"] = float(r.get("vina_docked", 0.0) or 0.0)
+./hybridock-pep/experiments/e66_recalibrate_rgperL.py:69:    cal = fit_ensemble_calibration(rows, blend=0.5, vina_mode="total", feature_names=WITH_KEYS)
+./hybridock-pep/experiments/e66_recalibrate_rgperL.py:78:                   vina_mean=cal.vina_mean, vina_std=cal.vina_std, blend=cal.blend,
+./hybridock-pep/experiments/e66_recalibrate_rgperL.py:79:                   vina_mode=cal.vina_mode, y_mean=cal.y_mean, y_std=cal.y_std,
+./hybridock-pep/experiments/e94_oracle_pose_autopsy.py:78:                dg = escore(f, 0.0, cal)  # geometry-only ΔG (vina=0 → geometry dominates the z-blend)
+./hybridock-pep/experiments/e89_e2e_random_sample.py:64:            n_samples=5, output_dir=out, seed=7, scoring={"vina", "ad4"},
+./hybridock-pep/experiments/e90_full_scorecard.py:79:            r["phys_single"] = bench.get(r["pdb"], {}).get("vina_docked", np.nan)
+./hybridock-pep/experiments/e90_full_scorecard.py:80:            r["vina"] = bench.get(r["pdb"], {}).get("vina_docked", np.nan)
+./hybridock-pep/experiments/e90_full_scorecard.py:83:            r["vina"] = np.nan
+./hybridock-pep/experiments/e90_full_scorecard.py:132:        ("Vina (cr65 only)", "vina", cr),
+./hybridock-pep/experiments/e69_pooled_calibration.py:9:org_density + cys_frac). Saves a pooled calibration candidate. Geometry-only (the-98 has no vina).
+./hybridock-pep/experiments/e69_pooled_calibration.py:133:                   note="CANDIDATE pooled/balanced geometry calibration; geometry-only (no vina blend)"),
+./hybridock-pep/experiments/e21b_helix_ensemble.py:70:        r = dict(r); r["vina"] = b["vina_docked"]; r["helix"] = h; r["amphi"] = mom
+./hybridock-pep/experiments/e21b_helix_ensemble.py:74:    vina = np.array([r["vina"] for r in rows], float)
+./hybridock-pep/experiments/e21b_helix_ensemble.py:95:    pred_vina = loo_pred(vina.reshape(-1, 1), y)
+./hybridock-pep/experiments/e21b_helix_ensemble.py:113:    zb, zv = z(best), z(pred_vina)
+./hybridock-pep/experiments/e21b_helix_ensemble.py:116:        print(f"  {w:.1f}*(geo+helix+amphi) + {1-w:.1f}*vina   r={pearsonr(ze,y).statistic:+.3f}")
+./hybridock-pep/experiments/e21b_helix_ensemble.py:119:        print(f"  0.45*geo+helix + 0.45*vina + 0.10*ESM(light)  r={pearsonr(ze2,y).statistic:+.3f}")
+./hybridock-pep/experiments/e21b_helix_ensemble.py:121:        print(f"  0.50*geo+helix + 0.35*vina + 0.15*ESM(light)  r={pearsonr(ze3,y).statistic:+.3f}")
+./hybridock-pep/experiments/e21b_helix_ensemble.py:122:    print(f"\n  guess-mean RMSE={y.std():.2f}  | targets: ours 0.576, vina 0.527, lit 0.62")
+./hybridock-pep/experiments/e25_esm_contact.py:135:                         vina=bench[pdb]["vina_docked"]))
+./hybridock-pep/experiments/e1_honest_push.py:7:  - vina_eff = vina / L          (ligand efficiency: per-residue binding;
+./hybridock-pep/experiments/e1_honest_push.py:98:    "vina_eff": +1,        # larger (less negative)/res -> weaker. oriented so + = weaker
+./hybridock-pep/experiments/e1_honest_push.py:132:        r["vina_eff"] = (r.get("vina") or 0) / L
+./hybridock-pep/experiments/e402_propd_dock_score.py:146:        "vina": _f(rows[0], "vina_score", "vina"),
+./hybridock-pep/tests/test_phospho_residues.py:161:    def test_pdbqt_is_parseable_by_vina(self, tpo_pdb: Path, tmp_path: Path) -> None:
+./hybridock-pep/tests/test_phospho_residues.py:163:        from vina import Vina
+./hybridock-pep/tests/test_phospho_residues.py:166:        v = Vina(sf_name="vina", verbosity=0)
+./hybridock-pep/tests/test_driver.py:28:    Production default is ``scoring={"vina"}`` (AD4 dropped per
+./hybridock-pep/tests/test_driver.py:43:        scoring={"vina", "ad4"},
+./hybridock-pep/tests/test_driver.py:53:    "hybridock_pep.driver.score_vina_batch",
+./hybridock-pep/tests/test_driver.py:75:            patch("hybridock_pep.driver.score_vina_batch", return_value=([], [])),
+./hybridock-pep/tests/test_driver.py:97:            patch("hybridock_pep.driver.score_vina_batch", return_value=([], [])),
+./hybridock-pep/tests/test_driver.py:125:            vina_score=-5.0,
+./hybridock-pep/tests/test_driver.py:137:            patch("hybridock_pep.driver.score_vina_batch", return_value=([scored], [])),
+./hybridock-pep/tests/test_driver.py:174:            patch("hybridock_pep.driver.score_vina_batch", side_effect=make_side("score_vina_batch", ([], []))),
+./hybridock-pep/tests/test_driver.py:186:        assert call_log.index("prepare_ligand_batch") < call_log.index("score_vina_batch")
+./hybridock-pep/tests/test_driver.py:187:        assert call_log.index("score_vina_batch") < call_log.index("score_ad4_batch")
+./hybridock-pep/tests/test_driver.py:202:            patch("hybridock_pep.driver.score_vina_batch", return_value=([], [])),
+./hybridock-pep/tests/test_driver.py:211:    def test_vina_only_skips_ad4_maps_and_scoring(self, tmp_path: Path) -> None:
+./hybridock-pep/tests/test_driver.py:212:        """--scoring vina must not call generate_ad4_maps or score_ad4_batch."""
+./hybridock-pep/tests/test_driver.py:227:            scoring={"vina"},
+./hybridock-pep/tests/test_driver.py:236:            patch("hybridock_pep.driver.score_vina_batch", return_value=([], [])),
+./hybridock-pep/tests/test_driver.py:259:            patch("hybridock_pep.driver.score_vina_batch", return_value=([], [])),
+./hybridock-pep/tests/test_pose_ranker_ml.py:67:    p = _pose(0, pdb, hybrid_score=-7.0, vina_score=-6.0, ensemble_dg=-7.5, mmgbsa_dg=-8.0)
+./hybridock-pep/tests/test_pose_ranker_ml.py:69:    assert (p.hybrid_score, p.vina_score, p.ensemble_dg, p.mmgbsa_dg) == (-7.0, -6.0, -7.5, -8.0)
+./hybridock-pep/tests/test_scoring.py:21:    """Tests for check_grid_boundary() and score_vina_batch() (SCORE-01)."""
+./hybridock-pep/tests/test_scoring.py:40:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:48:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:56:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:64:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:72:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:88:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:102:        from hybridock_pep.scoring.vina import check_grid_boundary
+./hybridock-pep/tests/test_scoring.py:114:    def test_score_vina_batch_returns_failure_on_missing_pdbqt(self, tmp_path: Path) -> None:
+./hybridock-pep/tests/test_scoring.py:118:        from hybridock_pep.scoring.vina import score_vina_batch
+./hybridock-pep/tests/test_scoring.py:139:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:140:        mock_vina_instance.set_ligand_from_file.side_effect = FileNotFoundError(
+./hybridock-pep/tests/test_scoring.py:144:        with mock.patch("hybridock_pep.scoring.vina.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:145:            scored, failures = score_vina_batch([pose], config, receptor)
+./hybridock-pep/tests/test_scoring.py:153:    def test_score_vina_batch_sets_is_clipped(self, tmp_path: Path) -> None:
+./hybridock-pep/tests/test_scoring.py:162:        from hybridock_pep.scoring.vina import score_vina_batch
+./hybridock-pep/tests/test_scoring.py:187:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:188:        mock_vina_instance.score.return_value = [-8.5]
+./hybridock-pep/tests/test_scoring.py:190:        with mock.patch("hybridock_pep.scoring.vina.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:191:            scored, failures = score_vina_batch([pose], config, receptor)
+./hybridock-pep/tests/test_scoring.py:199:        mock_vina_instance.set_ligand_from_file.assert_not_called()
+./hybridock-pep/tests/test_scoring.py:201:    def test_score_vina_batch_writes_clipped_to_metadata(self, tmp_path: Path) -> None:
+./hybridock-pep/tests/test_scoring.py:205:        from hybridock_pep.scoring.vina import score_vina_batch
+./hybridock-pep/tests/test_scoring.py:231:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:232:        mock_vina_instance.score.return_value = [-8.5]
+./hybridock-pep/tests/test_scoring.py:234:        with mock.patch("hybridock_pep.scoring.vina.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:235:            score_vina_batch([pose], config, receptor, metadata_path=metadata_path)
+./hybridock-pep/tests/test_scoring.py:247:        from hybridock_pep.scoring.vina import score_vina_batch
+./hybridock-pep/tests/test_scoring.py:275:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:277:        mock_vina_instance.score.side_effect = [
+./hybridock-pep/tests/test_scoring.py:283:        with mock.patch("hybridock_pep.scoring.vina.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:284:            scored, failures = score_vina_batch(
+./hybridock-pep/tests/test_scoring.py:290:        assert scored[0].vina_score == pytest.approx(-4.5)
+./hybridock-pep/tests/test_scoring.py:291:        assert mock_vina_instance.optimize.call_count == 2
+./hybridock-pep/tests/test_scoring.py:299:        from hybridock_pep.scoring.vina import score_vina_batch
+./hybridock-pep/tests/test_scoring.py:326:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:328:        mock_vina_instance.score.side_effect = [
+./hybridock-pep/tests/test_scoring.py:333:        with mock.patch("hybridock_pep.scoring.vina.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:334:            scored, failures = score_vina_batch(
+./hybridock-pep/tests/test_scoring.py:342:        assert mock_vina_instance.optimize.call_count == 1  # stopped after 1 round
+./hybridock-pep/tests/test_scoring.py:390:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:391:        mock_vina_instance.score.return_value = [-6.0]
+./hybridock-pep/tests/test_scoring.py:393:        with mock.patch("hybridock_pep.scoring.ad4.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:422:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:423:        mock_vina_instance.score.return_value = [1.5]
+./hybridock-pep/tests/test_scoring.py:425:        with mock.patch("hybridock_pep.scoring.ad4.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:454:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:455:        mock_vina_instance.score.return_value = [-5.2]
+./hybridock-pep/tests/test_scoring.py:457:        with mock.patch("hybridock_pep.scoring.ad4.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:486:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:487:        mock_vina_instance.score.return_value = [0.0]
+./hybridock-pep/tests/test_scoring.py:489:        with mock.patch("hybridock_pep.scoring.ad4.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:518:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:519:        mock_vina_instance.set_ligand_from_file.side_effect = RuntimeError("corrupt PDBQT")
+./hybridock-pep/tests/test_scoring.py:521:        with mock.patch("hybridock_pep.scoring.ad4.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:551:        mock_vina_instance = mock.MagicMock()
+./hybridock-pep/tests/test_scoring.py:552:        mock_vina_instance.score.return_value = [-7.0]
+./hybridock-pep/tests/test_scoring.py:554:        with mock.patch("hybridock_pep.scoring.ad4.Vina", return_value=mock_vina_instance):
+./hybridock-pep/tests/test_scoring.py:558:        call_args = mock_vina_instance.load_maps.call_args
+./hybridock-pep/tests/test_scoring.py:575:        """D-01 formula: hybrid = vina + beta*(ad4-vina) + alpha*n_residues.
+./hybridock-pep/tests/test_scoring.py:577:        vina=-6.0, ad4=-7.0, alpha=0.65, beta=0.22, n_residues=15
+./hybridock-pep/tests/test_scoring.py:592:            vina_score=-6.0,
+./hybridock-pep/tests/test_scoring.py:600:        """beta=0 -> hybrid = vina + alpha*n_residues (AD4 not blended)."""
+./hybridock-pep/tests/test_scoring.py:611:            vina_score=-5.0,
+./hybridock-pep/tests/test_scoring.py:634:            vina_score=-4.0,
+./hybridock-pep/tests/test_scoring.py:715:        vina_scores = [-5.0, -6.0, -7.0, -4.0, -8.0]
+./hybridock-pep/tests/test_scoring.py:720:        result = fit_calibration(vina_scores, ad4_scores, n_residues, pkd_list)
+./hybridock-pep/tests/test_scoring.py:727:        """calibration_mode() routes ridge vs legacy via model_type / w_vina presence."""
+
+========== EXISTING RUN CONFIGS ==========
+./prototype2/extract_top10_structural_panel.py
+./results/p2_audit_efficiency_smoke/config.json
+./results/p2_audit_efficiency_smoke2/config.json
+./results/p2_audit_efficiency_v1/config.json
+./results/p2_combined_adaptive_benchmark/config.json
+./results/p2_combined_adaptive_benchmark_v2/config.json
+./results/p2_combined_adaptive_smoke/config.json
+./results/p2_combined_adaptive_smoke2/config.json
+./results/p2_combined_adaptive_smoke3/config.json
+./results/p2_combined_smoke_20261015_144502/config.json
+./results/p2_combined_v2_smoke_20261015_151140/config.json
+./results/p2_combined_v3_smoke_20261015_152614/config.json
+./results/p2_event_logging_smoke_20261015_162425/config.json
+./results/p2_fitness_guided_smoke_20261015_155505/config.json
+./results/p2_online_audit_smoke_20261015_210113/config.json

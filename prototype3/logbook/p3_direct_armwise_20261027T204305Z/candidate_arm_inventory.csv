@@ -1,0 +1,4 @@
+arm,candidate_records,unique_sequences,records_with_native_score,mean_native_score,best_native_score,candidate_source_files
+baseline,480,275,480,0.6522404876005785,0.7145354444591977,3
+adaptive,480,450,480,0.7493252275618555,0.8455310975436344,3
+unknown,0,0,0,,,0

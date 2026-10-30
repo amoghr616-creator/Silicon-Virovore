@@ -1,0 +1,66 @@
+{
+  "benchmark_type": "retrospective exploratory paired mutation comparison",
+  "input_pair_file": "prototype3/results/experimental_mutation_benchmark/structure_audit_20261026T222207Z/mutation_pairs_structural_availability.csv",
+  "input_pair_file_sha256": "74a220e3f2baf3df156520c26d3cb596caff7fd1fb78ab39393504be98d09a97",
+  "mapping_file": "prototype3/results/experimental_mutation_benchmark/structure_audit_20261026T222207Z/pdb_complex_chain_mapping.csv",
+  "mapping_file_sha256": "d09431267e8d9bb76fae18ffa93abb295271ca1b23f0cc307a1626762df27b22",
+  "pdb_root": "prototype3/data/raw/PPIKB/rcsb_structures_20261026T222207Z",
+  "score_function_signature": "(receptor_structure: 'str | Path', peptide_structure: 'str | Path | None' = None, config: 'StructuralScoreConfig | None' = None, *, receptor_chain: 'str', peptide_chain: 'str', target_structure_id: 'str | None' = None, structure_provenance: 'str' = 'user_supplied_complex_pdb') -> 'dict[str, Any]'",
+  "formula_version": "target_aware_structural_score_v1.1_clash_gated",
+  "pairs_in_input": 693,
+  "verified_mapped_pairs_before_scoring": 18,
+  "pairs_scored_successfully": 18,
+  "unique_complex_chain_combinations_scored": 28,
+  "scorer_result_status_counts": {
+    "scored": 28
+  },
+  "overall_metrics": {
+    "subset": "all selected mapped pairs",
+    "all_scored_pairs": {
+      "n_pairs": 18,
+      "n_target_groups": 7,
+      "spearman_rho_delta_score_vs_delta_pKd": 0.05882352941176471,
+      "spearman_p_value_exploratory": 0.8166542035684891,
+      "direction_concordant": 7,
+      "direction_discordant": 7,
+      "direction_ties": 0,
+      "direction_accuracy_excluding_ties": 0.5
+    },
+    "informative_pairs_abs_delta_pKd_ge_0_3": {
+      "n_pairs": 14,
+      "n_target_groups": 6,
+      "spearman_rho_delta_score_vs_delta_pKd": 0.059340659340659345,
+      "spearman_p_value_exploratory": 0.8403017626906826,
+      "direction_concordant": 7,
+      "direction_discordant": 7,
+      "direction_ties": 0,
+      "direction_accuracy_excluding_ties": 0.5
+    },
+    "informative_pairs_same_observed_receptor_sequence": {
+      "n_pairs": 10,
+      "n_target_groups": 5,
+      "spearman_rho_delta_score_vs_delta_pKd": 0.28484848484848485,
+      "spearman_p_value_exploratory": 0.42503815489214547,
+      "direction_concordant": 6,
+      "direction_discordant": 4,
+      "direction_ties": 0,
+      "direction_accuracy_excluding_ties": 0.6
+    }
+  },
+  "primary_metrics_note": "The same-observed-receptor-sequence subset is the stricter comparison. A higher structural geometry score is tested exploratorily against higher pKd; this is not assumed to be a validated affinity model.",
+  "cluster_bootstrap_primary_subset": {
+    "n_pairs": 10,
+    "n_target_groups": 5,
+    "replicates_requested": 2000,
+    "spearman_rho_95pct_cluster_bootstrap_ci": [
+      -0.5586879338667796,
+      0.9034090909090909
+    ],
+    "direction_accuracy_95pct_cluster_bootstrap_ci": [
+      0.16666666666666666,
+      0.8461538461538461
+    ],
+    "valid_rho_replicates": 1999,
+    "valid_accuracy_replicates": 2000
+  }
+}

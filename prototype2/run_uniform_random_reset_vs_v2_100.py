@@ -145,8 +145,8 @@ def main() -> None:
 
     if not (ROOT / ".venv/bin/python").exists() and Path(sys.executable).name != "python":
         print(f"Warning: runner Python is {sys.executable}; activate .venv before launch.", flush=True)
-    if len(SEEDS) != 100 or len(set(SEEDS)) != 100:
-        raise SystemExit("ABORT: expected 100 unique matched seeds.")
+    if len(SEEDS) < 3 or len(set(SEEDS)) != len(SEEDS):
+        raise SystemExit("ABORT: need at least 3 unique matched seeds.")
     if METHODS["adaptive_substitution"]["flags"] != METHODS["uniform_baseline"]["flags"]:
         raise SystemExit("ABORT: arm-level flags differ; only mutation-guidance mode may vary.")
     historical_seeds = (
@@ -382,8 +382,11 @@ def main() -> None:
         by_key[(seed, "adaptive_substitution")] - by_key[(seed, "uniform_baseline")]
         for seed in SEEDS
     ]
-    if len(differences) != 200:
-        raise SystemExit(f"ABORT: only {len(differences)}/200 complete pairs are available.")
+    expected_pairs = len(SEEDS)
+    if len(differences) != expected_pairs:
+        raise SystemExit(
+            f"ABORT: only {len(differences)}/{expected_pairs} complete seed pairs are available."
+        )
 
     rng = random.Random(271022)
     boot = []

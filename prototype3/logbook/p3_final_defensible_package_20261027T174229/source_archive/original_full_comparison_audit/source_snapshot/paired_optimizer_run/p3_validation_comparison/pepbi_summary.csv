@@ -1,0 +1,3 @@
+arm,unique_candidate_sequences,exact_pepbi_sequence_matches,measured_affinity_validation
+adaptive,450,0,not estimable: no exact PEPBI candidate overlap
+baseline,275,0,not estimable: no exact PEPBI candidate overlap

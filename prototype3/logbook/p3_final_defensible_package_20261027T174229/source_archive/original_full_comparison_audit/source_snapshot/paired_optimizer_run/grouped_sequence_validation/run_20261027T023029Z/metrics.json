@@ -1,0 +1,87 @@
+{
+  "benchmark": "experimental_single_substitution_pKd_difference_sequence_only_grouped_validation",
+  "bootstrap_seed": 20261026,
+  "claim_scope": "separate sequence-only comparator; not native c_score, not the adaptive optimizer, and not target-aware structural score",
+  "collapsed_target_assay_peptide_records": 2496,
+  "independent_leakage_components": 111,
+  "input_csv": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/ppikb_kd_benchmark/filtered_kd_measurements.csv",
+  "input_sha256": "48aafbf55007d258b07c6075820c7dd3a2b01491fa8a8e322789ab193792e418",
+  "limitations": [
+    "Retrospective benchmark on deposited affinity data; not prospective validation.",
+    "Sequence-only comparator is separate from the production native c_score and is not integrated into candidate generation.",
+    "Holding target sequences and exact peptide pairs together prevents those forms of split leakage, but does not establish generalization to HERV-K Env.",
+    "Pair orientation is lexicographic; delta_pKd is pKd_b minus pKd_a and positive values mean peptide_b has stronger measured affinity.",
+    "Experimental annotations may differ in construct, assay conditions, and uncertainty even after exact target-sequence grouping."
+  ],
+  "metrics": {
+    "sequence_only_ridge": {
+      "informative_direction_accuracy": 0.589622641509434,
+      "informative_direction_accuracy_ties_half": 0.5815450643776824,
+      "informative_direction_coverage": 0.9098712446351931,
+      "mae": 0.8643157903240979,
+      "n": 693,
+      "n_informative": 466,
+      "rmse": 1.395672869959655,
+      "spearman_rho": 0.10874027339042665
+    },
+    "training_fold_mean_baseline": {
+      "informative_direction_accuracy": 0.6266094420600858,
+      "informative_direction_accuracy_ties_half": 0.6266094420600858,
+      "informative_direction_coverage": 1.0,
+      "mae": 0.818212554563056,
+      "n": 693,
+      "n_informative": 466,
+      "rmse": 1.3655814586084296,
+      "spearman_rho": 0.045870601293509276
+    },
+    "zero_change_baseline": {
+      "informative_direction_accuracy": null,
+      "informative_direction_accuracy_ties_half": 0.5,
+      "informative_direction_coverage": 0.0,
+      "mae": 0.825359312626174,
+      "n": 693,
+      "n_informative": 466,
+      "rmse": 1.3840433664872516,
+      "spearman_rho": null
+    }
+  },
+  "model": {
+    "alpha": 10.0,
+    "feature_count": 453,
+    "feature_definition": "directional amino-acid substitution, peptide length, normalized position, and flanking residues; sequence-only; no target/assay identifiers",
+    "hyperparameter_tuning": "none; alpha fixed before CV",
+    "name": "Ridge"
+  },
+  "n_folds": 5,
+  "paired_bootstrap_ridge_minus_fold_mean": {
+    "bootstrap_unit": "connected leakage component, resampled as a cluster",
+    "cluster_count": 111,
+    "direction_tie_half_difference_a_minus_b_ci95": {
+      "ci95_high": 2.399232245668356e-05,
+      "ci95_low": -0.09796700753735615
+    },
+    "mae_difference_a_minus_b_ci95": {
+      "ci95_high": 0.07815702909143259,
+      "ci95_low": 0.01731472836918097
+    },
+    "replicates_requested": 2000,
+    "spearman_difference_a_minus_b_ci95": {
+      "ci95_high": 0.1726406814692609,
+      "ci95_low": -0.0636806757785614
+    },
+    "valid_replicates_direction_tie_half": 2000,
+    "valid_replicates_mae": 2000,
+    "valid_replicates_spearman": 2000
+  },
+  "result_directory": "/Users/centurion616/Desktop/Silicon-Virovore/prototype3/results/p3_paired_arm_20261027T022810Z/grouped_sequence_validation/run_20261027T023029Z",
+  "single_substitution_pairs": 693,
+  "split_leakage_checks": {
+    "all_folds_have_zero_exact_pair_overlap": true,
+    "all_folds_have_zero_peptide_sequence_overlap": true,
+    "all_folds_have_zero_target_overlap": true,
+    "all_rows_have_one_oof_prediction": true
+  },
+  "split_rule": "GroupKFold over connected components; every exact target sequence, individual peptide sequence, and unordered peptide pair is confined to one fold",
+  "unique_exact_pair_signatures": 633,
+  "unique_target_sequences": 123
+}

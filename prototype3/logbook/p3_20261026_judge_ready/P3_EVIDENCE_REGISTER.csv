@@ -1,0 +1,14 @@
+area,status,result,source
+Optimizer comparison,completed exploratory,6 runs; 3 matched seeds; all seeds favored adaptive on final-generation mean fitness,prototype3/results/p3_paired_arm_20261027T022810Z/
+PPIKB native score,completed retrospective,693 pairs; rho=-0.1071; direction accuracy=42.49%,prototype3/results/native_score_all_mutation_pairs/
+Exact 21-aa score benchmark,completed exploratory,129 rows; 67 peptides; 9 informative pairs; 1/9 correct-direction pair,prototype3/results/p3_21aa_affinity_audit/native_c_score_21aa/
+ARISE positions 1-3,completed retrospective,"all-pairs effect=-0.0115; CI[-0.1690,0.1543]; p=0.9218",prototype3/results/arise_experimental_position_audit/
+New mutation position proxy,completed exploratory,"proxy positions 14,3,8; effect=-0.0828; p=0.5495",prototype3/results/p3_paired_arm_20261027T022810Z/p3_validation_comparison/
+PEPBI strict matched,completed retrospective,native concordance=0.3762; Rosetta=0.3927; 11 binding groups,prototype3/scripts/pepbi_strict_matched_benchmark.py
+PEPBI receptor-context control,completed retrospective,0 native-score changes in 24 matched receptor-variant pairs,prototype3/scripts/pepbi_target_mutation_invariance.py
+Structural mutation benchmark,"carried forward, not rerun",18 pairs; rho=0.0588; direction accuracy=50%,prototype3/results/experimental_mutation_benchmark/
+Grouped Ridge vs training-fold mean,rerun completed,Ridge worse on MAE and direction accuracy; grouped overlap constraints applied,prototype3/results/p3_paired_arm_20261027T022810Z/grouped_sequence_validation/
+Generated-candidate pKd accuracy,not estimable,0 exact generated candidate sequence matches in the measured-pKd audit,P3 candidate sequence audit
+Generated-candidate PEPBI accuracy,not estimable,0 exact candidate sequence matches in scanned PEPBI workbook,P3 candidate sequence audit
+New candidate structural scoring,not estimable,0 complex PDB files found in the six optimizer run folders,P3 candidate structure audit
+Explicit hotspot provenance,not recovered,0 new seeds with recoverable explicit selected hotspot positions,P3 candidate mutation audit

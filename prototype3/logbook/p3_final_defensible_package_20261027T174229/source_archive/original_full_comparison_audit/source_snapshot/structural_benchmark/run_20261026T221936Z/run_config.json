@@ -1,0 +1,22 @@
+{
+  "protocol_version": "matched_single_substitution_pilot_v1",
+  "source_sha256": "48aafbf55007d258b07c6075820c7dd3a2b01491fa8a8e322789ab193792e418",
+  "eligibility": {
+    "affinity_type": "exact KD",
+    "peptide": "canonical amino acids only",
+    "length_min_inclusive": 9,
+    "length_max_inclusive": 20,
+    "unmodified": true,
+    "linear_only": true,
+    "same_exact_target_sequence": true,
+    "same_assay": true,
+    "same_peptide_length": true,
+    "hamming_distance": 1
+  },
+  "replicate_aggregation": "median pKd per target-assay-peptide",
+  "directional_threshold_abs_delta_pKd": 0.3,
+  "score_column": null,
+  "score_direction_assumption": "higher score predicts higher pKd",
+  "bootstrap_seed": 20261027,
+  "bootstrap_replicates": 10000
+}
