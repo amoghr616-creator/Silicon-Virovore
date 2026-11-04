@@ -7,6 +7,8 @@ import copy
 from html import parser
 import json
 import logging
+import os
+import hashlib
 import random
 import secrets
 import statistics
@@ -23,7 +25,7 @@ from src.arise_memory import (
     upsert_arise_run,
     aggregate_memory_positional_signal,
 )
-
+from src.p4_selection_policy import p4_candidate_preference
 from c.bridge import (
     clear_evaluation_cache,
     evaluation_cache_stats,
@@ -54,6 +56,19 @@ from src.population_runner import (
 )
 from src.predict_structure import predict_population_structures
 from src.ranking import CandidateRanker
+from src.p4_pipeline_integration import (
+    apply_p4_target_objective,
+    build_selection_comparison,
+)
+from src.p4_generation_audit import write_p4_generation_assessment
+from src.p4_integrated_gate import (
+    adjudicate_candidate_objects,
+    recommendation_eligible_candidates,
+)
+from src.p4_target_shortlist import (
+    select_p4_structure_shortlist,
+    write_p4_target_shortlist,
+)
 from src.report import ReportGenerator
 
 logging.basicConfig(level=logging.INFO)
@@ -313,6 +328,50 @@ def _candidate_history_record(candidate: Candidate) -> dict:
         ),
         "hotspot_start": candidate.metadata.get("hotspot_start"),
         "hotspot_end": candidate.metadata.get("hotspot_end"),
+    }
+
+
+def _p4_selected_winner_record(
+    candidates: list[Candidate],
+    target_report: dict | None = None,
+) -> dict | None:
+    """Record the actual generation-selected candidate and provenance."""
+
+    if not candidates:
+        return None
+
+    marked = [
+        candidate
+        for candidate in candidates
+        if candidate.metadata.get("generation_selected_as_best")
+    ]
+    marker_verified = len(marked) == 1
+    selected = marked[0] if marker_verified else candidates[0]
+    report = target_report or {}
+
+    if report.get("pareto_reordered_candidates"):
+        selection_method = (
+            "p4_pareto_front_then_overall_score_then_original_order"
+        )
+    elif not report.get("pareto_requested", True):
+        selection_method = "candidate_ranker_order_pareto_disabled"
+    else:
+        selection_method = "candidate_ranker_order_pareto_not_applied"
+
+    return {
+        "candidate_id": selected.metadata.get("candidate_id"),
+        "sequence": selected.sequence,
+        "generation": selected.metadata.get("generation"),
+        "generation_score": selected.overall_score,
+        "generation_score_source": "generation_rank.current_candidate_set",
+        "pareto_front": selected.metadata.get("p4_target_pareto_front"),
+        "selection_method": selection_method,
+        "selection_reason": report.get("reason"),
+        "selection_marker_count": len(marked),
+        "selection_marker_verified": marker_verified,
+        "posthoc_score": None,
+        "posthoc_score_source": "full_run_candidate_set",
+        "posthoc_normalization_scope": "full_run",
     }
 
 
@@ -584,6 +643,29 @@ def _finalize_comparable_telemetry(
             key=lambda candidate: candidate.posthoc_recomputed_score or 0.0,
         )
         comparable_score = comparable_best.posthoc_recomputed_score or 0.0
+
+        p4_record = summary.get("p4_selected_winner")
+        if isinstance(p4_record, dict):
+            selected_id = p4_record.get("candidate_id")
+            p4_candidate = next(
+                (
+                    candidate
+                    for candidate in generation_candidates
+                    if selected_id is not None
+                    and candidate.metadata.get("candidate_id") == selected_id
+                ),
+                None,
+            )
+
+            p4_record["posthoc_score"] = (
+                p4_candidate.posthoc_recomputed_score
+                if p4_candidate is not None
+                else None
+            )
+            p4_record["posthoc_score_verified"] = (
+                p4_candidate is not None
+            )
+
         if best_so_far_score is None or comparable_score > best_so_far_score:
             best_so_far_score = comparable_score
             best_so_far_sequence = comparable_best.sequence
@@ -596,6 +678,7 @@ def _finalize_comparable_telemetry(
             "generation_local_best_sequence": local_best.sequence,
             "generation_best_score": comparable_score,
             "generation_best_sequence": comparable_best.sequence,
+            "best_sequence": comparable_best.sequence,
             "best_so_far_score": best_so_far_score,
             "best_so_far_sequence": best_so_far_sequence,
             "population_mean_score": round(statistics.mean(comparable_scores), 6),
@@ -647,6 +730,77 @@ def _run_directory(settings: PipelineSettings) -> Path:
     if settings.run_id:
         output_directory = output_directory / settings.run_id
     return output_directory
+
+
+def _load_initial_pool_fasta(
+    fasta_path: str | Path,
+    *,
+    expected_count: int,
+    expected_length: int,
+) -> tuple[list[str], str]:
+    """Load and validate a fixed shared initial sequence pool."""
+    path = Path(fasta_path).expanduser().resolve()
+
+    if not path.is_file():
+        raise FileNotFoundError(f"Initial pool FASTA not found: {path}")
+
+    sequences = []
+    current = None
+
+    for line_number, raw in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        line = raw.strip()
+
+        if not line:
+            continue
+
+        if line.startswith(">"):
+            if current is not None:
+                if not current:
+                    raise ValueError(
+                        f"Empty FASTA record before line {line_number}"
+                    )
+                sequences.append("".join(current))
+
+            current = []
+
+        else:
+            if current is None:
+                raise ValueError(
+                    "FASTA sequence data appeared before the first header."
+                )
+            current.append(line.upper())
+
+    if current is not None:
+        if not current:
+            raise ValueError("Final FASTA record is empty.")
+        sequences.append("".join(current))
+
+    if len(sequences) != expected_count:
+        raise ValueError(
+            f"Initial pool must contain {expected_count} records; "
+            f"found {len(sequences)}."
+        )
+
+    if len(set(sequences)) != len(sequences):
+        raise ValueError("Initial pool contains duplicate sequences.")
+
+    canonical = set("ACDEFGHIKLMNPQRSTVWY")
+
+    for index, sequence in enumerate(sequences, start=1):
+        if len(sequence) != expected_length:
+            raise ValueError(
+                f"Initial pool record {index} has length {len(sequence)}; "
+                f"expected {expected_length}."
+            )
+        if set(sequence) - canonical:
+            raise ValueError(
+                f"Initial pool record {index} contains noncanonical residues."
+            )
+
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    return sequences, digest
 
 
 def run_pipeline(settings: PipelineSettings | None = None):
@@ -766,6 +920,28 @@ def run_pipeline(settings: PipelineSettings | None = None):
     ARISE_ENGINE.reset()
     final_signal = [0.0] * len(seed_sequence)
     parent_sequence = seed_sequence
+
+    initial_pool_sequences = None
+    initial_pool_sha256 = None
+    initial_pool_path = os.environ.get(
+        "SILICON_VIROVORE_INITIAL_POOL_FASTA"
+    )
+
+    if initial_pool_path:
+        initial_pool_sequences, initial_pool_sha256 = (
+            _load_initial_pool_fasta(
+                initial_pool_path,
+                expected_count=settings.population_size,
+                expected_length=len(seed_sequence),
+            )
+        )
+        logger.info(
+            "Initial pool verified | path=%s | records=%d | sha256=%s",
+            initial_pool_path,
+            len(initial_pool_sequences),
+            initial_pool_sha256,
+        )
+
     for generation in range(1, settings.generations + 1):
         generation_start = time.perf_counter()
         logger.info("-" * 50)
@@ -794,6 +970,9 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 else None
             ),
 
+            initial_sequences=(
+                initial_pool_sequences if generation == 1 else None
+            ),
             population_size=settings.population_size,
             mutation_rate=settings.mutation_rate,
             arise_enabled=(
@@ -844,24 +1023,142 @@ def run_pipeline(settings: PipelineSettings | None = None):
         for candidate in candidates:
             candidate.metadata["generation"] = generation
             candidate.metadata["generation_seed"] = generation_parent
+            candidate.metadata["initial_pool_sha256"] = (
+                initial_pool_sha256
+            )
+            candidate.metadata["shared_initial_pool_member"] = (
+                generation == 1 and initial_pool_sequences is not None
+            )
             if settings.mutation_guidance_mode == "uniform_random_reset":
                 candidate.metadata["requested_mutation_guidance_mode"] = "uniform_random_reset"
                 candidate.metadata["proposal_sampling_mode"] = "uniform_random_mutation_from_original_seed"
                 candidate.metadata["preserved_elite"] = False
 
-        if settings.enable_vina_tier2:
-            structure_start = time.perf_counter()
-            candidates = predict_population_structures(
+        p4_target_optimization_requested = (
+            bool(getattr(settings, "p4_target_optimization_enabled", False))
+            or os.environ.get(
+                "SILICON_VIROVORE_P4_TARGET_OPTIMIZATION", "0"
+            ).strip() == "1"
+        )
+        if p4_target_optimization_requested and settings.enable_vina_tier2:
+            raise RuntimeError(
+                "P4 target optimization cannot run with standalone Vina tier-2 enabled."
+            )
+
+        p4_generation_requested = (
+            p4_target_optimization_requested
+            or os.environ.get(
+                "SILICON_VIROVORE_P4_GENERATE_COMPLEXES", "0"
+            ).strip() == "1"
+        )
+        p4_structure_only_requested = (
+            p4_generation_requested and not settings.enable_vina_tier2
+        )
+        p4_structure_prediction_requested = p4_structure_only_requested
+        p4_structure_shortlist = []
+
+        if p4_generation_requested and not p4_target_optimization_requested:
+            # Legacy diagnostic mode: budgeted subset only. This is not P4-TA.
+            p4_structure_limit = int(
+                os.environ.get(
+                    "SILICON_VIROVORE_P4_STRUCTURE_LIMIT", "1"
+                )
+            )
+            if p4_structure_limit < 1:
+                raise ValueError(
+                    "SILICON_VIROVORE_P4_STRUCTURE_LIMIT must be >= 1"
+                )
+            p4_structure_shortlist = select_p4_structure_shortlist(
                 candidates,
+                p4_structure_limit,
+            )
+            logger.info(
+                "P4 diagnostic structure shortlist | selected=%d | population=%d | "
+                "method=fitness_seeded_greedy_max_min_sequence_diversity",
+                len(p4_structure_shortlist),
+                len(candidates),
+            )
+
+        if settings.enable_vina_tier2 or p4_structure_only_requested:
+            if p4_target_optimization_requested:
+                # No shortlist: every candidate needs its own exact-sequence complex.
+                structure_candidates = candidates
+                logger.info(
+                    "P4 TARGET OPTIMIZATION | structures_requested=%d | "
+                    "population=%d | Vina disabled | full coverage required",
+                    len(structure_candidates),
+                    len(candidates),
+                )
+            elif settings.enable_vina_tier2:
+                structure_candidates = candidates
+            else:
+                structure_candidates = p4_structure_shortlist
+
+            if p4_structure_only_requested and not p4_target_optimization_requested:
+                selected_ids = {id(candidate) for candidate in p4_structure_shortlist}
+                for candidate in candidates:
+                    if id(candidate) in selected_ids:
+                        continue
+                    candidate.structure_path = None
+                    candidate.structure_confidence = None
+                    candidate.metadata["structure_available"] = False
+                    candidate.metadata["structure_backend"] = "ESMFold"
+                    candidate.metadata["structure_status"] = (
+                        "not_requested_p4_budget"
+                    )
+
+                logger.info(
+                    "P4 structure-only diagnostic mode | requested=%d | "
+                    "population=%d | Vina disabled",
+                    len(structure_candidates),
+                    len(candidates),
+                )
+
+            structure_start = time.perf_counter()
+            structure_candidates = predict_population_structures(
+                structure_candidates,
                 structure_directory=structure_directory,
                 workers=settings.structure_workers,
             )
             structure_runtime = time.perf_counter() - structure_start
+
+            # Synchronize the complete population, not just the selected subset.
             _synchronize_structure_state(candidates)
 
-            docking_start = time.perf_counter()
-            docked = scorer.evaluate_candidates(candidates)
-            docking_runtime = time.perf_counter() - docking_start
+            if settings.enable_vina_tier2:
+                docking_start = time.perf_counter()
+                docked = scorer.evaluate_candidates(candidates)
+                docking_runtime = time.perf_counter() - docking_start
+            else:
+                # P4 needs peptide structures, not Vina scores.
+                docked = candidates
+                docking_runtime = 0.0
+
+                for candidate in docked:
+                    candidate.metadata.update({
+                        "target_pose_passed_geometry_gate": False,
+                        "target_structural_score_validated": False,
+                        "target_structural_score": None,
+                        "structure_available": candidate_has_valid_structure(
+                            candidate
+                        ),
+                        "docking_backend": "not_run_p4_structure_only",
+                        "docking_score_is_target_specific": False,
+                        "docking_score_used_in_primary_ranking": False,
+                        "docking_is_surrogate": False,
+                        "docking_validated": False,
+                        "docking_status": "not_run_structure_only",
+                        "ranking_observation_valid": True,
+                        "tier2_eligible": False,
+                        "tier2_attempted": False,
+                        "tier2_validated": False,
+                        "tier2_status": "disabled_by_config",
+                        "vina_status": "disabled_by_config",
+                        "vina_score_available": False,
+                    })
+
+                evaluation_start = len(all_candidates) + 1
+
         else:
             structure_runtime = 0.0
             docking_runtime = 0.0
@@ -869,7 +1166,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 candidate.metadata.update({
                     "target_pose_passed_geometry_gate": False,
                     "target_structural_score_validated": False,
-                    "target_structural_score": None,    
+                    "target_structural_score": None,
                     "structure_available": False,
                     "structure_status": "not_requested",
                     "docking_backend": "not_run_primary_search_only",
@@ -948,7 +1245,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
         run_status["structure_success_count"] += structure_count - cached_count
         run_status["structure_available_count"] += structure_count
         run_status["structure_cached_count"] += cached_count
-        if settings.enable_vina_tier2:
+        if settings.enable_vina_tier2 or p4_structure_prediction_requested:
             run_status["structure_unavailable_count"] += (
                 len(docked) - structure_count
             )
@@ -963,6 +1260,193 @@ def run_pipeline(settings: PipelineSettings | None = None):
 
         ranking_start = time.perf_counter()
         ranked = ranker.rank(docked)
+        sequence_only_ranked = list(ranked)
+
+        # Candidate-specific HADDOCK3 runs are only part of P4-TA when the
+        # explicit full-population mode is enabled. The legacy env-only mode
+        # remains a shortlist diagnostic and must not be labelled target optimization.
+        import os as _p4_os
+        if p4_target_optimization_requested or _p4_os.environ.get(
+            "SILICON_VIROVORE_P4_GENERATE_COMPLEXES", "0"
+        ).strip() == "1":
+            from pathlib import Path as _P4Path
+            from src.p4_candidate_haddock import (
+                generate_candidate_target_complexes,
+            )
+
+            _p4_root = _P4Path(__file__).resolve().parent
+            _p4_seeds = tuple(
+                int(x.strip())
+                for x in _p4_os.environ.get(
+                    "SILICON_VIROVORE_P4_DOCK_SEEDS", "1917,2917"
+                ).split(",")
+                if x.strip()
+            )
+            if p4_target_optimization_requested and (
+                len(_p4_seeds) < 2 or len(set(_p4_seeds)) != len(_p4_seeds)
+            ):
+                raise ValueError(
+                    "P4 target optimization requires at least two distinct "
+                    "SILICON_VIROVORE_P4_DOCK_SEEDS."
+                )
+            if p4_target_optimization_requested and _p4_os.environ.get(
+                "SILICON_VIROVORE_P4_TARGET_PARETO", "1"
+            ).strip() != "1":
+                raise RuntimeError(
+                    "P4 target optimization requires SILICON_VIROVORE_P4_TARGET_PARETO=1."
+                )
+
+            if p4_target_optimization_requested:
+                _p4_docking_candidates = [
+                    candidate for candidate in ranked
+                    if candidate_has_valid_structure(candidate)
+                ]
+            else:
+                _p4_docking_candidates = sorted(
+                    (
+                        candidate for candidate in ranked
+                        if candidate.metadata.get(
+                            "p4_structure_shortlist", {}
+                        ).get("selected")
+                        and candidate_has_valid_structure(candidate)
+                    ),
+                    key=lambda candidate: candidate.metadata.get(
+                        "p4_structure_shortlist", {}
+                    ).get("rank", 10**9),
+                )
+
+            _p4_generation = generate_candidate_target_complexes(
+                _p4_docking_candidates,
+                project_root=_p4_root,
+                template_config=(
+                    _p4_root
+                    / "prototype4/configs/p4_reliability_seed1917.cfg"
+                ),
+                receptor_pdb=(
+                    _p4_root
+                    / "prototype4/data/haddock3/receptors/"
+                    / "9sya_source_chain_A.pdb"
+                ),
+                output_root=(
+                    _P4Path(output_directory)
+                    / f"p4_candidate_complexes_g{generation:04d}"
+                ),
+                max_candidates=(
+                    len(ranked)
+                    if p4_target_optimization_requested
+                    else int(_p4_os.environ.get(
+                        "SILICON_VIROVORE_P4_MAX_DOCK_CANDIDATES", "1"
+                    ))
+                ),
+                seeds=_p4_seeds,
+                ncores=int(
+                    _p4_os.environ.get(
+                        "SILICON_VIROVORE_P4_DOCK_NCORES", "4"
+                    )
+                ),
+            )
+            logger.info(
+                "P4 candidate complex generation: %s",
+                _p4_generation,
+            )
+
+        ranked, p4_target_report = apply_p4_target_objective(
+            ranked,
+            generation=generation,
+            output_directory=output_directory,
+            require_reproducibility=p4_target_optimization_requested,
+        )
+        p4_target_report["p4_selection_comparison"] = build_selection_comparison(
+            sequence_only_ranked,
+            ranked,
+            p4_target_report,
+        )
+        # The comparison is an audit of the same generation/cohort, not an
+        # independent-affinity result. Persist it beside target-evidence metrics.
+        report_path = p4_target_report.get("report_path")
+        if report_path:
+            Path(report_path).write_text(
+                json.dumps(p4_target_report, indent=2, default=str) + "\n",
+                encoding="utf-8",
+            )
+        if (
+            p4_target_optimization_requested
+            and not p4_target_report.get("pareto_reordered_candidates")
+        ):
+            raise RuntimeError(
+                "P4 target optimization withheld parent selection because "
+                "complete exact-sequence structural evidence and independent-run "
+                "repeatability diagnostics were not available for every candidate. "
+                f"Audit: {p4_target_report.get('report_path')}"
+            )
+        p4_shortlist_report = write_p4_target_shortlist(
+            ranked,
+            generation=generation,
+            output_directory=output_directory,
+        )
+        p4_target_report["target_shortlist_report_path"] = (
+            p4_shortlist_report["report_path"]
+        )
+        logger.info(
+            "P4 target-evidence shortlist | generation=%d | "
+            "valid=%d/%d | population_reordered=false | report=%s",
+            generation,
+            p4_shortlist_report["valid_target_evidence_count"],
+            p4_shortlist_report["candidate_count"],
+            p4_shortlist_report["report_path"],
+        )
+
+        # Candidate-level P4 gate: exact-sequence target, reliability,
+        # and epistasis evidence are adjudicated before parent carry-forward.
+        p4_gate_results = adjudicate_candidate_objects(ranked)
+        for candidate, gate_result in zip(ranked, p4_gate_results):
+            candidate.metadata["p4_integrated_gate"] = gate_result
+            candidate.metadata["p4_recommendation_eligible"] = (
+                gate_result.get("decision")
+                == "ELIGIBLE_FOR_MULTI_OBJECTIVE_REVIEW"
+            )
+            candidate.metadata["p4_epistasis_operator"] = {
+                "active": settings.mutation_guidance_mode in PAIRWISE_MODES,
+                "mode": settings.mutation_guidance_mode,
+                "source": "EpistasisEntropyController",
+                "feedback_generation": (
+                    generation + 1
+                    if settings.mutation_guidance_mode in PAIRWISE_MODES
+                    else None
+                ),
+                "candidate_level_delta_epsilon_validated": bool(
+                    gate_result.get("epistasis", {}).get("valid")
+                ),
+                "interpretation": (
+                    "Pairwise mutation-proposal feedback; not a "
+                    "candidate-level experimental epistasis measurement."
+                ),
+            }
+
+        p4_integrated_report = write_p4_generation_assessment(
+            ranked,
+            p4_target_report,
+            output_directory,
+        )
+
+        logger.info(
+            "P4 integrated assessment | generation=%d | "
+            "target_coverage=%.1f%% | calibrated=%s | "
+            "epistasis=%s | pruning=%s",
+            generation,
+            100.0 * p4_integrated_report["target_evidence_coverage"],
+            p4_integrated_report["reliability"]["calibrated"],
+            p4_integrated_report["epistasis_benchmark"]["status"],
+            p4_integrated_report["evsi_and_pruning"]["status"],
+        )
+        logger.info(
+            "P4 target evidence | generation=%d | coverage=%.1f%% | "
+            "pareto_reordered=%s | reason=%s",
+            generation,
+            100.0 * p4_target_report["target_evidence_coverage"],
+            p4_target_report["pareto_reordered_candidates"],
+            p4_target_report["reason"],
+        )
         ranking_runtime = time.perf_counter() - ranking_start
 
         if not ranked:
@@ -989,6 +1473,54 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 diagnostics["substitution_pair_updates"],
             )
 
+        recommendation_candidates = recommendation_eligible_candidates(ranked)
+        recommendation_shortlist = []
+
+        for optimizer_rank, candidate in enumerate(ranked, start=1):
+            if not candidate.metadata.get("p4_recommendation_eligible", False):
+                continue
+            recommendation_shortlist.append({
+                "candidate_id": candidate.metadata.get("candidate_id", "unknown"),
+                "sequence": candidate.sequence,
+                "original_optimizer_rank": optimizer_rank,
+                "optimizer_score": candidate.overall_score,
+                "gate": candidate.metadata["p4_integrated_gate"],
+            })
+
+        recommendation_report = {
+            "schema_version": 1,
+            "generation": generation,
+            "candidate_count": len(ranked),
+            "review_eligible_count": len(recommendation_shortlist),
+            "abstained_count": len(ranked) - len(recommendation_shortlist),
+            "decision": (
+                "REVIEW_CANDIDATES_AVAILABLE"
+                if recommendation_shortlist else "ABSTAIN"
+            ),
+            "review_shortlist": recommendation_shortlist,
+            "optimizer_best_sequence": ranked[0].sequence,
+            "optimizer_selection_changed": False,
+            "policy": "fail_closed_separate_review_shortlist",
+        }
+
+        from pathlib import Path as _RecommendationPath
+        _recommendation_dir = (
+            _RecommendationPath(output_directory) / "p4_recommendations"
+        )
+        _recommendation_dir.mkdir(parents=True, exist_ok=True)
+        (_recommendation_dir / f"generation_{generation:04d}.json").write_text(
+            json.dumps(recommendation_report, indent=2, default=str) + "\n",
+            encoding="utf-8",
+        )
+
+        logger.info(
+            "P4 review eligibility | generation=%d | eligible=%d/%d | abstained=%d",
+            generation,
+            len(recommendation_shortlist),
+            len(ranked),
+            len(ranked) - len(recommendation_shortlist),
+        )
+
         current_best = ranked[0]
         for generation_rank, candidate in enumerate(ranked, start=1):
             candidate.metadata["generation_rank"] = generation_rank
@@ -1001,10 +1533,23 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 candidate.metadata.get("ranking_components", {})
             )
         best_scores.append(current_best.overall_score)
-        if global_best is None or current_best.overall_score > global_best.overall_score:
+        if global_best is None:
             global_best = current_best
-            global_best_score = current_best.overall_score
-            global_best_sequence = current_best.sequence
+        else:
+            p4_preference = p4_candidate_preference(
+                current_best,
+                global_best,
+            )
+
+            if p4_preference is True:
+                global_best = current_best
+
+            elif p4_preference is None:
+                # Preserve legacy behavior if neither candidate has
+                # a complete eligible P4 objective vector.
+                if current_best.overall_score > global_best.overall_score:
+                    global_best = current_best
+
         # Carry the best sequence forward as the next generation's parent.
         parent_sequence = (
             settings.seed_sequence
@@ -1094,6 +1639,10 @@ def run_pipeline(settings: PipelineSettings | None = None):
             ranked,
             generation_seed=seed_sequence,
             hotspot_state=hotspot_model,
+        )
+        summary["p4_selected_winner"] = _p4_selected_winner_record(
+            ranked,
+            p4_target_report,
         )
         generation_runtime = time.perf_counter() - generation_start
         summary.update({
@@ -1276,10 +1825,30 @@ def run_pipeline(settings: PipelineSettings | None = None):
             "hotspot_bootstrap_iterations": settings.hotspot_bootstrap_iterations,
             "mutation_guidance_mode": settings.mutation_guidance_mode,
             "enable_vina_tier2": settings.enable_vina_tier2,
-            "ranking_objective": "bounded sequence-level C fitness prior [0,1]",
-            "structure_prediction_performed": settings.enable_vina_tier2,
-            "composition_heuristic_performed": settings.enable_vina_tier2,
+            "ranking_objective": (
+            "Conditional P4 Pareto selection: bounded sequence-level C fitness, "
+            "target geometry, and hotspot proximity; legacy ranking is retained "
+            "when the full-cohort target-evidence eligibility requirement fails."
+    ),
+
+# No experimental or predicted binding-affinity score is being used.
             "target_specific_binding_score_used_for_selection": False,
+
+# These describe the P4 policy, not a claim of successful activation
+# in every generation.
+            "target_geometry_used_when_p4_selection_active": True,
+            "hotspot_proximity_used_when_p4_selection_active": True,
+
+            "p4_target_optimization_requested": bool(
+            p4_target_optimization_requested
+            ),
+
+            "p4_selection_requires_full_cohort_eligibility": True,
+
+# Repeatability remains a gate, not a calibrated ranking probability.
+            "reliability_used_for_ranking": False,
+            "reproducibility_used_as_eligibility_gate": True,
+            "reliability_calibrated": False,
             "standalone_vina_used_for_selection": False,
             "sequence_composition_heuristic_weight": 0.0,
             "preserve_best": settings.preserve_best,
@@ -1604,6 +2173,7 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
             "hotspot_epistasis_entropy_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory_v2",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
             "uniform_random_reset",
         ),
     )
@@ -1614,6 +2184,16 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         help=(
             "Opt in to standalone AutoDock Vina scoring for diagnostics. "
             "It never contributes to the primary ranking objective."
+        ),
+    )
+    parser.add_argument(
+        "--p4-target-optimization",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Generate sequence-matched 9SYA complexes for the full population "
+            "and permit target-aware parent ordering only with complete, "
+            "independently replicated structural evidence. Not affinity validation."
         ),
     )
     parser.add_argument(
@@ -1671,6 +2251,8 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         values["arise_memory_use_history"] = args.arise_memory_use_history
     if args.enable_vina_tier2 is not None:
         values["enable_vina_tier2"] = args.enable_vina_tier2
+    if args.p4_target_optimization is not None:
+        values["p4_target_optimization_enabled"] = args.p4_target_optimization
     if args.cache_enabled is not None:
         values["cache_enabled"] = args.cache_enabled
     if args.generate_plots is not None:

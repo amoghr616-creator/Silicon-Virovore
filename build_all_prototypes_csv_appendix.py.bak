@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+"""
+Build a complete CSV/TSV appendix for Silicon-Virovore prototypes 1–4.
+
+Outputs:
+  prototype4/results/all_prototypes_csv_appendix.pdf
+  prototype4/results/all_prototypes_csv_archive.zip
+  prototype4/results/all_prototypes_csv_manifest.json
+
+The PDF contains every discovered CSV/TSV row (not just chart subsets), with
+tables split across pages as needed. The ZIP preserves the source files and
+includes a SHA-256 manifest. No source data is modified.
+
+Run from the repository root:
+  .venv/bin/python build_all_prototypes_csv_appendix.py
+
+Optional:
+  .venv/bin/python build_all_prototypes_csv_appendix.py --root ~/Desktop/Silicon-Virovore
+  .venv/bin/python build_all_prototypes_csv_appendix.py --min-pages 21
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import os
+import sys
+import zipfile
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+from xml.sax.saxutils import escape
+
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.lib.pagesizes import A3, landscape, letter
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+        PageBreak, KeepTogether
+    )
+    from pypdf import PdfReader
+except ImportError as exc:
+    raise SystemExit(
+        "Missing dependency. Install once with:\n"
+        "  .venv/bin/python -m pip install reportlab pypdf\n"
+        f"Import detail: {exc}"
+    )
+
+SKIP_DIRS = {
+    ".git", ".venv", "venv", "__pycache__", "node_modules",
+    ".pytest_cache", ".mypy_cache", ".ruff_cache"
+}
+MAX_CELL_CHARS = 1200
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def discover(root: Path) -> list[Path]:
+    found = []
+    for base, dirs, files in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for name in files:
+            p = Path(base) / name
+            if p.suffix.lower() in {".csv", ".tsv"}:
+                # Exclude generated appendix outputs if rerunning.
+                if "all_prototypes_csv" in p.name:
+                    continue
+                found.append(p)
+    return sorted(found, key=lambda p: str(p.relative_to(root)).lower())
+
+
+def read_delimited(path: Path):
+    # Try UTF-8 with BOM first, then common fallback.
+    try:
+        raw = path.read_text(encoding="utf-8-sig", errors="replace")
+    except OSError as exc:
+        return [], [], f"READ ERROR: {exc}"
+    sample = raw[:8192]
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
+        delimiter = dialect.delimiter
+    except csv.Error:
+        delimiter = "\t" if path.suffix.lower() == ".tsv" else ","
+    try:
+        rows = list(csv.reader(raw.splitlines(), delimiter=delimiter))
+    except Exception as exc:
+        return [], [], f"PARSE ERROR: {exc}"
+    if not rows:
+        return [], [], "EMPTY FILE"
+    header = rows[0]
+    body = rows[1:]
+    # Keep malformed rows visible; pad/truncate to the header width.
+    width = max(1, len(header))
+    normalized = []
+    malformed = 0
+    for row in body:
+        if len(row) != width:
+            malformed += 1
+            row = (row + [""] * width)[:width]
+        normalized.append(row)
+    return header, normalized, f"delimiter={repr(delimiter)}, malformed_rows={malformed}"
+
+
+def shorten(value):
+    value = str(value)
+    if len(value) > MAX_CELL_CHARS:
+        value = value[:MAX_CELL_CHARS] + " … [cell truncated in PDF; full value in ZIP]"
+    return value
+
+
+def paragraph_cell(value, style):
+    value = escape(shorten(value)).replace("\n", "<br/>")
+    return Paragraph(value if value else " ", style)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", default=".", help="Repository root (default: current directory)")
+    parser.add_argument("--min-pages", type=int, default=21,
+                        help="Required minimum PDF page count; default 21")
+    args = parser.parse_args()
+
+    root = Path(args.root).expanduser().resolve()
+    if not root.is_dir():
+        raise SystemExit(f"Repository root does not exist: {root}")
+
+    files = discover(root)
+    if not files:
+        raise SystemExit(
+            f"No CSV/TSV files found under {root}. Run this from the Silicon-Virovore repository."
+        )
+
+    out_dir = root / "prototype4" / "results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pdf_path = out_dir / "all_prototypes_csv_appendix.pdf"
+    zip_path = out_dir / "all_prototypes_csv_archive.zip"
+    manifest_path = out_dir / "all_prototypes_csv_manifest.json"
+
+    manifest = {
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "repository_root": str(root),
+        "scope": "All CSV and TSV files discovered recursively under the repository, excluding virtual environments, VCS, caches, and generated appendix outputs.",
+        "file_count": len(files),
+        "files": []
+    }
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="CoverTitle", parent=styles["Title"], fontName="Helvetica-Bold",
+        fontSize=22, leading=27, alignment=TA_CENTER, spaceAfter=16
+    ))
+    styles.add(ParagraphStyle(
+        name="DatasetTitle", parent=styles["Heading1"], fontSize=13,
+        leading=16, spaceBefore=8, spaceAfter=5
+    ))
+    styles.add(ParagraphStyle(
+        name="Small", parent=styles["BodyText"], fontSize=7, leading=9
+    ))
+    styles.add(ParagraphStyle(
+        name="TinyCell", parent=styles["BodyText"], fontSize=5.5, leading=6.5,
+        wordWrap="CJK"
+    ))
+    styles.add(ParagraphStyle(
+        name="HeaderCell", parent=styles["BodyText"], fontName="Helvetica-Bold",
+        fontSize=5.5, leading=6.5, textColor=colors.white, wordWrap="CJK"
+    ))
+
+    story = [
+        Spacer(1, 0.65 * inch),
+        Paragraph("Silicon-Virovore", styles["CoverTitle"]),
+        Paragraph("Complete CSV / TSV Data Appendix — Prototypes 1–4",
+                  ParagraphStyle("Sub", parent=styles["Heading2"], alignment=TA_CENTER)),
+        Spacer(1, 0.2 * inch),
+        Paragraph(f"Repository: {escape(str(root))}", styles["Small"]),
+        Paragraph(f"Source files discovered: {len(files)}", styles["Small"]),
+        Paragraph("This appendix includes the complete tabular rows discovered in CSV/TSV files. "
+                  "Long individual cell values may be shortened in the PDF for legibility; "
+                  "the ZIP archive preserves the original files byte-for-byte.", styles["BodyText"]),
+        Spacer(1, 0.15 * inch),
+        Paragraph("Contents", styles["Heading2"])
+    ]
+
+    for i, path in enumerate(files, 1):
+        rel = path.relative_to(root).as_posix()
+        header, rows, note = read_delimited(path)
+        entry = {
+            "path": rel, "bytes": path.stat().st_size, "sha256": sha256(path),
+            "rows_excluding_header": len(rows), "columns": len(header),
+            "parse_note": note
+        }
+        manifest["files"].append(entry)
+        story.append(Paragraph(
+            f"{i}. {escape(rel)} — {len(rows):,} rows × {len(header):,} columns",
+            styles["Small"]
+        ))
+
+    story.append(PageBreak())
+
+    for file_index, path in enumerate(files, 1):
+        rel = path.relative_to(root).as_posix()
+        header, rows, note = read_delimited(path)
+        entry = manifest["files"][file_index - 1]
+
+        story.append(Paragraph(f"{file_index}. {escape(rel)}", styles["DatasetTitle"]))
+        story.append(Paragraph(
+            f"{entry['rows_excluding_header']:,} data rows; {entry['columns']:,} columns; "
+            f"{entry['bytes']:,} bytes; {escape(note)}",
+            styles["Small"]
+        ))
+        story.append(Paragraph(f"SHA-256: {entry['sha256']}", styles["Small"]))
+        story.append(Spacer(1, 5))
+
+        if not header:
+            story.append(Paragraph("No parseable table content.", styles["BodyText"]))
+            story.append(PageBreak())
+            continue
+
+        # Render wide datasets as readable column panels and small row batches.
+        # The ZIP archive retains the complete, unmodified source files.
+        available_width = landscape(A3)[0] - 0.7 * inch
+        ncols = max(1, len(header))
+        columns_per_panel = 6
+        rows_per_batch = 12
+        max_cell_chars = 140
+
+        total_panels = (ncols + columns_per_panel - 1) // columns_per_panel
+        total_batches = max(1, (len(rows) + rows_per_batch - 1) // rows_per_batch)
+        total_blocks = total_panels * total_batches
+        block_number = 0
+
+        for panel_start in range(0, ncols, columns_per_panel):
+            panel_indices = list(
+                range(panel_start, min(panel_start + columns_per_panel, ncols))
+            )
+            panel_headers = [header[i] for i in panel_indices]
+            panel_width = available_width / len(panel_indices)
+
+            for row_start in range(0, max(1, len(rows)), rows_per_batch):
+                batch = rows[row_start:row_start + rows_per_batch]
+                block_number += 1
+
+                story.append(Paragraph(
+                    f"Column panel {panel_start + 1}–"
+                    f"{panel_start + len(panel_indices)} of {ncols} "
+                    f" | Rows {row_start + 1}–{min(row_start + rows_per_batch, len(rows))} "
+                    f"of {len(rows)}",
+                    styles["Small"]
+                ))
+
+                table_data = [[
+                    paragraph_cell(str(value)[:max_cell_chars], styles["HeaderCell"])
+                    for value in panel_headers
+                ]]
+
+                for row in batch:
+                    cells = []
+                    for col_index in panel_indices:
+                        value = row[col_index] if col_index < len(row) else ""
+                        value = str(value)
+                        if len(value) > max_cell_chars:
+                            value = value[:max_cell_chars] + " ... [PDF shortened]"
+                        cells.append(paragraph_cell(value, styles["TinyCell"]))
+                    table_data.append(cells)
+
+                table = Table(
+                    table_data,
+                    colWidths=[panel_width] * len(panel_indices),
+                    repeatRows=1,
+                    hAlign="LEFT"
+                )
+                table.setStyle(TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#26384A")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#AAB4BE")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+                     [colors.white, colors.HexColor("#F1F4F7")]),
+                ]))
+                story.append(table)
+
+                if block_number < total_blocks:
+                    story.append(PageBreak())
+        story.append(PageBreak())
+
+    doc = SimpleDocTemplate(
+        str(pdf_path), pagesize=landscape(A3),
+        rightMargin=0.35 * inch, leftMargin=0.35 * inch,
+        topMargin=0.4 * inch, bottomMargin=0.4 * inch,
+        title="Silicon-Virovore Complete CSV TSV Appendix",
+        author="Silicon-Virovore project"
+    )
+    doc.build(story)
+
+    # Preserve all original CSV/TSV source files and a manifest in the ZIP.
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for path in files:
+            zf.write(path, arcname=path.relative_to(root).as_posix())
+        zf.writestr(
+            "ALL_PROTOTYPES_CSV_MANIFEST.json",
+            json.dumps(manifest, indent=2)
+        )
+
+    page_count = len(PdfReader(str(pdf_path)).pages)
+    manifest["pdf"] = {
+        "path": str(pdf_path.relative_to(root)),
+        "page_count": page_count,
+        "minimum_requested_pages": args.min_pages,
+        "meets_minimum_pages": page_count >= args.min_pages
+    }
+    manifest["archive"] = str(zip_path.relative_to(root))
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    print("\n========== EXPORT COMPLETE ==========")
+    print(f"CSV/TSV files included: {len(files)}")
+    print(f"Total data rows: {sum(x['rows_excluding_header'] for x in manifest['files']):,}")
+    print(f"PDF pages: {page_count}")
+    print(f"PDF: {pdf_path}")
+    print(f"ZIP: {zip_path}")
+    print(f"Manifest: {manifest_path}")
+    if page_count < args.min_pages:
+        print(
+            f"WARNING: PDF has {page_count} pages, below the requested {args.min_pages}. "
+            "The script does not add artificial blank pages; the archive still contains every discovered source file."
+        )
+        return 2
+    print("PAGE CHECK: PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

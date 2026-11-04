@@ -213,6 +213,7 @@ def generate_candidates(
     total_generations: int | None = None,
     random_seed: int | None = None,
     operator_controller: EpistasisEntropyController | None = None,
+    initial_sequences: list[str] | None = None,
 ) -> list[Candidate]:
     """
     Generate and evaluate a population of candidate peptides.
@@ -303,6 +304,7 @@ def generate_candidates(
                 "hotspot_epistasis_entropy_exploratory",
                 "hotspot_entropy_substitution_epistasis_exploratory",
                 "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
             }
             and selected
             and (
@@ -311,6 +313,7 @@ def generate_candidates(
                     "hotspot_epistasis_entropy_exploratory",
                     "hotspot_entropy_substitution_epistasis_exploratory",
                     "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                    "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
                 }
             )
         )
@@ -431,6 +434,7 @@ def generate_candidates(
                     "hotspot_epistasis_entropy_exploratory",
                     "hotspot_entropy_substitution_epistasis_exploratory",
                     "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                    "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
                 }
                 and selected
                 and (
@@ -441,6 +445,7 @@ def generate_candidates(
                         "hotspot_epistasis_entropy_exploratory",
                         "hotspot_entropy_substitution_epistasis_exploratory",
                         "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                        "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
                     }
                 )
             ):
@@ -519,50 +524,131 @@ def generate_candidates(
     sequences: list[str] = []
     seen: set[str] = set()
 
-    while len(sequences) < population_size:
-        requested_size = population_size - len(sequences)
-        batch = generate_batch(requested_size)
+    if initial_sequences is not None:
+        normalized = [
+            str(sequence).strip().upper()
+            for sequence in initial_sequences
+        ]
 
-        if not REMOVE_DUPLICATE_CANDIDATES:
-            sequences.extend(batch)
-            break
+        if len(normalized) != population_size:
+            raise ValueError(
+                "Initial pool size must equal population_size: "
+                f"{len(normalized)} != {population_size}"
+            )
 
-        before = len(sequences)
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("Initial pool contains duplicate sequences.")
 
-        for sequence in batch:
-            if sequence not in seen:
-                seen.add(sequence)
-                sequences.append(sequence)
+        canonical = set("ACDEFGHIKLMNPQRSTVWY")
+        for sequence in normalized:
+            if len(sequence) != len(seed_sequence):
+                raise ValueError(
+                    "Initial pool sequence length mismatch: "
+                    f"{sequence!r}"
+                )
+            if not sequence or set(sequence) - canonical:
+                raise ValueError(
+                    f"Invalid amino-acid sequence in initial pool: {sequence!r}"
+                )
+
+        sequences = normalized
+        seen = set(normalized)
+
+        logger.info(
+            "Shared initial pool injected | candidates=%d | "
+            "proposal_operator_active=False",
+            len(sequences),
+        )
+
+    else:
+        max_proposal_batches = max(1, int(DIVERSITY_REFILL_ATTEMPTS))
+        total_proposal_budget = population_size * max_proposal_batches
+        proposal_budget_used = 0
+        proposal_batches = 0
+
+        while (
+            len(sequences) < population_size
+            and proposal_batches < max_proposal_batches
+        ):
+            missing = population_size - len(sequences)
+            remaining_budget = total_proposal_budget - proposal_budget_used
+
+            if remaining_budget <= 0:
+                break
+
+            # Preserve the original first-batch behavior.
+            # Oversample only during duplicate-refill batches.
+            if REMOVE_DUPLICATE_CANDIDATES and proposal_batches > 0:
+                requested_size = min(missing * 4, remaining_budget)
+            else:
+                requested_size = min(missing, remaining_budget)
+
+            if requested_size <= 0:
+                break
+
+            batch = generate_batch(requested_size)
+
+            # Advance the proposal seed for the next batch.
+            attempts += 1
+            proposal_batches += 1
+            proposal_budget_used += requested_size
+
+            before = len(sequences)
+
+            for sequence in batch:
+                normalized = str(sequence).strip().upper()
+
+                if not normalized:
+                    continue
+
+                if REMOVE_DUPLICATE_CANDIDATES:
+                    if normalized in seen:
+                        continue
+                    seen.add(normalized)
+
+                sequences.append(normalized)
 
                 if len(sequences) >= population_size:
                     break
 
-        attempts += 1
-
-        if len(sequences) >= population_size:
-            break
-
-        if attempts >= DIVERSITY_REFILL_ATTEMPTS:
-            logger.warning(
-                "Could only generate %d/%d unique candidates after %d "
-                "attempts.",
+            logger.debug(
+                "Population refill | batch=%d/%d | requested=%d | "
+                "accepted=%d | total=%d/%d | proposal_budget=%d/%d",
+                proposal_batches,
+                max_proposal_batches,
+                requested_size,
+                len(sequences) - before,
                 len(sequences),
                 population_size,
-                attempts,
+                proposal_budget_used,
+                total_proposal_budget,
             )
-            break
 
-        if before == len(sequences):
-            logger.debug(
-                "Duplicate refill made no progress on attempt %d",
-                attempts,
+        if len(sequences) != population_size:
+            raise RuntimeError(
+                "POPULATION_PROPOSAL_EXHAUSTED: could not construct a "
+                f"complete population. Expected {population_size}, "
+                f"constructed {len(sequences)}; batches={proposal_batches}/"
+                f"{max_proposal_batches}; proposals="
+                f"{proposal_budget_used}/{total_proposal_budget}; "
+                f"duplicate_removal={REMOVE_DUPLICATE_CANDIDATES}."
             )
+
+        logger.info(
+            "Population proposal fill complete | population=%d | "
+            "batches=%d | proposals=%d/%d",
+            population_size,
+            proposal_batches,
+            proposal_budget_used,
+            total_proposal_budget,
+        )
 
     # Preserve the requested elite, if applicable.
     preserved_elite = False
 
     if (
-        preserve_sequence
+        initial_sequences is None
+        and preserve_sequence
         and preserve_sequence.upper() not in sequences
         and sequences
     ):
@@ -571,6 +657,7 @@ def generate_candidates(
 
     # Evaluate candidates and attach mutation metadata.
     candidates: list[Candidate] = []
+    evaluation_failures = 0
 
     controlled_budget = mutation_event_budget(
         len(seed_sequence),
@@ -586,13 +673,27 @@ def generate_candidates(
         )
 
         if candidate is None:
+            evaluation_failures += 1
             logger.warning(
-                "Candidate processing returned None; candidate skipped."
+                "Candidate processing returned None; generation will "
+                "fail closed if the evaluation budget is not met."
             )
             continue
 
         if not isinstance(candidate.metadata, dict):
             candidate.metadata = {}
+
+        candidate.metadata['initial_pool_injected'] = (
+            initial_sequences is not None
+        )
+        candidate.metadata['proposal_operator_active'] = (
+            initial_sequences is None
+        )
+        candidate.metadata['proposal_operator_used'] = (
+            'shared_initial_pool'
+            if initial_sequences is not None
+            else mode
+        )
 
         changed_positions = mutation_positions(seed_sequence, sequence)
 
@@ -601,7 +702,7 @@ def generate_candidates(
             and sequence == (preserve_sequence or "").upper()
         )
 
-        if is_preserved:
+        if initial_sequences is not None or is_preserved:
             event_budget = 0
         elif mode in PAIRWISE_MODES:
             event_budget = len(changed_positions)
@@ -617,12 +718,25 @@ def generate_candidates(
         )
         candidate.metadata["mutation_event_budget"] = event_budget
         candidate.metadata["mutation_event_count"] = (
-            len(changed_positions)
-            if mode == "legacy" or mode in PAIRWISE_MODES
-            else event_budget
+            0 if initial_sequences is not None else (
+                len(changed_positions)
+                if mode == "legacy" or mode in PAIRWISE_MODES
+                else event_budget
+            )
+        )
+        candidate.metadata["mutation_origin"] = (
+            "pre_generated_shared_pool"
+            if initial_sequences is not None
+            else "evolutionary_proposal"
+        )
+        candidate.metadata["root_sequence_distance"] = len(changed_positions)
+        candidate.metadata["mutations_proposed_this_generation"] = (
+            0 if initial_sequences is not None else len(changed_positions)
         )
 
-        candidate.metadata["mutation_count"] = len(changed_positions)
+        candidate.metadata["mutation_count"] = (
+            0 if initial_sequences is not None else len(changed_positions)
+        )
         candidate.metadata["mutation_positions"] = changed_positions
 
         candidate.metadata["parent_sequence"] = seed_sequence
@@ -633,7 +747,9 @@ def generate_candidates(
         candidate.metadata["requested_mutation_guidance_mode"] = (
             policy["requested_mode"]
         )
-        candidate.metadata["hotspot_guided"] = policy["guided"]
+        candidate.metadata["hotspot_guided"] = (
+            False if initial_sequences is not None else policy["guided"]
+        )
         candidate.metadata["hotspot_probability"] = (
             policy["hotspot_probability"]
         )
@@ -663,12 +779,31 @@ def generate_candidates(
 
         candidates.append(candidate)
 
+    unique_sequence_count = len({
+        candidate.sequence for candidate in candidates
+    })
+
+    if len(candidates) != population_size:
+        raise RuntimeError(
+            "POPULATION_EVALUATION_UNDERFILL: refusing to return an "
+            f"incomplete population. Expected {population_size}, "
+            f"successfully evaluated {len(candidates)}; "
+            f"candidate_processing_failures={evaluation_failures}."
+        )
+
+    if REMOVE_DUPLICATE_CANDIDATES and unique_sequence_count != population_size:
+        raise RuntimeError(
+            "POPULATION_DUPLICATES: duplicate sequences remain after "
+            f"generation. Expected {population_size} unique candidates, "
+            f"got {unique_sequence_count}."
+        )
+
     logger.info(
         "Generated %d candidates (%d unique) | mode=%s | budget=%d",
         len(candidates),
         len({candidate.sequence for candidate in candidates}),
         mode,
-        controlled_budget,
+        0 if initial_sequences is not None else controlled_budget,
     )
 
     return candidates 

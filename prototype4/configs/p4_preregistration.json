@@ -1,0 +1,47 @@
+{
+  "project": "Silicon-Virovore",
+  "manifest_version": "P4-preregistration-v1",
+  "model_a": {
+    "status": "frozen_historical_results",
+    "historical_fitness_weights_may_change": false
+  },
+  "model_b": {
+    "target": "HERV-K Env 9SYA",
+    "target_site": [
+      "ARG203",
+      "ARG205"
+    ],
+    "objective_version": "HERVK_9SYA_target_pareto_v2",
+    "ranking": "multi_objective_pareto",
+    "legacy_fitness_weights_modified": false,
+    "sulfate_displacement_tracked": true
+  },
+  "model_c": {
+    "contact_distance_A": 5.0,
+    "distance_metric": "Jaccard",
+    "linkage": "complete",
+    "cut_height": 0.15,
+    "entropy": "Shannon",
+    "calibration": "leave_one_family_out",
+    "bootstrap_replicates": 10000,
+    "acceptance_rule": "entropy improves held-out RMSE and family-bootstrap 95% CI for baseline RMSE minus entropy RMSE is entirely above zero"
+  },
+  "feedback": {
+    "exploration_fraction": 0.15,
+    "future_replicates_per_candidate": 10,
+    "parent_reweighting_requires_calibrated_reliability": true,
+    "operator_gating_requires_calibrated_reliability": true,
+    "candidate_pruning_requires_independent_experimental_data": true
+  },
+  "structural_benchmark": {
+    "phase_a_min_complexes": 20,
+    "phase_a_min_families": 10,
+    "phase_b_min_complexes": 40,
+    "phase_b_min_unseen_families": 30,
+    "family_overlap_allowed": false,
+    "power_alpha": 0.05,
+    "power_target": 0.8,
+    "power_bootstrap_replicates": 10000
+  },
+  "important_limitation": "Thresholds are preregistered design choices. Model C is not validated until independent structural benchmark data have been evaluated out of family."
+}

@@ -1,0 +1,10 @@
+{
+  "source": "data/receptor/9SYA.pdb",
+  "source_sha256": "92007db8c20dc8afa638d60bed13bf527cfb0321999ca227838a8c417b5fd865",
+  "receptor_files": {
+    "A": "prototype4/data/haddock3/receptors/9sya_source_chain_A.pdb",
+    "B": "prototype4/data/haddock3/receptors/9sya_source_chain_B.pdb"
+  },
+  "preparation": "standard amino acids only; source author residue numbers retained; output chain ID A",
+  "excluded": "glycans, sulfate, other heteroatoms, and waters"
+}

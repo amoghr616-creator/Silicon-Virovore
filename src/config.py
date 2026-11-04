@@ -176,6 +176,10 @@ USE_ML_SURROGATE = True
 # optimization objective. Prototype 2 target-specific evaluation is external.
 ENABLE_VINA_TIER2 = False
 
+# Full-population target-aware optimization is opt-in and fail-closed.
+# Structural geometry/repeatability are computational evidence, not affinity.
+P4_TARGET_OPTIMIZATION_ENABLED = False
+
 
 # ============================================================
 # Ranking Weights
@@ -330,6 +334,8 @@ class PipelineSettings:
 
     enable_vina_tier2: bool = ENABLE_VINA_TIER2
 
+    p4_target_optimization_enabled: bool = P4_TARGET_OPTIMIZATION_ENABLED
+
     generate_plots: bool = GENERATE_PLOTS
 
     hotspot_enabled: bool = HOTSPOT_ENABLED
@@ -401,6 +407,10 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
     random_seed = getattr(settings, "random_seed", RANDOM_SEED)
     seed_sequence = getattr(settings, "seed_sequence", DEFAULT_SEED_SEQUENCE)
     condition = getattr(settings, "condition", EXPERIMENT_CONDITION)
+    p4_target_optimization_enabled = getattr(
+        settings, "p4_target_optimization_enabled", P4_TARGET_OPTIMIZATION_ENABLED
+    )
+    enable_vina_tier2 = getattr(settings, "enable_vina_tier2", ENABLE_VINA_TIER2)
     structure_workers = getattr(settings, "structure_workers", STRUCTURE_WORKERS)
     docking_workers = getattr(settings, "docking_workers", DOCKING_WORKERS)
     hotspot_start = getattr(settings, "hotspot_start", HOTSPOT_START)
@@ -466,6 +476,13 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
             raise ValueError("random_seed must be an integer or None.")
         if not 0 <= random_seed <= 0xFFFFFFFF:
             raise ValueError("random_seed must be between 0 and 2**32 - 1.")
+    if not isinstance(p4_target_optimization_enabled, bool):
+        raise ValueError("p4_target_optimization_enabled must be a boolean.")
+    if p4_target_optimization_enabled and enable_vina_tier2:
+        raise ValueError(
+            "P4 target optimization is a separate structural workflow; "
+            "disable standalone Vina tier-2 scoring."
+        )
     if condition not in {"baseline", "adaptive", "pilot"}:
         raise ValueError(
             "condition must be one of: baseline, adaptive, pilot."
@@ -507,6 +524,7 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
         "hotspot_epistasis_entropy_exploratory",
         "hotspot_entropy_substitution_epistasis_exploratory",
         "hotspot_entropy_substitution_epistasis_exploratory_v2",
+        "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
         "uniform_random_reset",
     }:
         raise ValueError(
@@ -518,7 +536,10 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
             "uniform_pair_matched, entropy_pair_matched, "
             "epistasis_pair_matched, epistasis_entropy, "
             "hotspot_epistasis_entropy, "
-            "hotspot_epistasis_entropy_exploratory. "
+            "hotspot_epistasis_entropy_exploratory, "
+            "hotspot_entropy_substitution_epistasis_exploratory, "
+            "hotspot_entropy_substitution_epistasis_exploratory_v2, "
+            "hotspot_entropy_substitution_epistasis_exploratory_v2_matched. "
             "Unknown mutation_guidance_mode: "
             f"{mutation_guidance_mode!r}"
         )

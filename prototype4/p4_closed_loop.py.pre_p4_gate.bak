@@ -1,0 +1,1174 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import hmac
+import json
+import math
+import secrets
+import sqlite3
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+VERSION = "p4_closed_loop_v1.0"
+JACCARD_CUT_HEIGHT = 0.15
+EXPLORATION_FRACTION = 0.15
+EVSI_FUTURE_REPLICATES = 10
+
+SCHEMA = """
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS skempi_raw (
+    raw_id INTEGER PRIMARY KEY,
+    source_version TEXT NOT NULL,
+    source_record_key TEXT,
+    original_line TEXT NOT NULL,
+    chain_partner_1 TEXT,
+    chain_partner_2 TEXT,
+    experimental_method TEXT,
+    raw_sha256 TEXT NOT NULL UNIQUE,
+    ingested_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER IF NOT EXISTS skempi_raw_no_update
+BEFORE UPDATE ON skempi_raw
+BEGIN
+    SELECT RAISE(ABORT, 'skempi_raw is immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS skempi_raw_no_delete
+BEFORE DELETE ON skempi_raw
+BEGIN
+    SELECT RAISE(ABORT, 'skempi_raw is immutable');
+END;
+
+CREATE TABLE IF NOT EXISTS cycle_nodes (
+    node_id TEXT PRIMARY KEY,
+    cycle_uid TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN ('WT','M1','M2','M1M2')),
+    raw_id INTEGER,
+    mutation_partner_1 TEXT,
+    mutation_partner_2 TEXT,
+    mutation_1 TEXT,
+    mutation_2 TEXT,
+    topology TEXT CHECK(
+        topology IN (
+            'same_partner_1',
+            'same_partner_2',
+            'cross_partner_1x2',
+            'unresolved'
+        )
+    ),
+    interface_proximity TEXT CHECK(
+        interface_proximity IN ('interface','distal','unresolved')
+    ),
+    FOREIGN KEY(raw_id) REFERENCES skempi_raw(raw_id),
+    UNIQUE(cycle_uid, state)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cycle_nodes_cycle
+ON cycle_nodes(cycle_uid);
+
+CREATE TABLE IF NOT EXISTS structure_runs (
+    run_id TEXT PRIMARY KEY,
+    cycle_uid TEXT,
+    target_key TEXT,
+    run_role TEXT,
+    software TEXT NOT NULL,
+    software_version TEXT NOT NULL,
+    command_string TEXT NOT NULL,
+    config_sha256 TEXT NOT NULL,
+    random_seed INTEGER,
+    input_sha256 TEXT NOT NULL,
+    output_sha256 TEXT,
+    trajectory_path TEXT,
+    l_rmsd REAL,
+    status TEXT NOT NULL,
+    started_at TEXT,
+    completed_at TEXT,
+    metadata_json TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_structure_runs_cycle
+ON structure_runs(cycle_uid);
+
+CREATE TABLE IF NOT EXISTS cycle_features (
+    feature_id INTEGER PRIMARY KEY,
+    cycle_uid TEXT NOT NULL,
+    feature_name TEXT NOT NULL,
+    feature_value REAL,
+    feature_json TEXT,
+    run_wt_id TEXT,
+    run_m1_id TEXT,
+    run_m2_id TEXT,
+    run_m1m2_id TEXT,
+    source_sha256 TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(run_wt_id) REFERENCES structure_runs(run_id),
+    FOREIGN KEY(run_m1_id) REFERENCES structure_runs(run_id),
+    FOREIGN KEY(run_m2_id) REFERENCES structure_runs(run_id),
+    FOREIGN KEY(run_m1m2_id) REFERENCES structure_runs(run_id),
+    UNIQUE(cycle_uid, feature_name)
+);
+
+CREATE TABLE IF NOT EXISTS loco_predictions (
+    prediction_id INTEGER PRIMARY KEY,
+    model_version TEXT NOT NULL,
+    cycle_uid TEXT NOT NULL,
+    outer_fold INTEGER NOT NULL,
+    heldout_group TEXT NOT NULL,
+    y_true REAL NOT NULL,
+    y_pred REAL NOT NULL,
+    train_groups_sha256 TEXT NOT NULL,
+    feature_set TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(model_version, cycle_uid, outer_fold)
+);
+
+CREATE TABLE IF NOT EXISTS validation_manifest (
+    manifest_id TEXT PRIMARY KEY,
+    manifest_json TEXT NOT NULL,
+    content_sha256 TEXT NOT NULL,
+    signature_hmac_sha256 TEXT,
+    signature_key_id TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER IF NOT EXISTS validation_manifest_no_update
+BEFORE UPDATE ON validation_manifest
+BEGIN
+    SELECT RAISE(ABORT, 'validation_manifest is immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validation_manifest_no_delete
+BEFORE DELETE ON validation_manifest
+BEGIN
+    SELECT RAISE(ABORT, 'validation_manifest is immutable');
+END;
+"""
+
+
+def canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def sha256_file(path: str | Path) -> str:
+    h = hashlib.sha256()
+    with Path(path).open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def open_registry(path: str | Path) -> sqlite3.Connection:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(path)
+    con.execute("PRAGMA foreign_keys = ON")
+    con.executescript(SCHEMA)
+    con.commit()
+    return con
+
+
+def add_raw_record(
+    con: sqlite3.Connection,
+    original_line: str,
+    source_version: str,
+    source_record_key: str | None = None,
+    chain_partner_1: str | None = None,
+    chain_partner_2: str | None = None,
+    experimental_method: str | None = None,
+) -> int:
+    digest = sha256_text(original_line)
+    con.execute(
+        """
+        INSERT OR IGNORE INTO skempi_raw
+        (source_version, source_record_key, original_line,
+         chain_partner_1, chain_partner_2, experimental_method, raw_sha256)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            source_version, source_record_key, original_line,
+            chain_partner_1, chain_partner_2, experimental_method, digest
+        ),
+    )
+    con.commit()
+    row = con.execute(
+        "SELECT raw_id FROM skempi_raw WHERE raw_sha256 = ?", (digest,)
+    ).fetchone()
+    return int(row[0])
+
+
+def add_cycle_node(
+    con: sqlite3.Connection,
+    node_id: str,
+    cycle_uid: str,
+    state: str,
+    **metadata: Any,
+) -> None:
+    allowed = {
+        "raw_id", "mutation_partner_1", "mutation_partner_2",
+        "mutation_1", "mutation_2", "topology", "interface_proximity"
+    }
+    unknown = set(metadata) - allowed
+    if unknown:
+        raise ValueError(f"Unknown cycle-node fields: {sorted(unknown)}")
+
+    fields = ["node_id", "cycle_uid", "state"] + list(metadata)
+    values = [node_id, cycle_uid, state] + list(metadata.values())
+    sql = (
+        f"INSERT INTO cycle_nodes ({','.join(fields)}) "
+        f"VALUES ({','.join('?' for _ in fields)})"
+    )
+    con.execute(sql, values)
+    con.commit()
+
+
+def add_structure_run(con: sqlite3.Connection, record: dict[str, Any]) -> None:
+    required = {
+        "run_id", "software", "software_version", "command_string",
+        "config_sha256", "input_sha256", "status"
+    }
+    missing = required - set(record)
+    if missing:
+        raise ValueError(f"Missing structure-run fields: {sorted(missing)}")
+
+    columns = [
+        "run_id", "cycle_uid", "target_key", "run_role", "software",
+        "software_version", "command_string", "config_sha256", "random_seed",
+        "input_sha256", "output_sha256", "trajectory_path", "l_rmsd",
+        "status", "started_at", "completed_at", "metadata_json"
+    ]
+    values = []
+    for column in columns:
+        value = record.get(column)
+        if column == "metadata_json" and isinstance(value, dict):
+            value = canonical_json(value)
+        values.append(value)
+
+    con.execute(
+        f"INSERT INTO structure_runs ({','.join(columns)}) "
+        f"VALUES ({','.join('?' for _ in columns)})",
+        values,
+    )
+    con.commit()
+
+
+def seal_manifest(
+    con: sqlite3.Connection,
+    manifest: dict[str, Any],
+    key_path: str | Path,
+) -> str:
+    """
+    HMAC-SHA256 authenticated integrity seal.
+    This is a local symmetric signature, not a public-key signature.
+    Keep the key private and back it up separately.
+    """
+    key_path = Path(key_path)
+    key_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not key_path.exists():
+        key_path.write_bytes(secrets.token_bytes(32))
+        key_path.chmod(0o600)
+
+    key = key_path.read_bytes()
+    body = canonical_json(manifest)
+    digest = sha256_text(body)
+    signature = hmac.new(key, body.encode(), hashlib.sha256).hexdigest()
+    manifest_id = sha256_text(VERSION + body)[:24]
+    key_id = hashlib.sha256(key).hexdigest()[:16]
+
+    con.execute(
+        """
+        INSERT INTO validation_manifest
+        (manifest_id, manifest_json, content_sha256,
+         signature_hmac_sha256, signature_key_id)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (manifest_id, body, digest, signature, key_id),
+    )
+    con.commit()
+    return manifest_id
+
+
+def verify_manifest(
+    con: sqlite3.Connection,
+    manifest_id: str,
+    key_path: str | Path,
+) -> bool:
+    row = con.execute(
+        """
+        SELECT manifest_json, content_sha256,
+               signature_hmac_sha256, signature_key_id
+        FROM validation_manifest WHERE manifest_id = ?
+        """,
+        (manifest_id,),
+    ).fetchone()
+    if row is None:
+        return False
+
+    body, digest, signature, key_id = row
+    key = Path(key_path).read_bytes()
+    expected = hmac.new(key, body.encode(), hashlib.sha256).hexdigest()
+
+    return (
+        sha256_text(body) == digest
+        and hmac.compare_digest(expected, signature or "")
+        and hashlib.sha256(key).hexdigest()[:16] == key_id
+    )
+
+
+# ---------------------------------------------------------------------
+# MODEL C: CONTACT-FINGERPRINT ENTROPY AND CROSS-RUN REPRODUCIBILITY
+# ---------------------------------------------------------------------
+
+def jaccard_distance(a: set[str], b: set[str]) -> float:
+    union = a | b
+    if not union:
+        return 0.0
+    return 1.0 - len(a & b) / len(union)
+
+
+def complete_linkage_jaccard(
+    fingerprints: list[set[str]],
+    cut_height: float = JACCARD_CUT_HEIGHT,
+) -> list[list[int]]:
+    """
+    Agglomerative complete-linkage clustering using Jaccard distance.
+    Clusters merge only while their maximum cross-cluster distance
+    is <= cut_height.
+    """
+    n = len(fingerprints)
+    if n == 0:
+        raise ValueError("At least one contact fingerprint is required")
+
+    distances = np.zeros((n, n), dtype=float)
+    for i in range(n):
+        for j in range(i + 1, n):
+            distances[i, j] = distances[j, i] = jaccard_distance(
+                fingerprints[i], fingerprints[j]
+            )
+
+    clusters = [[i] for i in range(n)]
+
+    while True:
+        best = None
+        best_distance = float("inf")
+
+        for i in range(len(clusters)):
+            for j in range(i + 1, len(clusters)):
+                d = max(
+                    distances[a, b]
+                    for a in clusters[i]
+                    for b in clusters[j]
+                )
+                if d < best_distance:
+                    best_distance = d
+                    best = (i, j)
+
+        if best is None or best_distance > cut_height:
+            break
+
+        i, j = best
+        merged = sorted(clusters[i] + clusters[j])
+        clusters = [
+            c for k, c in enumerate(clusters) if k not in (i, j)
+        ]
+        clusters.append(merged)
+        clusters.sort(key=lambda c: c[0])
+
+    return clusters
+
+
+def contact_entropy(
+    fingerprints: list[set[str]],
+    cut_height: float = JACCARD_CUT_HEIGHT,
+) -> dict[str, Any]:
+    clusters = complete_linkage_jaccard(fingerprints, cut_height)
+    counts = np.array([len(c) for c in clusters], dtype=float)
+    probabilities = counts / counts.sum()
+
+    entropy = float(-np.sum(probabilities * np.log(probabilities)))
+    max_entropy = math.log(len(fingerprints)) if len(fingerprints) > 1 else 0.0
+    normalized = entropy / max_entropy if max_entropy > 0 else 0.0
+
+    labels = [None] * len(fingerprints)
+    for cluster_id, cluster in enumerate(clusters):
+        for frame_index in cluster:
+            labels[frame_index] = cluster_id
+
+    return {
+        "n_frames": len(fingerprints),
+        "n_clusters": len(clusters),
+        "cluster_sizes": counts.astype(int).tolist(),
+        "cluster_labels": labels,
+        "entropy_nats": entropy,
+        "normalized_entropy": float(normalized),
+        "effective_cluster_count": float(math.exp(entropy)),
+        "cut_height": float(cut_height),
+        "distance": "Jaccard",
+        "linkage": "complete",
+    }
+
+
+def run_consensus(
+    fingerprints: list[set[str]],
+    frequency_cutoff: float = 0.5,
+) -> set[str]:
+    if not fingerprints:
+        raise ValueError("A run must contain at least one frame")
+    counts: dict[str, int] = {}
+    for frame in fingerprints:
+        for contact in frame:
+            counts[contact] = counts.get(contact, 0) + 1
+    n = len(fingerprints)
+    return {
+        contact for contact, count in counts.items()
+        if count / n >= frequency_cutoff
+    }
+
+
+def cross_run_reliability(
+    runs: list[list[set[str]]],
+) -> dict[str, Any]:
+    if len(runs) < 2:
+        raise ValueError("At least two independent runs are required")
+
+    run_metrics = [contact_entropy(run) for run in runs]
+    consensuses = [run_consensus(run) for run in runs]
+
+    pairwise = []
+    for i in range(len(consensuses)):
+        for j in range(i + 1, len(consensuses)):
+            pairwise.append(
+                1.0 - jaccard_distance(consensuses[i], consensuses[j])
+            )
+
+    mean_entropy = float(np.mean([
+        x["normalized_entropy"] for x in run_metrics
+    ]))
+    stability = float(np.mean(pairwise))
+
+    # Uncalibrated diagnostic proxy only. It is not pose accuracy.
+    proxy = 0.5 * (1.0 - mean_entropy) + 0.5 * stability
+
+    return {
+        "n_independent_runs": len(runs),
+        "run_entropy": run_metrics,
+        "mean_normalized_entropy": mean_entropy,
+        "mean_cross_run_jaccard_similarity": stability,
+        "reliability_proxy": proxy,
+        "calibrated": False,
+        "interpretation": (
+            "Reproducibility diagnostic only; not experimental binding "
+            "probability or structural accuracy."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------
+# EXTERNAL CALIBRATION: STRICT GROUPED OUT-OF-FOLD RIDGE REGRESSION
+# ---------------------------------------------------------------------
+
+def _ridge_predict(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    alpha: float,
+) -> np.ndarray:
+    mean = x_train.mean(axis=0)
+    scale = x_train.std(axis=0)
+    scale[scale < 1e-12] = 1.0
+
+    xt = (x_train - mean) / scale
+    xv = (x_test - mean) / scale
+
+    xt = np.column_stack([np.ones(len(xt)), xt])
+    xv = np.column_stack([np.ones(len(xv)), xv])
+
+    penalty = np.eye(xt.shape[1]) * alpha
+    penalty[0, 0] = 0.0
+
+    beta = np.linalg.solve(xt.T @ xt + penalty, xt.T @ y_train)
+    return xv @ beta
+
+
+def grouped_oof_ridge(
+    features: np.ndarray,
+    labels: np.ndarray,
+    groups: np.ndarray,
+    alpha: float = 1.0,
+) -> np.ndarray:
+    features = np.asarray(features, dtype=float)
+    labels = np.asarray(labels, dtype=float)
+    groups = np.asarray(groups)
+
+    if features.ndim != 2 or len(features) != len(labels):
+        raise ValueError("Feature matrix and labels have incompatible shapes")
+    if len(groups) != len(labels):
+        raise ValueError("Group vector length does not match labels")
+    unique_groups = np.unique(groups)
+    if len(unique_groups) < 3:
+        raise ValueError("At least three independent families are required")
+
+    predictions = np.full(len(labels), np.nan)
+
+    for group in unique_groups:
+        test = groups == group
+        train = ~test
+        if train.sum() <= features.shape[1]:
+            raise ValueError(
+                "Too few training rows for this grouped outer fold; "
+                "reduce features or add independent families."
+            )
+        predictions[test] = _ridge_predict(
+            features[train], labels[train], features[test], alpha
+        )
+
+    if np.isnan(predictions).any():
+        raise RuntimeError("Some rows did not receive an outer-fold prediction")
+    return predictions
+
+
+def compare_entropy_incremental(
+    baseline_features: np.ndarray,
+    entropy_feature: np.ndarray,
+    labels: np.ndarray,
+    groups: np.ndarray,
+    alpha: float = 1.0,
+    bootstrap_replicates: int = 10000,
+    seed: int = 20261031,
+) -> dict[str, Any]:
+    """
+    Positive delta_rmse means entropy improves out-of-family prediction.
+    CI is bootstrapped by family, not by individual frames/rows.
+    """
+    x0 = np.asarray(baseline_features, dtype=float)
+    h = np.asarray(entropy_feature, dtype=float).reshape(-1, 1)
+    y = np.asarray(labels, dtype=float)
+    g = np.asarray(groups)
+
+    p0 = grouped_oof_ridge(x0, y, g, alpha)
+    p1 = grouped_oof_ridge(np.column_stack([x0, h]), y, g, alpha)
+
+    rmse0 = float(np.sqrt(np.mean((y - p0) ** 2)))
+    rmse1 = float(np.sqrt(np.mean((y - p1) ** 2)))
+    delta = rmse0 - rmse1
+
+    group_deltas = []
+    unique_groups = np.unique(g)
+    for group in unique_groups:
+        idx = g == group
+        r0 = np.sqrt(np.mean((y[idx] - p0[idx]) ** 2))
+        r1 = np.sqrt(np.mean((y[idx] - p1[idx]) ** 2))
+        group_deltas.append(float(r0 - r1))
+
+    rng = np.random.default_rng(seed)
+    group_deltas = np.asarray(group_deltas)
+    boot = np.empty(bootstrap_replicates)
+
+    for b in range(bootstrap_replicates):
+        sample = rng.choice(
+            group_deltas, size=len(group_deltas), replace=True
+        )
+        boot[b] = sample.mean()
+
+    lo, hi = np.quantile(boot, [0.025, 0.975])
+
+    return {
+        "model_version": VERSION,
+        "cv": "leave-one-family-out",
+        "n_rows": len(y),
+        "n_families": len(unique_groups),
+        "baseline_oof_rmse": rmse0,
+        "entropy_augmented_oof_rmse": rmse1,
+        "delta_rmse_baseline_minus_augmented": float(delta),
+        "family_bootstrap_ci95": [float(lo), float(hi)],
+        "bootstrap_replicates": bootstrap_replicates,
+        "entropy_incremental_validated": bool(lo > 0),
+        "ci_excludes_zero": bool(lo > 0 or hi < 0),
+        "entropy_improvement_supported": bool(lo > 0),
+        "oof_predictions_baseline": p0.tolist(),
+        "oof_predictions_entropy": p1.tolist(),
+    }
+
+
+# ---------------------------------------------------------------------
+# MODEL B: VERSIONED TARGET-AWARE MULTI-OBJECTIVE RANKING ADAPTER
+# ---------------------------------------------------------------------
+
+def hotspot_proximity_score(d203: float, d205: float) -> float:
+    """
+    Geometric proximity diagnostic, not a binding energy.
+    Distances are in Angstroms.
+    """
+    values = []
+    for distance in (d203, d205):
+        if not np.isfinite(distance) or distance < 0:
+            raise ValueError("Invalid hotspot distance")
+        values.append(math.exp(-max(distance - 4.0, 0.0) / 2.0))
+    return float(np.mean(values))
+
+
+def _pareto_fronts(
+    objective_rows: list[dict[str, float]],
+) -> list[int]:
+    n = len(objective_rows)
+    remaining = set(range(n))
+    ranks = [-1] * n
+    rank = 0
+
+    while remaining:
+        front = []
+        for i in sorted(remaining):
+            dominated = False
+            for j in remaining:
+                if i == j:
+                    continue
+                a = objective_rows[j]
+                b = objective_rows[i]
+                if all(a[k] >= b[k] for k in b) and any(
+                    a[k] > b[k] for k in b
+                ):
+                    dominated = True
+                    break
+            if not dominated:
+                front.append(i)
+
+        if not front:
+            raise RuntimeError("Pareto sorting failed")
+        for i in front:
+            ranks[i] = rank
+            remaining.remove(i)
+        rank += 1
+
+    return ranks
+
+
+def rank_target_candidates(
+    candidates: list[dict[str, Any]],
+    use_calibrated_reliability: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Pareto ranking; does not alter c_score or historical fitness weights.
+    Required keys: sequence_score, target_geometry_score,
+                   arg203_min_A, arg205_min_A.
+    """
+    output = []
+    objectives = []
+
+    for candidate in candidates:
+        row = dict(candidate)
+
+        d203 = float(row["arg203_min_A"])
+        d205 = float(row["arg205_min_A"])
+        interface = float(row["target_geometry_score"])
+        sequence = float(row["sequence_score"])
+
+        row["target_objective_version"] = "HERVK_9SYA_target_pareto_v2"
+        row["hotspot_proximity_score"] = hotspot_proximity_score(d203, d205)
+        row["sulfate_displacement_flag"] = (
+            row.get("sulfate_min_A") is not None
+            and float(row["sulfate_min_A"]) < 4.0
+        )
+        row["target_eligible"] = not bool(row.get("severe_clash", False))
+
+        objective = {
+            "sequence_score": sequence,
+            "target_geometry_score": interface,
+            "hotspot_proximity_score": row["hotspot_proximity_score"],
+        }
+
+        if use_calibrated_reliability:
+            if not row.get("reliability_calibrated", False):
+                raise ValueError(
+                    "Cannot use reliability in ranking until externally calibrated"
+                )
+            objective["reliability_score"] = float(
+                row["reliability_score"]
+            )
+
+        # A severe-clash candidate is strictly dominated by a virtual
+        # infeasible penalty in the final ranking.
+        if not row["target_eligible"]:
+            objective = {k: -1e12 for k in objective}
+
+        objectives.append(objective)
+        output.append(row)
+
+    ranks = _pareto_fronts(objectives)
+    for row, rank in zip(output, ranks):
+        row["pareto_front"] = rank
+
+    return sorted(
+        output,
+        key=lambda r: (not r["target_eligible"], r["pareto_front"])
+    )
+
+
+def attach_target_evidence(
+    candidates: list[dict[str, Any]],
+    evidence_by_sequence: dict[str, dict[str, Any]],
+    use_calibrated_reliability: bool = False,
+) -> list[dict[str, Any]]:
+    enriched = []
+    for candidate in candidates:
+        row = dict(candidate)
+        sequence = row.get("sequence")
+        if not sequence or sequence not in evidence_by_sequence:
+            raise KeyError(
+                f"No target evidence for candidate sequence {sequence!r}"
+            )
+        row.update(evidence_by_sequence[sequence])
+        enriched.append(row)
+    return rank_target_candidates(enriched, use_calibrated_reliability)
+
+
+# ---------------------------------------------------------------------
+# CLOSED-LOOP FEEDBACK
+# ---------------------------------------------------------------------
+
+def parent_selection_weights(
+    candidates: list[dict[str, Any]],
+    exploration_fraction: float = EXPLORATION_FRACTION,
+    use_calibrated_reliability: bool = False,
+    temperature: float = 0.25,
+) -> list[float]:
+    if not candidates:
+        raise ValueError("No candidates provided")
+    if not 0 <= exploration_fraction < 1:
+        raise ValueError("Exploration fraction must be in [0, 1)")
+
+    values = np.asarray(
+        [float(x["predicted_value"]) for x in candidates], dtype=float
+    )
+    vmin, vmax = float(values.min()), float(values.max())
+    utility = (
+        np.zeros_like(values)
+        if vmax - vmin < 1e-12
+        else (values - vmin) / (vmax - vmin)
+    )
+
+    if use_calibrated_reliability:
+        for row in candidates:
+            if not row.get("reliability_calibrated", False):
+                raise ValueError(
+                    "Reliability must be externally calibrated before "
+                    "it can change parent-selection weights"
+                )
+        reliability = np.asarray([
+            float(x["reliability_score"]) for x in candidates
+        ])
+        utility = utility * np.clip(reliability, 0.0, 1.0)
+
+    logits = (utility - utility.max()) / max(temperature, 1e-6)
+    exploit = np.exp(logits)
+    exploit /= exploit.sum()
+
+    n = len(candidates)
+    weights = (
+        (1.0 - exploration_fraction) * exploit
+        + exploration_fraction / n
+    )
+    return weights.tolist()
+
+
+def operator_gate(
+    out_of_domain: bool,
+    normalized_entropy: float,
+    cross_run_similarity: float,
+    reliability_calibrated: bool,
+    entropy_limit: float = 0.50,
+    stability_minimum: float = 0.70,
+) -> dict[str, Any]:
+    if not reliability_calibrated:
+        return {
+            "aggressive_operators_enabled": True,
+            "local_operators_enabled": True,
+            "gating_active": False,
+            "reason": "Reliability model not externally calibrated",
+        }
+
+    reasons = []
+    if out_of_domain:
+        reasons.append("out_of_domain")
+    if normalized_entropy > entropy_limit:
+        reasons.append("high_contact_entropy")
+    if cross_run_similarity < stability_minimum:
+        reasons.append("low_cross_run_stability")
+
+    gate = bool(reasons)
+    return {
+        "aggressive_operators_enabled": not gate,
+        "local_operators_enabled": True,
+        "gating_active": True,
+        "reason": reasons or ["within_preregistered_limits"],
+    }
+
+
+def estimate_evsi(
+    replicate_scores: dict[str, list[float]],
+    future_replicates: int = EVSI_FUTURE_REPLICATES,
+    simulations: int = 5000,
+    seed: int = 20261031,
+) -> dict[str, Any]:
+    """
+    Monte-Carlo expected value of sample information for maximizing a
+    replicate-derived utility. This is a model-based estimate, not proof
+    that EVSI is exactly zero.
+    """
+    names = sorted(replicate_scores)
+    if len(names) < 2:
+        raise ValueError("EVSI requires at least two competing candidates")
+
+    means, prior_vars, observation_vars = [], [], []
+    for name in names:
+        x = np.asarray(replicate_scores[name], dtype=float)
+        if len(x) < 10:
+            raise ValueError(f"{name} has fewer than 10 pilot replicates")
+        if not np.isfinite(x).all():
+            raise ValueError(f"{name} contains non-finite replicate scores")
+        means.append(float(x.mean()))
+        variance = float(x.var(ddof=1))
+        prior_vars.append(variance / len(x))
+        observation_vars.append(variance / future_replicates)
+
+    means = np.asarray(means)
+    prior_vars = np.asarray(prior_vars)
+    observation_vars = np.asarray(observation_vars)
+
+    rng = np.random.default_rng(seed)
+    posterior_maxima = np.empty(simulations)
+
+    for b in range(simulations):
+        predictive_var = prior_vars + observation_vars
+        predictive_draw = rng.normal(means, np.sqrt(predictive_var))
+        gain = prior_vars / np.maximum(predictive_var, 1e-15)
+        posterior_means = means + gain * (predictive_draw - means)
+        posterior_maxima[b] = posterior_means.max()
+
+    evsi = max(0.0, float(posterior_maxima.mean() - means.max()))
+
+    posterior_samples = rng.normal(
+        means,
+        np.sqrt(np.maximum(prior_vars, 1e-15)),
+        size=(simulations, len(names)),
+    )
+    winners = np.argmax(posterior_samples, axis=1)
+    win_probabilities = {
+        name: float(np.mean(winners == i))
+        for i, name in enumerate(names)
+    }
+
+    return {
+        "evsi_estimate": evsi,
+        "future_replicates_per_candidate": future_replicates,
+        "simulations": simulations,
+        "candidate_win_probabilities": win_probabilities,
+        "basis": "normal-normal approximation from replicate scores",
+        "is_exact_zero_claim": False,
+    }
+
+
+def candidate_prune_decision(
+    candidate_name: str,
+    replicate_scores: dict[str, list[float]],
+    evidence_type: str,
+    reliability_calibrated: bool,
+    evsi_tolerance: float = 1e-3,
+    seed: int = 20261031,
+) -> dict[str, Any]:
+    """
+    Conservative pruning. Requires experimental replicate data,
+    >=10 replicates per candidate, calibrated reliability, and
+    interval dominance. In-silico-only scores cannot kill candidates.
+    """
+    if evidence_type != "experimental":
+        return {
+            "prune": False,
+            "decision_eligible": False,
+            "reason": "Pruning requires independent experimental measurements",
+        }
+    if not reliability_calibrated:
+        return {
+            "prune": False,
+            "decision_eligible": False,
+            "reason": "Reliability model is not externally calibrated",
+        }
+    if candidate_name not in replicate_scores:
+        raise KeyError(candidate_name)
+
+    for name, values in replicate_scores.items():
+        if len(values) < 10:
+            return {
+                "prune": False,
+                "decision_eligible": False,
+                "reason": f"{name} has fewer than 10 replicates",
+            }
+
+    evsi = estimate_evsi(replicate_scores, seed=seed)
+    candidate = np.asarray(replicate_scores[candidate_name], dtype=float)
+    rivals = {
+        k: np.asarray(v, dtype=float)
+        for k, v in replicate_scores.items() if k != candidate_name
+    }
+
+    c_mean = candidate.mean()
+    c_sem = candidate.std(ddof=1) / math.sqrt(len(candidate))
+    c_upper = c_mean + 1.96 * c_sem
+
+    best_rival_lower = max(
+        v.mean() - 1.96 * v.std(ddof=1) / math.sqrt(len(v))
+        for v in rivals.values()
+    )
+
+    win_probability = evsi["candidate_win_probabilities"][candidate_name]
+    dominated = c_upper < best_rival_lower
+    prune = bool(
+        dominated
+        and win_probability < 0.01
+        and evsi["evsi_estimate"] <= evsi_tolerance
+    )
+
+    return {
+        "prune": prune,
+        "decision_eligible": True,
+        "candidate_upper_95_approx": float(c_upper),
+        "best_rival_lower_95_approx": float(best_rival_lower),
+        "candidate_probability_of_being_best": win_probability,
+        "evsi": evsi,
+        "reason": (
+            "Experimental interval dominance and low EVSI"
+            if prune else "Insufficient evidence to prune"
+        ),
+    }
+
+
+# ---------------------------------------------------------------------
+# PHASE A / PHASE B FAMILY SPLIT AND POWER ANALYSIS
+# ---------------------------------------------------------------------
+
+def validate_phase_split(
+    phase_a: list[dict[str, Any]],
+    phase_b: list[dict[str, Any]],
+) -> dict[str, Any]:
+    a_families = {str(x["family_id"]) for x in phase_a}
+    b_families = {str(x["family_id"]) for x in phase_b}
+    overlap = sorted(a_families & b_families)
+
+    result = {
+        "phase_a_complexes": len(phase_a),
+        "phase_a_families": len(a_families),
+        "phase_b_complexes": len(phase_b),
+        "phase_b_families": len(b_families),
+        "overlapping_families": overlap,
+        "valid": (
+            len(phase_a) >= 20
+            and len(a_families) >= 10
+            and len(phase_b) >= 40
+            and len(b_families) >= 30
+            and not overlap
+        ),
+    }
+    return result
+
+
+def family_bootstrap_power(
+    family_effects: list[float],
+    confirmatory_families: int = 30,
+    bootstrap_replicates: int = 10000,
+    alpha: float = 0.05,
+    seed: int = 20261031,
+) -> dict[str, Any]:
+    """
+    Pilot-family bootstrap power estimate for a two-sided mean-effect
+    test. Each input value must be one independent family-level effect.
+    Uses the normal critical value as an approximation.
+    """
+    x = np.asarray(family_effects, dtype=float)
+    if len(x) < 5 or not np.isfinite(x).all():
+        raise ValueError("Supply at least five finite pilot family effects")
+    if confirmatory_families < 2:
+        raise ValueError("Confirmatory family count must be >=2")
+
+    rng = np.random.default_rng(seed)
+    centered = x - x.mean()
+    critical = 1.959963984540054 if alpha == 0.05 else 1.959963984540054
+
+    significant = 0
+    means = np.empty(bootstrap_replicates)
+
+    for b in range(bootstrap_replicates):
+        residuals = rng.choice(
+            centered, size=confirmatory_families, replace=True
+        )
+        simulated = x.mean() + residuals
+        means[b] = simulated.mean()
+        sd = simulated.std(ddof=1)
+        statistic = (
+            abs(simulated.mean()) / (sd / math.sqrt(confirmatory_families))
+            if sd > 1e-12 else float("inf")
+        )
+        significant += statistic > critical
+
+    power = significant / bootstrap_replicates
+    z = 1.96
+    denominator = 1 + z*z/bootstrap_replicates
+    center = (power + z*z/(2*bootstrap_replicates)) / denominator
+    half = (
+        z * math.sqrt(
+            power*(1-power)/bootstrap_replicates
+            + z*z/(4*bootstrap_replicates**2)
+        ) / denominator
+    )
+
+    return {
+        "pilot_families": len(x),
+        "confirmatory_families": confirmatory_families,
+        "pilot_mean_family_effect": float(x.mean()),
+        "pilot_sd_family_effect": float(x.std(ddof=1)),
+        "estimated_power": float(power),
+        "power_ci95_wilson": [
+            float(max(0, center-half)), float(min(1, center+half))
+        ],
+        "alpha": alpha,
+        "bootstrap_replicates": bootstrap_replicates,
+        "power_at_least_80_percent": bool(power >= 0.80),
+        "method": "family-level bootstrap with normal-critical approximation",
+    }
+
+
+# ---------------------------------------------------------------------
+# SELF-TESTS
+# ---------------------------------------------------------------------
+
+def self_test() -> None:
+    frames = [
+        {"A-B", "B-C"},
+        {"A-B", "B-C"},
+        {"A-B", "B-C"},
+        {"X-Y"},
+        {"X-Y"},
+    ]
+    result = contact_entropy(frames)
+    assert result["n_clusters"] == 2
+    assert result["cluster_sizes"] == [3, 2]
+
+    identical = contact_entropy([{"A-B"}] * 5)
+    assert identical["normalized_entropy"] == 0.0
+
+    runs = [
+        [{"A-B"}, {"A-B"}, {"A-B"}],
+        [{"A-B"}, {"A-B"}, {"A-B"}],
+    ]
+    reliability = cross_run_reliability(runs)
+    assert reliability["mean_cross_run_jaccard_similarity"] == 1.0
+    assert reliability["calibrated"] is False
+
+    candidates = [
+        {
+            "sequence": "AAAA",
+            "sequence_score": 0.8,
+            "target_geometry_score": 0.7,
+            "arg203_min_A": 3.8,
+            "arg205_min_A": 4.2,
+            "severe_clash": False,
+        },
+        {
+            "sequence": "BBBB",
+            "sequence_score": 0.6,
+            "target_geometry_score": 0.5,
+            "arg203_min_A": 9.0,
+            "arg205_min_A": 10.0,
+            "severe_clash": False,
+        },
+    ]
+    ranked = rank_target_candidates(candidates)
+    assert len(ranked) == 2
+    assert all("pareto_front" in x for x in ranked)
+
+    weights = parent_selection_weights(
+        [{"predicted_value": 0.9}, {"predicted_value": 0.1}]
+    )
+    assert abs(sum(weights) - 1.0) < 1e-10
+    assert abs(min(weights) >= 0.075)
+
+    gate = operator_gate(
+        out_of_domain=True,
+        normalized_entropy=0.9,
+        cross_run_similarity=0.1,
+        reliability_calibrated=False,
+    )
+    assert gate["aggressive_operators_enabled"] is True
+
+    print("P4 ENGINE SELF-TESTS PASSED")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Silicon Virovore P4 engine")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    dbp = sub.add_parser("init-db")
+    dbp.add_argument(
+        "--db",
+        default="prototype4/data/p4_closed_loop_registry.sqlite",
+    )
+
+    mp = sub.add_parser("seal-manifest")
+    mp.add_argument("--db", default="prototype4/data/p4_closed_loop_registry.sqlite")
+    mp.add_argument("--json", required=True)
+    mp.add_argument(
+        "--key",
+        default="prototype4/configs/validation_manifest_hmac.key",
+    )
+
+    vp = sub.add_parser("verify-manifest")
+    vp.add_argument("--db", default="prototype4/data/p4_closed_loop_registry.sqlite")
+    vp.add_argument("--manifest-id", required=True)
+    vp.add_argument(
+        "--key",
+        default="prototype4/configs/validation_manifest_hmac.key",
+    )
+
+    sub.add_parser("self-test")
+
+    args = parser.parse_args()
+
+    if args.command == "init-db":
+        con = open_registry(args.db)
+        tables = [
+            row[0] for row in con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            )
+        ]
+        con.close()
+        print("Registry initialized:", args.db)
+        print("Tables:", tables)
+
+    elif args.command == "seal-manifest":
+        manifest = json.loads(Path(args.json).read_text())
+        con = open_registry(args.db)
+        manifest_id = seal_manifest(con, manifest, args.key)
+        con.close()
+        print("Manifest sealed:", manifest_id)
+
+    elif args.command == "verify-manifest":
+        con = open_registry(args.db)
+        valid = verify_manifest(con, args.manifest_id, args.key)
+        con.close()
+        print("Manifest valid:", valid)
+        if not valid:
+            raise SystemExit(1)
+
+    elif args.command == "self-test":
+        self_test()
+
+
+if __name__ == "__main__":
+    main()

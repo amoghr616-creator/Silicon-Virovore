@@ -1,0 +1,26 @@
+{
+  "source_manifest": "prototype4/data/p4_reliability_manifest_chain_A_20261103.json",
+  "recovered_manifest": "prototype4/data/p4_reliability_manifest_chain_A_20261103_recovered.json",
+  "recovery_method": "unique SHA-256 match within registered_poses",
+  "records_recovered": 10,
+  "unique_files_assigned": 10,
+  "run_groups": {
+    "HADDOCK3_chain_A_seed1917": [
+      1917,
+      1917,
+      1917,
+      1917,
+      1917
+    ],
+    "HADDOCK3_chain_A_seed2917": [
+      2917,
+      2917,
+      2917,
+      2917,
+      2917
+    ]
+  },
+  "independent_execution_verified": false,
+  "calibration_established": false,
+  "hotspot_residue_names_are_preliminary_checks": true
+}

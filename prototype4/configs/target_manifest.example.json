@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "target": {
+    "target_structure_id": "9SYA",
+    "receptor_chain": "A",
+    "peptide_chain": "B",
+    "hotspots": [
+      {
+        "chain": "A",
+        "residue_number": 203,
+        "residue_name": "ARG"
+      },
+      {
+        "chain": "A",
+        "residue_number": 205,
+        "residue_name": "ARG"
+      }
+    ]
+  },
+  "complexes": [
+    {
+      "sequence": "REPLACE_WITH_EXACT_CANDIDATE_SEQUENCE",
+      "path": "REPLACE_WITH_MATCHED_COMPLEX_PDB",
+      "sha256": "REPLACE_WITH_ACTUAL_SHA256",
+      "provenance": "HADDOCK3_predicted_complex",
+      "independent_run_id": null,
+      "random_seed": null,
+      "protocol_sha256": null
+    }
+  ]
+}

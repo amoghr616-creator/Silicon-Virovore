@@ -61,3 +61,6 @@ prototype3/logbook/p3_comparison_full_audit_20261027T172008/json_scalar_inventor
 
 # Large generated audit inventories
 **/json_scalar_inventory.csv
+
+# Local validation signing key; never commit
+/prototype4/configs/validation_manifest_hmac.key

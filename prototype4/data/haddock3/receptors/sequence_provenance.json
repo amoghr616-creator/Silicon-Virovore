@@ -1,0 +1,32 @@
+{
+  "primary_structure": "9SYA",
+  "construct": "HERV-KCON Env SU",
+  "sequence_provenance": {
+    "141": "ALA; intentional C141A engineering substitution",
+    "167": "ARG; retain as deposited; differs from P61570",
+    "185": "THR; retain as deposited; differs from P61570"
+  },
+  "policy": "Preserve experimental construct residues; do not automatically substitute UniProt reference residues.",
+  "primary_inputs": {
+    "A": {
+      "file": "prototype4/data/haddock3/receptors/9sya_source_chain_A.pdb",
+      "residues": {
+        "141": "ALA",
+        "167": "ARG",
+        "185": "THR",
+        "203": "ARG",
+        "205": "ARG"
+      }
+    },
+    "B": {
+      "file": "prototype4/data/haddock3/receptors/9sya_source_chain_B.pdb",
+      "residues": {
+        "141": "ALA",
+        "167": "ARG",
+        "185": "THR",
+        "203": "ARG",
+        "205": "ARG"
+      }
+    }
+  }
+}

@@ -1,0 +1,454 @@
+from __future__ import annotations
+
+import hashlib
+import re
+import shutil
+import subprocess
+import tarfile
+
+from pathlib import Path
+from typing import Any
+
+AA3 = {
+    "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D",
+    "CYS": "C", "GLN": "Q", "GLU": "E", "GLY": "G",
+    "HIS": "H", "ILE": "I", "LEU": "L", "LYS": "K",
+    "MET": "M", "PHE": "F", "PRO": "P", "SER": "S",
+    "THR": "T", "TRP": "W", "TYR": "Y", "VAL": "V",
+    "MSE": "M",
+}
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def pdb_chain_sequences(data: bytes) -> dict[str, str]:
+    residues: dict[str, dict[tuple[int, str], str]] = {}
+
+    for line in data.decode("utf-8", errors="replace").splitlines():
+        if not line.startswith("ATOM") or len(line) < 27:
+            continue
+
+        if line[16:17].strip() not in ("", "A"):
+            continue
+
+        chain = line[21:22].strip()
+        resname = line[17:20].strip().upper()
+
+        if resname not in AA3:
+            continue
+
+        try:
+            number = int(line[22:26].strip())
+        except ValueError:
+            continue
+
+        icode = line[26:27].strip()
+        residues.setdefault(chain, {})[(number, icode)] = AA3[resname]
+
+    return {
+        chain: "".join(
+            residue_map[key] for key in sorted(residue_map)
+        )
+        for chain, residue_map in residues.items()
+    }
+
+
+
+def extract_receptor_chain_a(
+    source_pdb: Path,
+    destination: Path,
+) -> Path:
+    """Create a chain-A-only receptor from the bundled official 9SYA PDB.
+
+    The result is accepted only when its parsed chain-A sequence exactly
+    matches chain A in the source. This prevents an arbitrary fallback file
+    from silently becoming the HADDOCK receptor.
+    """
+    source_pdb = Path(source_pdb).resolve()
+    destination = Path(destination).resolve()
+    if not source_pdb.is_file():
+        raise FileNotFoundError(source_pdb)
+
+    source_bytes = source_pdb.read_bytes()
+    source_sequences = pdb_chain_sequences(source_bytes)
+    expected = source_sequences.get("A")
+    if not expected:
+        raise ValueError(
+            f"Fallback 9SYA file has no parseable chain A: {source_pdb}"
+        )
+
+    lines = []
+    for line in source_bytes.decode("utf-8", errors="replace").splitlines():
+        if line.startswith("ATOM") and len(line) >= 22 and line[21:22] == "A":
+            lines.append(line)
+
+    if not lines:
+        raise ValueError(f"No ATOM records found for chain A in {source_pdb}")
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text("\n".join(lines + ["TER", "END", ""]) , encoding="utf-8")
+
+    observed = pdb_chain_sequences(destination.read_bytes())
+    if observed != {"A": expected}:
+        destination.unlink(missing_ok=True)
+        raise ValueError(
+            "Extracted fallback receptor chain failed exact sequence validation."
+        )
+    return destination
+
+def normalized_sequence(sequence: str) -> str:
+    return "".join(sequence.split()).upper()
+
+
+def make_config(
+    template: str,
+    *,
+    run_dir: Path,
+    receptor: Path,
+    peptide: Path,
+    seed: int,
+    ncores: int,
+    peptide_length: int,
+) -> str:
+    text, n = re.subn(
+        r'(?m)^run_dir\s*=.*$',
+        f'run_dir = "{run_dir.resolve()}"',
+        template,
+        count=1,
+    )
+    if n != 1:
+        raise ValueError("Template must contain exactly one run_dir.")
+
+    text, n = re.subn(
+        r"(?ms)^molecules\s*=\s*\[.*?^\]",
+        (
+            "molecules = [\n"
+            f'    "{receptor.resolve()}",\n'
+            f'    "{peptide.resolve()}",\n'
+            "]"
+        ),
+        text,
+        count=1,
+    )
+    if n != 1:
+        raise ValueError("Could not replace template molecule list.")
+
+    text = re.sub(
+        r"(?m)^ncores\s*=.*$",
+        f"ncores = {int(ncores)}",
+        text,
+    )
+
+    text, seed_count = re.subn(
+        r"(?m)^(\s*)iniseed\s*=\s*\d+\s*$",
+        lambda m: f"{m.group(1)}iniseed = {int(seed)}",
+        text,
+    )
+    if seed_count == 0:
+        raise ValueError("Template contains no iniseed settings.")
+
+    text, flex_count = re.subn(
+        r"(?m)^(\s*fle_end_1\s*=\s*)\d+\s*$",
+        rf"\g<1>{int(peptide_length)}",
+        text,
+    )
+    if flex_count == 0:
+        raise ValueError("Template contains no fle_end_1 settings.")
+
+    return text
+
+
+def extract_final_models(
+    archive: Path,
+    destination: Path,
+    *,
+    receptor_sequence: str,
+    candidate_sequence: str,
+) -> list[Path]:
+    destination.mkdir(parents=True, exist_ok=True)
+    valid = []
+
+    with tarfile.open(archive, "r:*") as tar:
+        members = sorted(
+            (
+                m for m in tar.getmembers()
+                if m.isfile()
+                and re.fullmatch(
+                    r"cluster_\d+_model_1\.pdb",
+                    Path(m.name).name,
+                )
+            ),
+            key=lambda m: Path(m.name).name,
+        )
+
+        for member in members:
+            handle = tar.extractfile(member)
+            if handle is None:
+                continue
+
+            content = handle.read()
+            sequences = pdb_chain_sequences(content)
+
+            # Strict validation: chain A must be 9SYA receptor;
+            # chain B must match this candidate peptide exactly.
+            if sequences.get("A") != receptor_sequence:
+                print(
+                    "REJECTED receptor sequence mismatch:",
+                    member.name,
+                    sequences.get("A", "<missing>"),
+                )
+                continue
+
+            if sequences.get("B") != candidate_sequence:
+                print(
+                    "REJECTED peptide sequence mismatch:",
+                    member.name,
+                    sequences.get("B", "<missing>"),
+                )
+                continue
+
+            path = destination / Path(member.name).name
+            path.write_bytes(content)
+            valid.append(path)
+
+    return valid
+
+
+def generate_candidate_target_complexes(
+    candidates: list[Any],
+    *,
+    project_root: Path,
+    template_config: Path,
+    receptor_pdb: Path,
+    output_root: Path,
+    max_candidates: int = 1,
+    seeds: tuple[int, ...] = (1917, 2917),
+    ncores: int = 4,
+) -> dict[str, int]:
+    """
+    Generate candidate-specific HADDOCK complexes.
+
+    One independent HADDOCK execution is performed per seed.
+    Selected poses from one execution are not treated as independent runs.
+
+    Only exact chain-A receptor and chain-B candidate-sequence matches
+    are registered as target_complexes.
+    """
+
+    executable = shutil.which("haddock3")
+    if executable is None:
+        raise RuntimeError(
+            "haddock3 executable not found in the active environment."
+        )
+
+    if not template_config.is_file():
+        raise FileNotFoundError(template_config)
+
+    if not receptor_pdb.is_file():
+        bundled_9sya = project_root / "data/receptor/9SYA.pdb"
+        if not bundled_9sya.is_file():
+            raise FileNotFoundError(
+                "HADDOCK receptor input is missing. Expected either "
+                f"{receptor_pdb} or bundled official structure {bundled_9sya}."
+            )
+        receptor_pdb = extract_receptor_chain_a(
+            bundled_9sya,
+            output_root / "_receptor/9sya_source_chain_A.pdb",
+        )
+
+    template = template_config.read_text(encoding="utf-8")
+    receptor_sequence = pdb_chain_sequences(
+        receptor_pdb.read_bytes()
+    ).get("A")
+
+    if not receptor_sequence:
+        raise ValueError("Could not parse receptor chain A.")
+
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    attempted = 0
+    succeeded = 0
+    pose_count = 0
+
+    for candidate in candidates:
+        metadata = candidate.metadata
+        if not isinstance(metadata, dict):
+            candidate.metadata = {}
+            metadata = candidate.metadata
+
+        existing = metadata.get("target_complexes")
+        if existing:
+            continue
+
+        if attempted >= max_candidates:
+            break
+
+        sequence = normalized_sequence(candidate.sequence)
+        peptide_path = getattr(candidate, "structure_path", None)
+
+        if not peptide_path or not Path(peptide_path).is_file():
+            metadata["p4_complex_generation"] = {
+                "status": "missing_peptide_structure",
+                "reason": "Candidate-specific peptide structure unavailable.",
+            }
+            continue
+
+        peptide_path = Path(peptide_path).resolve()
+        peptide_sequences = pdb_chain_sequences(peptide_path.read_bytes())
+
+        if sequence not in peptide_sequences.values():
+            metadata["p4_complex_generation"] = {
+                "status": "peptide_sequence_mismatch",
+                "observed_sequences": peptide_sequences,
+                "expected_sequence_sha256": sha256_bytes(
+                    sequence.encode()
+                ),
+            }
+            continue
+
+        candidate_id = str(
+            metadata.get("candidate_id")
+            or sha256_bytes(sequence.encode())[:12]
+        )
+        safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", candidate_id)
+
+        print(f"\nCandidate {candidate_id}")
+        print("  Peptide structure:", peptide_path)
+        print("  Peptide length:", len(sequence))
+
+        candidate_entries = []
+        candidate_runs = 0
+        attempted += 1
+
+        for seed in seeds:
+            run_dir = (
+                output_root / safe_id / f"seed_{seed}" / "haddock_run"
+            )
+            config_dir = output_root / "configs"
+            config_dir.mkdir(parents=True, exist_ok=True)
+            config_path = config_dir / f"{safe_id}_seed{seed}.cfg"
+
+            config = make_config(
+                template,
+                run_dir=run_dir,
+                receptor=receptor_pdb,
+                peptide=peptide_path,
+                seed=seed,
+                ncores=ncores,
+                peptide_length=len(sequence),
+            )
+
+            # Protocol hash is identical across random seeds and run paths.
+            normalized_config = re.sub(
+                r'(?m)^run_dir\s*=.*$',
+                'run_dir = "<RUN_DIR>"',
+                config,
+            )
+            normalized_config = re.sub(
+                r"(?m)^(\s*iniseed\s*=\s*)\d+\s*$",
+                r"\g<1><SEED>",
+                normalized_config,
+            )
+            protocol_hash = sha256_bytes(
+                normalized_config.encode()
+            )
+
+            archive = (
+                run_dir
+                / "analysis/6_seletopclusts_analysis/summary.tgz"
+            )
+
+            if not archive.is_file():
+                if run_dir.exists():
+                    raise RuntimeError(
+                        f"Incomplete existing HADDOCK directory: {run_dir}. "
+                        "Inspect or archive it before rerunning."
+                    )
+
+                config_path.write_text(config, encoding="utf-8")
+                log_path = config_dir / f"{safe_id}_seed{seed}.log"
+
+                print(f"  Running HADDOCK3 seed {seed} ...")
+                result = subprocess.run(
+                    [executable, str(config_path)],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                )
+
+                log_path.write_text(
+                    result.stdout + "\n--- STDERR ---\n" + result.stderr,
+                    encoding="utf-8",
+                )
+
+                if result.returncode != 0:
+                    print(
+                        f"  HADDOCK failed for seed {seed}; "
+                        f"log: {log_path}"
+                    )
+                    continue
+
+            if not archive.is_file():
+                print(f"  Final-stage archive missing: {archive}")
+                continue
+
+            models = extract_final_models(
+                archive,
+                output_root / safe_id / f"seed_{seed}" / "complexes",
+                receptor_sequence=receptor_sequence,
+                candidate_sequence=sequence,
+            )
+
+            if not models:
+                print(f"  No sequence-verified models for seed {seed}")
+                continue
+
+            run_id = f"{safe_id}:HADDOCK3:seed{seed}"
+
+            for model_path in models:
+                candidate_entries.append({
+                    "path": str(model_path.resolve()),
+                    "sha256": sha256_bytes(model_path.read_bytes()),
+                    "target_structure_id": "9SYA",
+                    "receptor_chain": "A",
+                    "peptide_chain": "B",
+                    "provenance": "candidate_specific_HADDOCK3_prediction",
+                    "independent_run_id": run_id,
+                    "random_seed": int(seed),
+                    "protocol_sha256": protocol_hash,
+                })
+
+            candidate_runs += 1
+            pose_count += len(models)
+            print(f"  Seed {seed}: registered {len(models)} verified poses")
+
+        if candidate_entries:
+            metadata["target_complexes"] = candidate_entries
+            metadata["target_structure_id"] = "9SYA"
+            metadata["target_receptor_chain"] = "A"
+            metadata["target_peptide_chain"] = "B"
+            metadata["p4_complex_generation"] = {
+                "status": "success",
+                "independent_run_count": candidate_runs,
+                "verified_pose_count": len(candidate_entries),
+                "sequence_verified": True,
+                "reliability_calibrated": False,
+            }
+            succeeded += 1
+        else:
+            metadata["p4_complex_generation"] = {
+                "status": "no_valid_complexes",
+                "independent_run_count": candidate_runs,
+                "reliability_calibrated": False,
+            }
+
+    summary = {
+        "candidates_attempted": attempted,
+        "candidates_with_complexes": succeeded,
+        "verified_pose_count": pose_count,
+    }
+
+    print("\nCandidate HADDOCK generation summary:", summary)
+    return summary

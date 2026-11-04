@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "target": {
+    "target_structure_id": "9SYA",
+    "receptor_chain": "A",
+    "peptide_chain": "B",
+    "hotspots": [
+      {
+        "chain": "A",
+        "residue_number": 203,
+        "residue_name": "ARG"
+      },
+      {
+        "chain": "A",
+        "residue_number": 205,
+        "residue_name": "ARG"
+      }
+    ]
+  },
+  "complexes": [
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_1917/cluster_1_model_1.pdb",
+      "sha256": "e6f7b60e864370c4c866aa540c043794d936c77cf7bb652ec30d7ddff828bc99",
+      "provenance": "HADDOCK3 chain-A run seed 1917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed1917",
+      "random_seed": 1917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_1917/cluster_2_model_1.pdb",
+      "sha256": "f5c28a7286a1114d44edc84187dede8bd02998733c18b9933ff6568e9a19db42",
+      "provenance": "HADDOCK3 chain-A run seed 1917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed1917",
+      "random_seed": 1917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_1917/cluster_3_model_1.pdb",
+      "sha256": "b76132579ac926075f55da61f9aae0cd3b951327cd51e95575b698a9752aaa0d",
+      "provenance": "HADDOCK3 chain-A run seed 1917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed1917",
+      "random_seed": 1917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_1917/cluster_4_model_1.pdb",
+      "sha256": "862efc8c79bf772287b842180304a49e8f4cabd6db047c45f8f225b8f8cfc4fe",
+      "provenance": "HADDOCK3 chain-A run seed 1917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed1917",
+      "random_seed": 1917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_1917/cluster_5_model_1.pdb",
+      "sha256": "724facd2466b620379b9f8c4d7c074cf122243c6de36bf1e423c3cf7aa3f202e",
+      "provenance": "HADDOCK3 chain-A run seed 1917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed1917",
+      "random_seed": 1917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_2917/cluster_1_model_1.pdb",
+      "sha256": "025a0db1081b80fe7ce7e9313070f27ae88cabdfb4d846b5f2ce2a39bd0627b2",
+      "provenance": "HADDOCK3 chain-A run seed 2917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed2917",
+      "random_seed": 2917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_2917/cluster_2_model_1.pdb",
+      "sha256": "735074f94bc256f927c7f382315cdc50e3c27fb9808c1d75834bb7f5946b3e06",
+      "provenance": "HADDOCK3 chain-A run seed 2917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed2917",
+      "random_seed": 2917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_2917/cluster_3_model_1.pdb",
+      "sha256": "9f254dff208a87a16a53b18ba6d0d1554760a37e9d46f87c1c948e1fa32720fa",
+      "provenance": "HADDOCK3 chain-A run seed 2917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed2917",
+      "random_seed": 2917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_2917/cluster_4_model_1.pdb",
+      "sha256": "6642cfde03513a1494b87191c3382e8a5b541d4b624aab2222147d281e98d106",
+      "provenance": "HADDOCK3 chain-A run seed 2917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed2917",
+      "random_seed": 2917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    },
+    {
+      "sequence": "MKLAVDALLRTFAESSDKLRR",
+      "path": "../results/p4_reliability_repeats_20261103/registered_poses/seed_2917/cluster_5_model_1.pdb",
+      "sha256": "d9073aa42f768d25dba346a28f2304f5ff4a3366322f8c952abb707c646873a4",
+      "provenance": "HADDOCK3 chain-A run seed 2917; final selected-cluster pose from stage 6_seletopclusts",
+      "independent_run_id": "HADDOCK3_chain_A_seed2917",
+      "random_seed": 2917,
+      "protocol_sha256": "3bbe8ddc732d4381d1571413ca8736b58165a948e2c7c3a7febfd99188495d68"
+    }
+  ]
+}

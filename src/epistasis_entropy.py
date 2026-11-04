@@ -24,6 +24,7 @@ PAIRWISE_MODES = frozenset({
     "hotspot_epistasis_entropy_exploratory",
     "hotspot_entropy_substitution_epistasis_exploratory",
     "hotspot_entropy_substitution_epistasis_exploratory_v2",
+    "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
 })
 
 
@@ -409,6 +410,7 @@ class EpistasisEntropyController:
             "hotspot_epistasis_entropy_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory_v2",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
         }
         use_epistasis = mode in {
             "epistasis_pair_matched",
@@ -417,6 +419,7 @@ class EpistasisEntropyController:
             "hotspot_epistasis_entropy_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory",
             "hotspot_entropy_substitution_epistasis_exploratory_v2",
+            "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
         }
 
         active_hotspots = (
@@ -426,6 +429,7 @@ class EpistasisEntropyController:
                 "hotspot_epistasis_entropy_exploratory",
                 "hotspot_entropy_substitution_epistasis_exploratory",
                 "hotspot_entropy_substitution_epistasis_exploratory_v2",
+                "hotspot_entropy_substitution_epistasis_exploratory_v2_matched",
             }
             else set()
         )
@@ -437,7 +441,7 @@ class EpistasisEntropyController:
             hotspot_boost=hotspot_boost,
         )
 
-        if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}:
+        if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2", "hotspot_entropy_substitution_epistasis_exploratory_v2_matched"}:
             # Do not let entropy alone decide where to search. Mix its
             # exploration distribution with a softmax over learned single-AA
             # gains, while retaining the explicit hotspot boost in both paths.
@@ -516,7 +520,7 @@ class EpistasisEntropyController:
             trio = None
 
             for _attempt in range(100):
-                if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}:
+                if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2", "hotspot_entropy_substitution_epistasis_exploratory_v2_matched"}:
                     a, b = self._choose_substitution_pair(
                         parent, i, j, rng
                     )
@@ -552,7 +556,7 @@ class EpistasisEntropyController:
         # count as additional pair-selection observations.
         while len(result) < pop_size:
             i = self._draw(pos_weights, rng)
-            if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2"}:
+            if mode in {"hotspot_entropy_substitution_epistasis_exploratory", "hotspot_entropy_substitution_epistasis_exploratory_v2", "hotspot_entropy_substitution_epistasis_exploratory_v2_matched"}:
                 aa = self._choose_single_substitution(parent, i, rng)
             else:
                 aa = rng.choice(
