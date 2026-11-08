@@ -336,6 +336,8 @@ class PipelineSettings:
 
     p4_target_optimization_enabled: bool = P4_TARGET_OPTIMIZATION_ENABLED
 
+    p4_exploratory_target_optimization_enabled: bool = False
+
     generate_plots: bool = GENERATE_PLOTS
 
     hotspot_enabled: bool = HOTSPOT_ENABLED
@@ -410,6 +412,9 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
     p4_target_optimization_enabled = getattr(
         settings, "p4_target_optimization_enabled", P4_TARGET_OPTIMIZATION_ENABLED
     )
+    p4_exploratory_target_optimization_enabled = getattr(
+        settings, "p4_exploratory_target_optimization_enabled", False
+    )
     enable_vina_tier2 = getattr(settings, "enable_vina_tier2", ENABLE_VINA_TIER2)
     structure_workers = getattr(settings, "structure_workers", STRUCTURE_WORKERS)
     docking_workers = getattr(settings, "docking_workers", DOCKING_WORKERS)
@@ -478,6 +483,10 @@ def validate_configuration(settings: PipelineSettings | None = None) -> None:
             raise ValueError("random_seed must be between 0 and 2**32 - 1.")
     if not isinstance(p4_target_optimization_enabled, bool):
         raise ValueError("p4_target_optimization_enabled must be a boolean.")
+    if not isinstance(p4_exploratory_target_optimization_enabled, bool):
+        raise ValueError("p4_exploratory_target_optimization_enabled must be a boolean.")
+    if p4_exploratory_target_optimization_enabled and not p4_target_optimization_enabled:
+        raise ValueError("Exploratory P4 target optimization requires P4 target optimization to be enabled.")
     if p4_target_optimization_enabled and enable_vina_tier2:
         raise ValueError(
             "P4 target optimization is a separate structural workflow; "

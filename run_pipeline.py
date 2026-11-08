@@ -7,6 +7,7 @@ import copy
 from html import parser
 import json
 import logging
+import math
 import os
 import hashlib
 import random
@@ -55,6 +56,7 @@ from src.population_runner import (
     generate_candidates,
 )
 from src.predict_structure import predict_population_structures
+from src.p4_structural_refill import run_bounded_structure_refill
 from src.ranking import CandidateRanker
 from src.p4_pipeline_integration import (
     apply_p4_target_objective,
@@ -830,6 +832,44 @@ def run_pipeline(settings: PipelineSettings | None = None):
         pair_prior_count=3.0,
     )
     validate_configuration(settings)
+
+    p4_exploratory_target_optimization = bool(
+        getattr(settings, "p4_exploratory_target_optimization_enabled", False)
+    ) or os.environ.get("SILICON_VIROVORE_P4_EXPLORATORY_TARGET_SELECTION", "0").strip() == "1"
+    p4_target_optimization_requested_run = (
+        bool(getattr(settings, "p4_target_optimization_enabled", False))
+        or os.environ.get("SILICON_VIROVORE_P4_TARGET_OPTIMIZATION", "0").strip() == "1"
+        or p4_exploratory_target_optimization
+    )
+    p4_external_validation_gate = None
+    if p4_target_optimization_requested_run:
+        from src.p4_external_validation_gate import load_external_validation_gate
+        p4_external_validation_gate = load_external_validation_gate()
+        if not p4_external_validation_gate.get("allow_target_selection"):
+            if not p4_exploratory_target_optimization:
+                raise RuntimeError(
+                    "P4 target-aware selection is blocked before candidate generation because "
+                    "the independent group-held-out external-validation gate did not pass. "
+                    + str(p4_external_validation_gate.get("reason"))
+                    + " Use --p4-exploratory-target-optimization only for a pre-registered "
+                    "exploratory matched experiment; this does not validate HERV-K binding."
+                )
+            p4_external_validation_gate = dict(p4_external_validation_gate)
+            p4_external_validation_gate["exploratory_override_used"] = True
+            p4_external_validation_gate["exploratory_override_reason"] = (
+                "User explicitly requested an exploratory P3/P4-TA comparison. "
+                "The failed PEPBI transfer gate remains visible and results are not validated."
+            )
+
+    p4_structural_generation_index = int(
+        os.environ.get("SILICON_VIROVORE_P4_STRUCTURAL_GENERATION", "1")
+    )
+    if not 1 <= p4_structural_generation_index <= settings.generations:
+        raise ValueError(
+            "SILICON_VIROVORE_P4_STRUCTURAL_GENERATION must be within "
+            "the configured generation range."
+        )
+
     output_directory = _run_directory(settings)
     structure_directory = output_directory / "structures"
     docking_directory = output_directory / "docking"
@@ -1034,58 +1074,131 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 candidate.metadata["proposal_sampling_mode"] = "uniform_random_mutation_from_original_seed"
                 candidate.metadata["preserved_elite"] = False
 
-        p4_target_optimization_requested = (
-            bool(getattr(settings, "p4_target_optimization_enabled", False))
+        p4_structural_generation_slot = (
+            generation == p4_structural_generation_index
+        )
+        p4_generation_requested = p4_structural_generation_slot and (
+            p4_target_optimization_requested_run
             or os.environ.get(
-                "SILICON_VIROVORE_P4_TARGET_OPTIMIZATION", "0"
+                "SILICON_VIROVORE_P4_GENERATE_COMPLEXES", "0"
             ).strip() == "1"
+        )
+        # "Active" means structural assessment is actually requested for
+        # this arm/generation, not merely that the generation index matches.
+        # This keeps P1/P2 audit records from implying structural work.
+        p4_structural_generation_active = p4_generation_requested
+        p4_target_optimization_requested = (
+            p4_target_optimization_requested_run
+            and p4_structural_generation_active
         )
         if p4_target_optimization_requested and settings.enable_vina_tier2:
             raise RuntimeError(
                 "P4 target optimization cannot run with standalone Vina tier-2 enabled."
             )
-
-        p4_generation_requested = (
-            p4_target_optimization_requested
-            or os.environ.get(
-                "SILICON_VIROVORE_P4_GENERATE_COMPLEXES", "0"
-            ).strip() == "1"
-        )
         p4_structure_only_requested = (
             p4_generation_requested and not settings.enable_vina_tier2
         )
         p4_structure_prediction_requested = p4_structure_only_requested
         p4_structure_shortlist = []
+        p4_structure_prediction_completed = False
+        p4_structure_refill_report = None
+        structure_runtime = 0.0
 
-        if p4_generation_requested and not p4_target_optimization_requested:
-            # Legacy diagnostic mode: budgeted subset only. This is not P4-TA.
-            p4_structure_limit = int(
-                os.environ.get(
+        if p4_generation_requested:
+            # Both diagnostic and target-aware modes use an explicit bounded
+            # structure budget. P4-TA reorders only these fully evaluated slots;
+            # unscored population members retain their original P3 positions.
+            if p4_target_optimization_requested:
+                p4_structure_limit = int(os.environ.get(
+                    "SILICON_VIROVORE_P4_MAX_DOCK_CANDIDATES", "12"
+                ))
+                budget_label = "target-aware shortlist"
+            else:
+                p4_structure_limit = int(os.environ.get(
                     "SILICON_VIROVORE_P4_STRUCTURE_LIMIT", "1"
-                )
-            )
+                ))
+                budget_label = "diagnostic shortlist"
             if p4_structure_limit < 1:
-                raise ValueError(
-                    "SILICON_VIROVORE_P4_STRUCTURE_LIMIT must be >= 1"
+                raise ValueError("P4 structure candidate budget must be >= 1")
+            if p4_structure_limit > len(candidates):
+                p4_structure_limit = len(candidates)
+
+            if p4_structure_only_requested:
+                # Freeze a deterministic sequence-fitness/diversity queue before
+                # any structure is predicted. The first N entries are the primary
+                # shortlist; the following M are bounded refill candidates.
+                refill_cap_raw = os.environ.get(
+                    "SILICON_VIROVORE_P4_MAX_STRUCTURE_REFILL_CANDIDATES", "2"
                 )
-            p4_structure_shortlist = select_p4_structure_shortlist(
-                candidates,
-                p4_structure_limit,
-            )
+                try:
+                    p4_structure_refill_cap = int(refill_cap_raw)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(
+                        "SILICON_VIROVORE_P4_MAX_STRUCTURE_REFILL_CANDIDATES "
+                        "must be a non-negative integer."
+                    ) from exc
+                if p4_structure_refill_cap < 0:
+                    raise ValueError(
+                        "SILICON_VIROVORE_P4_MAX_STRUCTURE_REFILL_CANDIDATES "
+                        "must be a non-negative integer."
+                    )
+                queue_limit = min(
+                    len(candidates), p4_structure_limit + p4_structure_refill_cap
+                )
+                p4_structure_queue = select_p4_structure_shortlist(
+                    candidates,
+                    queue_limit,
+                )
+                refill_structure_start = time.perf_counter()
+                p4_structure_shortlist, p4_structure_refill_report = (
+                    run_bounded_structure_refill(
+                        p4_structure_queue,
+                        required_count=p4_structure_limit,
+                        max_refill_candidates=p4_structure_refill_cap,
+                        predict_one=lambda candidate: predict_population_structures(
+                            [candidate],
+                            structure_directory=structure_directory,
+                            workers=1,
+                        ),
+                        is_valid_structure=candidate_has_valid_structure,
+                        output_directory=output_directory,
+                        generation=generation,
+                        run_id=settings.run_id or "run",
+                    )
+                )
+                structure_runtime += time.perf_counter() - refill_structure_start
+                p4_structure_prediction_completed = True
+                logger.info(
+                    "P4 bounded structural refill | requested=%d | eligible=%d | "
+                    "attempted=%d/%d | refills=%d | complete=%s | report=%s",
+                    p4_structure_limit,
+                    p4_structure_refill_report["eligible_count"],
+                    p4_structure_refill_report["attempted_count"],
+                    p4_structure_refill_report["max_attempts"],
+                    p4_structure_refill_report["refill_attempted_count"],
+                    p4_structure_refill_report["complete"],
+                    p4_structure_refill_report["report_path"],
+                )
+            else:
+                p4_structure_shortlist = select_p4_structure_shortlist(
+                    candidates,
+                    p4_structure_limit,
+                )
+
             logger.info(
-                "P4 diagnostic structure shortlist | selected=%d | population=%d | "
+                "P4 %s | selected=%d | population=%d | "
                 "method=fitness_seeded_greedy_max_min_sequence_diversity",
+                budget_label,
                 len(p4_structure_shortlist),
                 len(candidates),
             )
 
         if settings.enable_vina_tier2 or p4_structure_only_requested:
             if p4_target_optimization_requested:
-                # No shortlist: every candidate needs its own exact-sequence complex.
-                structure_candidates = candidates
+                structure_candidates = p4_structure_shortlist
                 logger.info(
-                    "P4 TARGET OPTIMIZATION | structures_requested=%d | "
-                    "population=%d | Vina disabled | full coverage required",
+                    "P4 TARGET-AWARE SHORTLIST OPTIMIZATION | structures_requested=%d | "
+                    "population=%d | Vina disabled | shortlist coverage required",
                     len(structure_candidates),
                     len(candidates),
                 )
@@ -1115,12 +1228,13 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 )
 
             structure_start = time.perf_counter()
-            structure_candidates = predict_population_structures(
-                structure_candidates,
-                structure_directory=structure_directory,
-                workers=settings.structure_workers,
-            )
-            structure_runtime = time.perf_counter() - structure_start
+            if not p4_structure_prediction_completed:
+                structure_candidates = predict_population_structures(
+                    structure_candidates,
+                    structure_directory=structure_directory,
+                    workers=settings.structure_workers,
+                )
+            structure_runtime += time.perf_counter() - structure_start
 
             # Synchronize the complete population, not just the selected subset.
             _synchronize_structure_state(candidates)
@@ -1266,9 +1380,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
         # explicit full-population mode is enabled. The legacy env-only mode
         # remains a shortlist diagnostic and must not be labelled target optimization.
         import os as _p4_os
-        if p4_target_optimization_requested or _p4_os.environ.get(
-            "SILICON_VIROVORE_P4_GENERATE_COMPLEXES", "0"
-        ).strip() == "1":
+        if p4_generation_requested:
             from pathlib import Path as _P4Path
             from src.p4_candidate_haddock import (
                 generate_candidate_target_complexes,
@@ -1299,7 +1411,8 @@ def run_pipeline(settings: PipelineSettings | None = None):
             if p4_target_optimization_requested:
                 _p4_docking_candidates = [
                     candidate for candidate in ranked
-                    if candidate_has_valid_structure(candidate)
+                    if candidate.metadata.get("p4_structure_shortlist", {}).get("selected")
+                    and candidate_has_valid_structure(candidate)
                 ]
             else:
                 _p4_docking_candidates = sorted(
@@ -1332,7 +1445,7 @@ def run_pipeline(settings: PipelineSettings | None = None):
                     / f"p4_candidate_complexes_g{generation:04d}"
                 ),
                 max_candidates=(
-                    len(ranked)
+                    len(_p4_docking_candidates)
                     if p4_target_optimization_requested
                     else int(_p4_os.environ.get(
                         "SILICON_VIROVORE_P4_MAX_DOCK_CANDIDATES", "1"
@@ -1350,12 +1463,37 @@ def run_pipeline(settings: PipelineSettings | None = None):
                 _p4_generation,
             )
 
-        ranked, p4_target_report = apply_p4_target_objective(
-            ranked,
-            generation=generation,
-            output_directory=output_directory,
-            require_reproducibility=p4_target_optimization_requested,
+        # Only the registered structural generation may consume the historical
+        # target manifest. This prevents a generation-2 sequence that happens
+        # to match a historical peptide from receiving an unplanned target score.
+        historical_manifest_env = os.environ.get(
+            "SILICON_VIROVORE_P4_TARGET_MANIFEST"
         )
+        if not p4_structural_generation_active:
+            os.environ.pop("SILICON_VIROVORE_P4_TARGET_MANIFEST", None)
+        p4_pareto_enabled_this_generation = (
+            p4_target_optimization_requested
+            or (
+                not p4_target_optimization_requested_run
+                and os.environ.get("SILICON_VIROVORE_P4_TARGET_PARETO", "0").strip() == "1"
+            )
+        )
+        try:
+            ranked, p4_target_report = apply_p4_target_objective(
+                ranked,
+                generation=generation,
+                output_directory=output_directory,
+                pareto_enabled=p4_pareto_enabled_this_generation,
+                require_reproducibility=p4_target_optimization_requested,
+                selection_scope=(
+                    "shortlist" if p4_target_optimization_requested else "full_population"
+                ),
+                external_validation_gate=p4_external_validation_gate,
+                allow_unvalidated_exploratory_selection=p4_exploratory_target_optimization,
+            )
+        finally:
+            if historical_manifest_env is not None:
+                os.environ["SILICON_VIROVORE_P4_TARGET_MANIFEST"] = historical_manifest_env
         p4_target_report["p4_selection_comparison"] = build_selection_comparison(
             sequence_only_ranked,
             ranked,
@@ -1373,11 +1511,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
             p4_target_optimization_requested
             and not p4_target_report.get("pareto_reordered_candidates")
         ):
-            raise RuntimeError(
-                "P4 target optimization withheld parent selection because "
-                "complete exact-sequence structural evidence and independent-run "
-                "repeatability diagnostics were not available for every candidate. "
-                f"Audit: {p4_target_report.get('report_path')}"
+            logger.warning(
+                "P4 target-selection abstention | generation=%d | "
+                "sequence-only parent order retained | reason=%s | audit=%s",
+                generation,
+                p4_target_report.get("reason"),
+                p4_target_report.get("report_path"),
             )
         p4_shortlist_report = write_p4_target_shortlist(
             ranked,
@@ -1453,12 +1592,14 @@ def run_pipeline(settings: PipelineSettings | None = None):
             logger.error("Ranking failed.")
             break
 
+        pairwise_operator_diagnostics = None
         if settings.mutation_guidance_mode in PAIRWISE_MODES:
             diagnostics = epistasis_entropy_controller.observe_generation(
                 docked,
                 parent_sequence=generation_parent,
             )
 
+            pairwise_operator_diagnostics = dict(diagnostics)
             logger.info(
                 "Epistasis/entropy telemetry | generation=%d | "
                 "mean_H=%.4f bits | low_entropy_positions=%d | "
@@ -1644,6 +1785,45 @@ def run_pipeline(settings: PipelineSettings | None = None):
             ranked,
             p4_target_report,
         )
+        native_scores = [
+            float(candidate.c_score)
+            for candidate in ranked
+            if candidate.c_score is not None
+            and math.isfinite(float(candidate.c_score))
+        ]
+        summary["common_sequence_endpoint"] = {
+            "name": "native_c_fitness",
+            "interpretation": "sequence-level optimization endpoint; not target binding affinity",
+            "n_scored_candidates": len(native_scores),
+            "mean": (statistics.mean(native_scores) if native_scores else None),
+            "median": (statistics.median(native_scores) if native_scores else None),
+            "best": (max(native_scores) if native_scores else None),
+        }
+        summary["sequence_evaluations"] = len(ranked)
+        summary["initial_pool_injected"] = bool(
+            generation == 1 and initial_pool_sequences is not None
+        )
+        summary["proposal_operator_active"] = bool(
+            not (generation == 1 and initial_pool_sequences is not None)
+        )
+        summary["pairwise_operator_diagnostics"] = pairwise_operator_diagnostics
+        summary["arise_ale_guidance"] = {
+            "arise_enabled": bool(settings.arise_enabled),
+            "ale_enabled": bool(settings.ale_enabled),
+            "hotspot_enabled": bool(settings.hotspot_enabled),
+            "mutation_guidance_mode": settings.mutation_guidance_mode,
+            "hotspot_model": hotspot_model,
+            "guided_candidate_count": sum(
+                bool(candidate.metadata.get("hotspot_guided"))
+                for candidate in ranked
+            ),
+            "candidate_count": len(ranked),
+            "guided_fraction": (
+                sum(bool(candidate.metadata.get("hotspot_guided")) for candidate in ranked)
+                / len(ranked) if ranked else 0.0
+            ),
+        }
+        summary["p4_structural_generation_active"] = p4_structural_generation_active
         generation_runtime = time.perf_counter() - generation_start
         summary.update({
             "median_overall": statistics.median(
@@ -1805,6 +1985,8 @@ def run_pipeline(settings: PipelineSettings | None = None):
             "tournament_size": settings.tournament_size,
             "random_seed": settings.random_seed,
             "seed_sequence": settings.seed_sequence,
+            "initial_pool_fasta_path": str(Path(initial_pool_path).expanduser().resolve()) if initial_pool_path else None,
+            "initial_pool_sha256": initial_pool_sha256,
             "adaptive_enabled": settings.adaptive_enabled,
             "arise_enabled": settings.arise_enabled,
             "ale_enabled": settings.ale_enabled,
@@ -1840,8 +2022,12 @@ def run_pipeline(settings: PipelineSettings | None = None):
             "hotspot_proximity_used_when_p4_selection_active": True,
 
             "p4_target_optimization_requested": bool(
-            p4_target_optimization_requested
+                p4_target_optimization_requested_run
             ),
+            "p4_structural_generation": p4_structural_generation_index,
+            "arise_memory_enabled": settings.arise_memory_enabled,
+            "arise_memory_use_history": settings.arise_memory_use_history,
+            "arise_memory_path": str(settings.arise_memory_path),
 
             "p4_selection_requires_full_cohort_eligibility": True,
 
@@ -2135,6 +2321,11 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         "--arise-memory-max-runs",
         type=int,
     )
+    parser.add_argument(
+        "--arise-memory-path",
+        type=Path,
+        help="Use a run-specific ARISE memory file to prevent cross-arm persistence collisions.",
+    )
     parser.add_argument("--structure-workers", type=int)
     parser.add_argument("--docking-workers", type=int)
     parser.add_argument(
@@ -2191,9 +2382,20 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         action=argparse.BooleanOptionalAction,
         default=None,
         help=(
-            "Generate sequence-matched 9SYA complexes for the full population "
-            "and permit target-aware parent ordering only with complete, "
-            "independently replicated structural evidence. Not affinity validation."
+            "Evaluate a deterministic, diverse 9SYA structural shortlist. Parent ordering "
+            "changes only within scored shortlist slots, and only when every shortlisted "
+            "candidate has exact-sequence evidence, at least two independent docking runs, "
+            "and a passing group-held-out external-transfer validation summary. Not affinity validation."
+        ),
+    )
+    parser.add_argument(
+        "--p4-exploratory-target-optimization",
+        action="store_true",
+        help=(
+            "Explicitly run P4-TA as an exploratory, not-yet-validated experiment. "
+            "This bypasses only the PEPBI transfer authorization gate; exact-sequence "
+            "9SYA evidence and repeatability requirements still apply to every shortlisted "
+            "candidate. Results must not be described as validated binding or efficacy."
         ),
     )
     parser.add_argument(
@@ -2232,6 +2434,7 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         ("score_threshold", "score_threshold"),
         ("arise_memory_max_records", "arise_memory_max_records"),
         ("arise_memory_max_runs", "arise_memory_max_runs"),
+        ("arise_memory_path", "arise_memory_path"),
     ):
         value = getattr(args, argument_name)
         if value is not None:
@@ -2253,6 +2456,9 @@ def parse_settings(argv: list[str] | None = None) -> PipelineSettings:
         values["enable_vina_tier2"] = args.enable_vina_tier2
     if args.p4_target_optimization is not None:
         values["p4_target_optimization_enabled"] = args.p4_target_optimization
+    if args.p4_exploratory_target_optimization:
+        values["p4_target_optimization_enabled"] = True
+        values["p4_exploratory_target_optimization_enabled"] = True
     if args.cache_enabled is not None:
         values["cache_enabled"] = args.cache_enabled
     if args.generate_plots is not None:

@@ -5,6 +5,9 @@ import re
 import shutil
 import subprocess
 import tarfile
+import json
+import uuid
+from datetime import datetime, timezone
 
 from pathlib import Path
 from typing import Any
@@ -327,6 +330,65 @@ def extract_final_models(
     return valid
 
 
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def _valid_execution_manifest(
+    manifest_path: Path,
+    *,
+    seed: int,
+    protocol_sha256: str,
+    receptor_sha256: str,
+    peptide_sha256: str,
+    archive_path: Path,
+) -> dict[str, Any] | None:
+    """Return a prior execution only when its provenance is independently checkable."""
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if payload.get("status") != "success" or payload.get("return_code") != 0:
+            return None
+        pose_hashes = payload.get("verified_pose_sha256")
+        if not isinstance(pose_hashes, dict) or not pose_hashes:
+            return None
+        if any(
+            not isinstance(value, str)
+            or len(value) != 64
+            or any(ch not in "0123456789abcdef" for ch in value.lower())
+            for value in pose_hashes.values()
+        ):
+            return None
+        expected = {
+            "random_seed": int(seed),
+            "protocol_sha256": protocol_sha256,
+            "receptor_sha256": receptor_sha256,
+            "peptide_input_sha256": peptide_sha256,
+        }
+        if any(payload.get(key) != value for key, value in expected.items()):
+            return None
+        if not payload.get("execution_id") or not payload.get("independent_run_id"):
+            return None
+        if not archive_path.is_file():
+            return None
+        if payload.get("archive_sha256") != _sha256_file(archive_path):
+            return None
+        return payload
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+
+
 def generate_candidate_target_complexes(
     candidates: list[Any],
     *,
@@ -337,25 +399,37 @@ def generate_candidate_target_complexes(
     max_candidates: int = 1,
     seeds: tuple[int, ...] = (1917, 2917),
     ncores: int = 4,
-) -> dict[str, int]:
+) -> dict[str, Any]:
+    """Generate exact-sequence 9SYA complexes with auditable independent runs.
+
+    Each seed is a separate HADDOCK3 process. The per-seed execution manifest
+    records the effective protocol hash, input hashes, command, archive hash,
+    pose hashes, exit status, and unique execution ID. Existing output is only
+    reused when this manifest verifies; an old/incomplete directory is never
+    silently treated as an independent successful execution.
+
+    Candidate-specific failures are recorded and do not abort evaluation of
+    the remaining shortlist. Geometry/docking output is not binding affinity.
     """
-    Generate candidate-specific HADDOCK complexes.
-
-    One independent HADDOCK execution is performed per seed.
-    Selected poses from one execution are not treated as independent runs.
-
-    Only exact chain-A receptor and chain-B candidate-sequence matches
-    are registered as target_complexes.
-    """
-
     executable = shutil.which("haddock3")
     if executable is None:
-        raise RuntimeError(
-            "haddock3 executable not found in the active environment."
-        )
-
+        raise RuntimeError("haddock3 executable not found in the active environment.")
     if not template_config.is_file():
         raise FileNotFoundError(template_config)
+    if not isinstance(max_candidates, int) or max_candidates < 1:
+        raise ValueError("max_candidates must be an integer >= 1")
+    if not isinstance(ncores, int) or ncores < 1:
+        raise ValueError("ncores must be an integer >= 1")
+    normalized_seeds = tuple(int(seed) for seed in seeds)
+    if len(normalized_seeds) < 2 or len(set(normalized_seeds)) != len(normalized_seeds):
+        raise ValueError("At least two distinct HADDOCK seeds are required for repeatability.")
+    if any(seed < 0 for seed in normalized_seeds):
+        raise ValueError("HADDOCK seeds must be nonnegative integers.")
+
+    project_root = Path(project_root).resolve()
+    template_config = Path(template_config).resolve()
+    receptor_pdb = Path(receptor_pdb).expanduser().resolve()
+    output_root = Path(output_root).expanduser().resolve()
 
     if not receptor_pdb.is_file():
         bundled_9sya = project_root / "data/receptor/9SYA.pdb"
@@ -370,208 +444,350 @@ def generate_candidate_target_complexes(
         )
 
     template = template_config.read_text(encoding="utf-8")
-    receptor_sequence = pdb_chain_sequences(
-        receptor_pdb.read_bytes()
-    ).get("A")
-
+    receptor_sequences = pdb_chain_sequences(receptor_pdb.read_bytes())
+    receptor_sequence = receptor_sequences.get("A")
     if not receptor_sequence:
         raise ValueError("Could not parse receptor chain A.")
 
+    receptor_sha256 = _sha256_file(receptor_pdb)
+    template_sha256 = _sha256_file(template_config)
     output_root.mkdir(parents=True, exist_ok=True)
 
-    attempted = 0
-    succeeded = 0
-    pose_count = 0
+    summary: dict[str, Any] = {
+        "candidates_requested": min(len(candidates), max_candidates),
+        "candidates_attempted": 0,
+        "candidates_with_two_independent_runs": 0,
+        "candidates_with_any_verified_pose": 0,
+        "verified_pose_count": 0,
+        "independent_run_count": 0,
+        "failed_candidate_count": 0,
+        "candidate_results": [],
+        "reliability_calibrated": False,
+        "binding_affinity_claim": False,
+    }
 
+    considered = 0
     for candidate in candidates:
-        metadata = candidate.metadata
-        if not isinstance(metadata, dict):
-            candidate.metadata = {}
-            metadata = candidate.metadata
-
-        existing = metadata.get("target_complexes")
-        if existing:
+        metadata = candidate.metadata if isinstance(candidate.metadata, dict) else {}
+        candidate.metadata = metadata
+        if metadata.get("target_complexes"):
+            summary["candidate_results"].append({
+                "candidate_id": metadata.get("candidate_id"),
+                "sequence": normalized_sequence(candidate.sequence),
+                "status": "existing_complexes_not_regenerated",
+                "registered_complex_count": len(metadata.get("target_complexes") or []),
+            })
             continue
-
-        if attempted >= max_candidates:
+        if considered >= max_candidates:
             break
+        considered += 1
+        summary["candidates_attempted"] += 1
 
         sequence = normalized_sequence(candidate.sequence)
-        peptide_path = getattr(candidate, "structure_path", None)
-
-        if not peptide_path or not Path(peptide_path).is_file():
-            metadata["p4_complex_generation"] = {
-                "status": "missing_peptide_structure",
-                "reason": "Candidate-specific peptide structure unavailable.",
-            }
-            continue
-
-        peptide_path = Path(peptide_path).resolve()
-        peptide_sequences = pdb_chain_sequences(peptide_path.read_bytes())
-
-        if sequence not in peptide_sequences.values():
-            metadata["p4_complex_generation"] = {
-                "status": "peptide_sequence_mismatch",
-                "observed_sequences": peptide_sequences,
-                "expected_sequence_sha256": sha256_bytes(
-                    sequence.encode()
-                ),
-            }
-            continue
-
-        candidate_id = str(
-            metadata.get("candidate_id")
-            or sha256_bytes(sequence.encode())[:12]
-        )
+        candidate_id = str(metadata.get("candidate_id") or sha256_bytes(sequence.encode())[:12])
         safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", candidate_id)
-
-        print(f"\nCandidate {candidate_id}")
-        print("  Peptide structure:", peptide_path)
-        print("  Peptide length:", len(sequence))
-
-        haddock_peptide_path = (
-            output_root / "_peptide_inputs" / f"{safe_id}_chain_B.pdb"
-        )
-        peptide_path = prepare_peptide_input_for_haddock(
-            peptide_path,
-            haddock_peptide_path,
-            expected_sequence=sequence,
-        )
-        validate_haddock_identifier_uniqueness(
-            receptor_pdb, peptide_path
-        )
-
-        candidate_entries = []
+        candidate_result: dict[str, Any] = {
+            "candidate_id": candidate_id,
+            "sequence": sequence,
+            "sequence_sha256": sha256_bytes(sequence.encode()),
+            "status": "started",
+            "seed_results": [],
+        }
+        candidate_entries: list[dict[str, Any]] = []
         candidate_runs = 0
-        attempted += 1
 
-        for seed in seeds:
-            run_dir = (
-                output_root / safe_id / f"seed_{seed}" / "haddock_run"
-            )
-            config_dir = output_root / "configs"
-            config_dir.mkdir(parents=True, exist_ok=True)
-            config_path = config_dir / f"{safe_id}_seed{seed}.cfg"
+        try:
+            peptide_path_value = getattr(candidate, "structure_path", None)
+            if not peptide_path_value or not Path(peptide_path_value).is_file():
+                raise FileNotFoundError("Candidate-specific peptide structure is unavailable.")
+            peptide_path = Path(peptide_path_value).expanduser().resolve()
+            peptide_sequences = pdb_chain_sequences(peptide_path.read_bytes())
+            if sequence not in peptide_sequences.values():
+                raise ValueError(
+                    f"Peptide structure sequence mismatch: observed={peptide_sequences}; "
+                    f"expected_sha256={sha256_bytes(sequence.encode())}"
+                )
 
-            config = make_config(
-                template,
-                run_dir=run_dir,
-                receptor=receptor_pdb,
-                peptide=peptide_path,
-                seed=seed,
-                ncores=ncores,
-                peptide_length=len(sequence),
+            haddock_peptide_path = output_root / "_peptide_inputs" / f"{safe_id}_chain_B.pdb"
+            peptide_path = prepare_peptide_input_for_haddock(
+                peptide_path, haddock_peptide_path, expected_sequence=sequence
             )
+            validate_haddock_identifier_uniqueness(receptor_pdb, peptide_path)
+            peptide_sha256 = _sha256_file(peptide_path)
 
-            # Protocol hash is identical across random seeds and run paths.
-            normalized_config = re.sub(
-                r'(?m)^run_dir\s*=.*$',
-                'run_dir = "<RUN_DIR>"',
-                config,
-            )
-            normalized_config = re.sub(
-                r"(?m)^(\s*iniseed\s*=\s*)\d+\s*$",
-                r"\g<1><SEED>",
-                normalized_config,
-            )
-            protocol_hash = sha256_bytes(
-                normalized_config.encode()
-            )
-
-            archive = (
-                run_dir
-                / "analysis/6_seletopclusts_analysis/summary.tgz"
-            )
-
-            if not archive.is_file():
-                if run_dir.exists():
-                    raise RuntimeError(
-                        f"Incomplete existing HADDOCK directory: {run_dir}. "
-                        "Inspect or archive it before rerunning."
-                    )
-
-                config_path.write_text(config, encoding="utf-8")
+            for seed in normalized_seeds:
+                seed_root = output_root / safe_id / f"seed_{seed}"
+                run_dir = seed_root / "haddock_run"
+                config_dir = output_root / "configs"
+                config_dir.mkdir(parents=True, exist_ok=True)
+                config_path = config_dir / f"{safe_id}_seed{seed}.cfg"
                 log_path = config_dir / f"{safe_id}_seed{seed}.log"
+                execution_manifest_path = seed_root / "execution_manifest.json"
 
-                print(f"  Running HADDOCK3 seed {seed} ...")
+                config = make_config(
+                    template,
+                    run_dir=run_dir,
+                    receptor=receptor_pdb,
+                    peptide=peptide_path,
+                    seed=seed,
+                    ncores=ncores,
+                    peptide_length=len(sequence),
+                )
+                normalized_config = re.sub(
+                    r'(?m)^run_dir\s*=.*$', 'run_dir = "<RUN_DIR>"', config
+                )
+                normalized_config = re.sub(
+                    r"(?m)^(\s*iniseed\s*=\s*)\d+\s*$",
+                    r"\g<1><SEED>", normalized_config,
+                )
+                protocol_sha256 = sha256_bytes(
+                    (normalized_config + "\nTEMPLATE_SHA256=" + template_sha256).encode()
+                )
+                archive = run_dir / "analysis/6_seletopclusts_analysis/summary.tgz"
+
+                prior = _valid_execution_manifest(
+                    execution_manifest_path,
+                    seed=seed,
+                    protocol_sha256=protocol_sha256,
+                    receptor_sha256=receptor_sha256,
+                    peptide_sha256=peptide_sha256,
+                    archive_path=archive,
+                )
+                if prior is not None:
+                    models = extract_final_models(
+                        archive,
+                        seed_root / "complexes",
+                        receptor_sequence=receptor_sequence,
+                        candidate_sequence=sequence,
+                    )
+                    if not models:
+                        candidate_result["seed_results"].append({
+                            "seed": seed,
+                            "status": "reused_archive_failed_sequence_validation",
+                        })
+                        continue
+                    manifest_sha256 = _sha256_file(execution_manifest_path)
+                    for model_path in models:
+                        candidate_entries.append({
+                            "path": str(model_path.resolve()),
+                            "sha256": _sha256_file(model_path),
+                            "target_structure_id": "9SYA",
+                            "receptor_chain": "A",
+                            "peptide_chain": "B",
+                            "provenance": "candidate_specific_HADDOCK3_predicted_complex",
+                            "independent_run_id": prior["independent_run_id"],
+                            "random_seed": int(seed),
+                            "protocol_sha256": protocol_sha256,
+                            "execution_id": prior["execution_id"],
+                            "execution_manifest_path": str(execution_manifest_path.resolve()),
+                            "execution_manifest_sha256": manifest_sha256,
+                        })
+                    candidate_runs += 1
+                    summary["independent_run_count"] += 1
+                    candidate_result["seed_results"].append({
+                        "seed": seed,
+                        "status": "reused_verified_execution",
+                        "execution_id": prior["execution_id"],
+                        "pose_count": len(models),
+                    })
+                    continue
+
+                # Never treat a pre-existing unmanifested run directory as new
+                # evidence. It may be a partial or copied execution.
+                if run_dir.exists() or execution_manifest_path.exists():
+                    candidate_result["seed_results"].append({
+                        "seed": seed,
+                        "status": "unverified_existing_execution_directory",
+                        "reason": "Existing HADDOCK output lacks a matching execution manifest; preserve for manual review.",
+                    })
+                    continue
+
+                run_id = f"{safe_id}:HADDOCK3:seed{seed}"
+                execution_id = uuid.uuid4().hex
+                started_at = datetime.now(timezone.utc).isoformat()
+                config_path.write_text(config, encoding="utf-8")
+                config_sha256 = _sha256_file(config_path)
+                command = [executable, str(config_path)]
                 result = subprocess.run(
-                    [executable, str(config_path)],
+                    command,
                     cwd=project_root,
                     capture_output=True,
                     text=True,
                 )
+                log_text = result.stdout + "\n--- STDERR ---\n" + result.stderr
+                log_path.write_text(log_text, encoding="utf-8")
+                log_sha256 = _sha256_file(log_path)
 
-                log_path.write_text(
-                    result.stdout + "\n--- STDERR ---\n" + result.stderr,
-                    encoding="utf-8",
-                )
-
-                if result.returncode != 0:
-                    print(
-                        f"  HADDOCK failed for seed {seed}; "
-                        f"log: {log_path}"
-                    )
+                if result.returncode != 0 or not archive.is_file():
+                    failed_manifest = {
+                        "schema_version": 1,
+                        "status": "failed",
+                        "execution_id": execution_id,
+                        "independent_run_id": run_id,
+                        "candidate_id": candidate_id,
+                        "sequence_sha256": sha256_bytes(sequence.encode()),
+                        "random_seed": int(seed),
+                        "protocol_sha256": protocol_sha256,
+                        "template_sha256": template_sha256,
+                        "config_sha256": config_sha256,
+                        "receptor_sha256": receptor_sha256,
+                        "peptide_input_sha256": peptide_sha256,
+                        "command": command,
+                        "started_at_utc": started_at,
+                        "finished_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "return_code": int(result.returncode),
+                        "log_path": str(log_path.resolve()),
+                        "log_sha256": log_sha256,
+                        "archive_path": str(archive.resolve()),
+                        "failure": "HADDOCK process failed or final archive is missing.",
+                    }
+                    _atomic_json(execution_manifest_path, failed_manifest)
+                    candidate_result["seed_results"].append({
+                        "seed": seed,
+                        "status": "failed",
+                        "return_code": int(result.returncode),
+                        "execution_manifest": str(execution_manifest_path),
+                    })
                     continue
 
-            if not archive.is_file():
-                print(f"  Final-stage archive missing: {archive}")
-                continue
+                models = extract_final_models(
+                    archive,
+                    seed_root / "complexes",
+                    receptor_sequence=receptor_sequence,
+                    candidate_sequence=sequence,
+                )
+                if not models:
+                    failed_manifest = {
+                        "schema_version": 1,
+                        "status": "failed",
+                        "execution_id": execution_id,
+                        "independent_run_id": run_id,
+                        "candidate_id": candidate_id,
+                        "sequence_sha256": sha256_bytes(sequence.encode()),
+                        "random_seed": int(seed),
+                        "protocol_sha256": protocol_sha256,
+                        "template_sha256": template_sha256,
+                        "config_sha256": config_sha256,
+                        "receptor_sha256": receptor_sha256,
+                        "peptide_input_sha256": peptide_sha256,
+                        "command": command,
+                        "started_at_utc": started_at,
+                        "finished_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "return_code": int(result.returncode),
+                        "log_path": str(log_path.resolve()),
+                        "log_sha256": log_sha256,
+                        "archive_path": str(archive.resolve()),
+                        "archive_sha256": _sha256_file(archive),
+                        "failure": "Final archive contained no exact-sequence receptor/peptide models.",
+                    }
+                    _atomic_json(execution_manifest_path, failed_manifest)
+                    candidate_result["seed_results"].append({
+                        "seed": seed,
+                        "status": "no_sequence_verified_models",
+                        "execution_manifest": str(execution_manifest_path),
+                    })
+                    continue
 
-            models = extract_final_models(
-                archive,
-                output_root / safe_id / f"seed_{seed}" / "complexes",
-                receptor_sequence=receptor_sequence,
-                candidate_sequence=sequence,
-            )
-
-            if not models:
-                print(f"  No sequence-verified models for seed {seed}")
-                continue
-
-            run_id = f"{safe_id}:HADDOCK3:seed{seed}"
-
-            for model_path in models:
-                candidate_entries.append({
-                    "path": str(model_path.resolve()),
-                    "sha256": sha256_bytes(model_path.read_bytes()),
-                    "target_structure_id": "9SYA",
-                    "receptor_chain": "A",
-                    "peptide_chain": "B",
-                    "provenance": "candidate_specific_HADDOCK3_prediction",
+                pose_hashes = {model_path.name: _sha256_file(model_path) for model_path in models}
+                success_manifest = {
+                    "schema_version": 1,
+                    "status": "success",
+                    "execution_id": execution_id,
                     "independent_run_id": run_id,
+                    "candidate_id": candidate_id,
+                    "sequence_sha256": sha256_bytes(sequence.encode()),
                     "random_seed": int(seed),
-                    "protocol_sha256": protocol_hash,
+                    "protocol_sha256": protocol_sha256,
+                    "template_sha256": template_sha256,
+                    "config_sha256": config_sha256,
+                    "receptor_sha256": receptor_sha256,
+                    "peptide_input_sha256": peptide_sha256,
+                    "command": command,
+                    "started_at_utc": started_at,
+                    "finished_at_utc": datetime.now(timezone.utc).isoformat(),
+                    "return_code": int(result.returncode),
+                    "log_path": str(log_path.resolve()),
+                    "log_sha256": log_sha256,
+                    "archive_path": str(archive.resolve()),
+                    "archive_sha256": _sha256_file(archive),
+                    "verified_pose_sha256": pose_hashes,
+                }
+                _atomic_json(execution_manifest_path, success_manifest)
+                manifest_sha256 = _sha256_file(execution_manifest_path)
+
+                for model_path in models:
+                    candidate_entries.append({
+                        "path": str(model_path.resolve()),
+                        "sha256": _sha256_file(model_path),
+                        "target_structure_id": "9SYA",
+                        "receptor_chain": "A",
+                        "peptide_chain": "B",
+                        "provenance": "candidate_specific_HADDOCK3_predicted_complex",
+                        "independent_run_id": run_id,
+                        "random_seed": int(seed),
+                        "protocol_sha256": protocol_sha256,
+                        "execution_id": execution_id,
+                        "execution_manifest_path": str(execution_manifest_path.resolve()),
+                        "execution_manifest_sha256": manifest_sha256,
+                    })
+                candidate_runs += 1
+                summary["independent_run_count"] += 1
+                summary["verified_pose_count"] += len(models)
+                candidate_result["seed_results"].append({
+                    "seed": seed,
+                    "status": "success",
+                    "execution_id": execution_id,
+                    "pose_count": len(models),
+                    "execution_manifest": str(execution_manifest_path),
                 })
 
-            candidate_runs += 1
-            pose_count += len(models)
-            print(f"  Seed {seed}: registered {len(models)} verified poses")
-
-        if candidate_entries:
-            metadata["target_complexes"] = candidate_entries
-            metadata["target_structure_id"] = "9SYA"
-            metadata["target_receptor_chain"] = "A"
-            metadata["target_peptide_chain"] = "B"
+            if candidate_entries:
+                metadata["target_complexes"] = candidate_entries
+                metadata["target_structure_id"] = "9SYA"
+                metadata["target_receptor_chain"] = "A"
+                metadata["target_peptide_chain"] = "B"
+                metadata["p4_complex_generation"] = {
+                    "status": "success" if candidate_runs >= 2 else "partial_success",
+                    "independent_run_count": candidate_runs,
+                    "verified_pose_count": len(candidate_entries),
+                    "sequence_verified": True,
+                    "execution_manifests_verified": True,
+                    "reliability_calibrated": False,
+                }
+                summary["candidates_with_any_verified_pose"] += 1
+                if candidate_runs >= 2:
+                    summary["candidates_with_two_independent_runs"] += 1
+                    candidate_result["status"] = "two_independent_runs_verified"
+                else:
+                    candidate_result["status"] = "partial_target_evidence"
+            else:
+                metadata["p4_complex_generation"] = {
+                    "status": "no_valid_complexes",
+                    "independent_run_count": candidate_runs,
+                    "sequence_verified": False,
+                    "reliability_calibrated": False,
+                }
+                candidate_result["status"] = "no_valid_complexes"
+        except Exception as exc:
+            candidate_result["status"] = "candidate_generation_error"
+            candidate_result["error"] = f"{type(exc).__name__}: {exc}"
             metadata["p4_complex_generation"] = {
-                "status": "success",
+                "status": "candidate_generation_error",
+                "error": candidate_result["error"],
                 "independent_run_count": candidate_runs,
-                "verified_pose_count": len(candidate_entries),
-                "sequence_verified": True,
                 "reliability_calibrated": False,
             }
-            succeeded += 1
-        else:
-            metadata["p4_complex_generation"] = {
-                "status": "no_valid_complexes",
-                "independent_run_count": candidate_runs,
-                "reliability_calibrated": False,
-            }
 
-    summary = {
-        "candidates_attempted": attempted,
-        "candidates_with_complexes": succeeded,
-        "verified_pose_count": pose_count,
-    }
+        if candidate_result["status"] not in {
+            "two_independent_runs_verified",
+            "partial_target_evidence",
+            "no_valid_complexes",
+        }:
+            summary["failed_candidate_count"] += 1
+        summary["candidate_results"].append(candidate_result)
 
-    print("\nCandidate HADDOCK generation summary:", summary)
+    _atomic_json(output_root / "target_complex_generation_summary.json", summary)
+    print("\nCandidate HADDOCK generation summary:", {
+        key: value for key, value in summary.items() if key != "candidate_results"
+    })
     return summary

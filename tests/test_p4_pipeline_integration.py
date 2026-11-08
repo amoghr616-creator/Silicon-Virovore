@@ -288,6 +288,8 @@ def test_reliability_diagnostic_remains_uncalibrated(monkeypatch):
                 "independent_run_id": run_id,
                 "random_seed": seed,
                 "protocol_sha256": "a" * 64,
+                "execution_id": f"execution-{run_id}",
+                "execution_manifest_sha256": ("b" if run_id == "run_1" else "c") * 64,
                 "_interface_fingerprint_5A": [
                     f"R:{pose_index}:GLU|P:1:ALA"
                 ],
@@ -299,6 +301,23 @@ def test_reliability_diagnostic_remains_uncalibrated(monkeypatch):
     assert result["calibrated"] is False
     assert result["feedback_active"] is False
     assert result["n_independent_runs"] == 2
+
+
+def test_reliability_rejects_reused_execution_identity():
+    entries = []
+    for run_id, seed in (("run_1", 101), ("run_2", 202)):
+        for pose_index in range(2):
+            entries.append({
+                "independent_run_id": run_id,
+                "random_seed": seed,
+                "protocol_sha256": "a" * 64,
+                "execution_id": "same-execution",
+                "execution_manifest_sha256": "b" * 64,
+                "_interface_fingerprint_5A": [f"R:{pose_index}:GLU|P:1:ALA"],
+            })
+    result = p4._reliability_diagnostic(entries)
+    assert result["status"] == "reused_execution_identity"
+    assert result["calibrated"] is False
 
 
 def test_missing_target_evidence_is_reported_and_not_ranked(tmp_path, monkeypatch):
@@ -671,6 +690,11 @@ def test_strict_target_optimization_requires_repeatability_and_targets_parent_or
         output_directory=tmp_path / "run",
         pareto_enabled=True,
         require_reproducibility=True,
+        external_validation_gate={
+            "status": "test_fixture_authorized",
+            "allow_target_selection": True,
+            "reason": "Synthetic unit-test authorization; not scientific validation.",
+        },
     )
 
     assert report["target_evidence_coverage"] == 1.0
@@ -764,6 +788,11 @@ def test_strict_target_optimization_withholds_pareto_if_any_repeatability_is_mis
         output_directory=tmp_path / "run",
         pareto_enabled=True,
         require_reproducibility=True,
+        external_validation_gate={
+            "status": "test_fixture_authorized",
+            "allow_target_selection": True,
+            "reason": "Synthetic unit-test authorization; not scientific validation.",
+        },
     )
 
     assert report["target_evidence_coverage"] == 1.0
@@ -771,3 +800,138 @@ def test_strict_target_optimization_withholds_pareto_if_any_repeatability_is_mis
     assert report["pareto_reordered_candidates"] is False
     assert "repeatability diagnostics" in report["reason"]
     assert ranked == candidates
+
+
+def _attach_two_independent_test_runs(candidate, tmp_path):
+    candidate.metadata.update({
+        "target_structure_id": "9SYA",
+        "target_receptor_chain": "A",
+        "target_peptide_chain": "B",
+        "target_hotspots": [
+            {"chain": "A", "residue_number": 203, "residue_name": "ARG"},
+            {"chain": "A", "residue_number": 205, "residue_name": "ARG"},
+        ],
+        "target_complexes": [
+            {
+                "path": str(tmp_path / f"{candidate.sequence}_seed1917_pose1.pdb"),
+                "target_structure_id": "9SYA", "receptor_chain": "A", "peptide_chain": "B",
+                "independent_run_id": "seed1917", "random_seed": 1917,
+                "protocol_sha256": "a" * 64,
+            },
+            {
+                "path": str(tmp_path / f"{candidate.sequence}_seed2917_pose1.pdb"),
+                "target_structure_id": "9SYA", "receptor_chain": "A", "peptide_chain": "B",
+                "independent_run_id": "seed2917", "random_seed": 2917,
+                "protocol_sha256": "a" * 64,
+            },
+        ],
+    })
+
+
+def _install_deterministic_target_test_scoring(monkeypatch):
+    def fake_score(candidate, entry):
+        geometry = 0.9 if candidate.sequence.startswith("B") else 0.2
+        return {
+            "path": entry["path"], "target_structure_id": "9SYA",
+            "score_version": "unit_test_only", "target_geometry_score": geometry,
+            "hotspot_distances_A": {"A:203:ARG": 3.0, "A:205:ARG": 3.5},
+            "hotspot_proximity_score": geometry, "minimum_interchain_distance_A": 2.8,
+            "severe_clash_count": 0, "interface_residue_pairs_5A": 12,
+            "independent_run_id": entry["independent_run_id"],
+            "random_seed": entry["random_seed"],
+            "protocol_sha256": entry["protocol_sha256"],
+            "_interface_fingerprint_5A": ["A:203:ARG|B:1:ALA"],
+        }
+
+    monkeypatch.setattr(p4, "_score_complex", fake_score)
+    monkeypatch.setattr(p4, "_reliability_diagnostic", lambda entries: {
+        "status": "diagnostic_only", "n_independent_runs": 2,
+        "reliability_proxy": 0.75, "calibrated": False,
+        "feedback_active": False,
+    })
+
+
+def test_shortlist_selection_reorders_only_scored_slots(tmp_path, monkeypatch):
+    _install_deterministic_target_test_scoring(monkeypatch)
+    monkeypatch.delenv("SILICON_VIROVORE_P4_TARGET_MANIFEST", raising=False)
+    low = make_candidate("AAAA")
+    untouched = make_candidate("CCCC")
+    high = make_candidate("BBBB")
+    low.metadata["p4_structure_shortlist"] = {"selected": True}
+    high.metadata["p4_structure_shortlist"] = {"selected": True}
+    untouched.metadata["p4_structure_shortlist"] = {"selected": False}
+    _attach_two_independent_test_runs(low, tmp_path)
+    _attach_two_independent_test_runs(high, tmp_path)
+
+    authorized = {
+        "status": "test_fixture_authorized",
+        "allow_target_selection": True,
+        "reason": "Synthetic unit-test authorization only.",
+    }
+    ranked, report = p4.apply_p4_target_objective(
+        [low, untouched, high], generation=1, output_directory=tmp_path / "shortlist",
+        pareto_enabled=True, require_reproducibility=True,
+        selection_scope="shortlist", external_validation_gate=authorized,
+    )
+
+    assert ranked[0] is high
+    assert ranked[1] is untouched
+    assert ranked[2] is low
+    assert report["selection_scope"] == "shortlist"
+    assert report["selection_scope_candidate_count"] == 2
+    assert report["target_selection_coverage"] == pytest.approx(1.0)
+    assert report["pareto_reordered_candidates"] is True
+    assert report["external_validation_allows_selection"] is True
+
+
+def test_external_validation_failure_prevents_target_aware_reordering(
+    tmp_path, monkeypatch
+):
+    _install_deterministic_target_test_scoring(monkeypatch)
+    monkeypatch.delenv("SILICON_VIROVORE_P4_TARGET_MANIFEST", raising=False)
+    low = make_candidate("AAAA")
+    high = make_candidate("BBBB")
+    for candidate in (low, high):
+        candidate.metadata["p4_structure_shortlist"] = {"selected": True}
+        _attach_two_independent_test_runs(candidate, tmp_path)
+    failed_gate = {
+        "status": "external_transfer_gate_failed",
+        "allow_target_selection": False,
+        "reason": "Held-out PEPBI MAE worsened after adding target context.",
+    }
+
+    ranked, report = p4.apply_p4_target_objective(
+        [low, high], generation=1, output_directory=tmp_path / "blocked",
+        pareto_enabled=True, require_reproducibility=True,
+        selection_scope="shortlist", external_validation_gate=failed_gate,
+    )
+
+    assert ranked == [low, high]
+    assert report["pareto_reordered_candidates"] is False
+    assert report["external_validation_allows_selection"] is False
+    assert "external-validation gate" in report["reason"]
+
+
+def test_exploratory_override_is_explicit_and_remains_unvalidated(tmp_path, monkeypatch):
+    _install_deterministic_target_test_scoring(monkeypatch)
+    monkeypatch.delenv("SILICON_VIROVORE_P4_TARGET_MANIFEST", raising=False)
+    low = make_candidate("AAAA")
+    high = make_candidate("BBBB")
+    for candidate in (low, high):
+        candidate.metadata["p4_structure_shortlist"] = {"selected": True}
+        _attach_two_independent_test_runs(candidate, tmp_path)
+    failed_gate = {
+        "status": "external_transfer_gate_failed",
+        "allow_target_selection": False,
+        "reason": "PEPBI transfer gate failed in this benchmark.",
+    }
+    ranked, report = p4.apply_p4_target_objective(
+        [low, high], generation=1, output_directory=tmp_path / "exploratory",
+        pareto_enabled=True, require_reproducibility=True,
+        selection_scope="shortlist", external_validation_gate=failed_gate,
+        allow_unvalidated_exploratory_selection=True,
+    )
+    assert report["pareto_reordered_candidates"] is True
+    assert report["exploratory_override_used"] is True
+    assert report["external_validation_allows_selection"] is False
+    assert report["selection_validation_status"] == "EXPLORATORY_NOT_VALIDATED"

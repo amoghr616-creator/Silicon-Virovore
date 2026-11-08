@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import json
 import math
 import os
 from collections import defaultdict
@@ -189,6 +190,9 @@ def _register_manifest(
                 "independent_run_id": raw.get("independent_run_id"),
                 "random_seed": raw.get("random_seed"),
                 "protocol_sha256": raw.get("protocol_sha256"),
+                "execution_id": raw.get("execution_id"),
+                "execution_manifest_path": raw.get("execution_manifest_path"),
+                "execution_manifest_sha256": raw.get("execution_manifest_sha256"),
             })
 
         except Exception as exc:
@@ -573,25 +577,116 @@ def _reliability_diagnostic(
             "reason": "Independent run IDs must use distinct random seeds.",
         }
 
+    execution_ids = set()
+    for run_id, entries in groups.items():
+        run_execution_ids = {str(entry.get("execution_id") or "").strip() for entry in entries}
+        run_manifest_hashes = {str(entry.get("execution_manifest_sha256") or "").strip().lower() for entry in entries}
+        if len(run_execution_ids) != 1 or not next(iter(run_execution_ids), ""):
+            return {
+                "status": "missing_or_conflicting_execution_identity",
+                "independent_run_count": len(groups),
+                "calibrated": False,
+                "feedback_active": False,
+                "reason": f"Run {run_id} lacks one shared execution_id across its poses.",
+            }
+        if len(run_manifest_hashes) != 1:
+            return {
+                "status": "missing_or_conflicting_execution_manifest",
+                "independent_run_count": len(groups),
+                "calibrated": False,
+                "feedback_active": False,
+                "reason": f"Run {run_id} lacks one shared execution-manifest hash.",
+            }
+        digest = next(iter(run_manifest_hashes))
+        if len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+            return {
+                "status": "missing_or_invalid_execution_manifest",
+                "independent_run_count": len(groups),
+                "calibrated": False,
+                "feedback_active": False,
+                "reason": f"Run {run_id} has no valid execution-manifest SHA-256.",
+            }
+        execution_ids.add(next(iter(run_execution_ids)))
+
+    if len(execution_ids) != len(groups):
+        return {
+            "status": "reused_execution_identity",
+            "independent_run_count": len(groups),
+            "calibrated": False,
+            "feedback_active": False,
+            "reason": "Each independent run must have a distinct recorded execution_id.",
+        }
+
     runs = []
+    pose_fingerprint_summary = {}
 
     for run_id in sorted(groups):
         fingerprints = []
+        fingerprint_errors = []
 
         for entry in groups[run_id]:
             fingerprint = entry.get("_interface_fingerprint_5A")
+            fingerprint_error = entry.get("fingerprint_error")
 
-            if not fingerprint:
+            # A missing fingerprint or a parser/calculation error is not a
+            # measured zero-contact pose. Keep those cases fail-closed.
+            if fingerprint_error:
+                fingerprint_errors.append(str(fingerprint_error))
+                continue
+            if fingerprint is None:
                 return {
                     "status": "missing_interface_fingerprint",
                     "independent_run_count": len(groups),
                     "calibrated": False,
                     "feedback_active": False,
-                    "reason": f"Run {run_id} contains an empty fingerprint.",
+                    "reason": f"Run {run_id} has a pose with no fingerprint field.",
                 }
 
+            # An empty collection is a valid observed result: no inter-chain
+            # residue pairs were within the 5 A cutoff. Preserve it as an
+            # empty set in the entropy/consensus calculation; do not treat it
+            # as missing data or silently discard it.
             fingerprints.append(set(fingerprint))
 
+        if fingerprint_errors:
+            return {
+                "status": "fingerprint_calculation_failed",
+                "independent_run_count": len(groups),
+                "calibrated": False,
+                "feedback_active": False,
+                "reason": (
+                    f"Run {run_id} has {len(fingerprint_errors)} fingerprint "
+                    "calculation error(s): " + "; ".join(fingerprint_errors[:3])
+                ),
+            }
+
+        nonempty_count = sum(bool(fingerprint) for fingerprint in fingerprints)
+        empty_count = len(fingerprints) - nonempty_count
+        if len(fingerprints) < 2 or nonempty_count < 2:
+            return {
+                "status": "insufficient_nonempty_interface_fingerprints",
+                "independent_run_count": len(groups),
+                "calibrated": False,
+                "feedback_active": False,
+                "reason": (
+                    f"Run {run_id} has {nonempty_count} nonempty interface "
+                    "fingerprint(s); at least two are required per run."
+                ),
+                "pose_fingerprint_summary": {
+                    run_id: {
+                        "pose_count": len(fingerprints),
+                        "nonempty_fingerprint_count": nonempty_count,
+                        "empty_fingerprint_count": empty_count,
+                    }
+                },
+            }
+
+        pose_fingerprint_summary[run_id] = {
+            "pose_count": len(fingerprints),
+            "nonempty_fingerprint_count": nonempty_count,
+            "empty_fingerprint_count": empty_count,
+            "nonempty_fraction": nonempty_count / len(fingerprints),
+        }
         runs.append(fingerprints)
 
     try:
@@ -613,6 +708,13 @@ def _reliability_diagnostic(
         "n_independent_runs": len(groups),
         "random_seeds": seeds,
         "protocol_sha256": next(iter(protocols)),
+        "pose_fingerprint_summary": pose_fingerprint_summary,
+        "empty_fingerprint_policy": (
+            "Measured empty 5 A contact sets are retained as zero-contact "
+            "observations; every independent run must contain at least two "
+            "nonempty pose fingerprints. Missing fields and calculation "
+            "errors remain ineligible."
+        ),
         "calibrated": False,
         "feedback_active": False,
         "interpretation": (
@@ -627,6 +729,8 @@ def _reliability_diagnostic(
 def _score_complex(
     candidate: Any,
     entry: dict[str, Any],
+    *,
+    require_execution_manifest: bool = False,
 ) -> dict[str, Any]:
     path = Path(entry["path"]).expanduser().resolve()
 
@@ -637,6 +741,46 @@ def _score_complex(
 
     if expected_hash and _sha256(path) != str(expected_hash).lower():
         raise ValueError("Complex SHA-256 changed after manifest registration")
+
+    require_execution_manifest = bool(
+        require_execution_manifest or entry.get("_require_execution_manifest")
+    )
+    execution_id = entry.get("execution_id")
+    execution_manifest_path = entry.get("execution_manifest_path")
+    execution_manifest_sha256 = entry.get("execution_manifest_sha256")
+    if require_execution_manifest:
+        if not execution_id or not execution_manifest_path or not execution_manifest_sha256:
+            raise ValueError("Independent execution manifest metadata is required for P4-TA.")
+        manifest_path = Path(execution_manifest_path).expanduser().resolve()
+        if not manifest_path.is_file():
+            raise FileNotFoundError(f"Execution manifest missing: {manifest_path}")
+        if _sha256(manifest_path) != str(execution_manifest_sha256).lower():
+            raise ValueError("Execution-manifest SHA-256 mismatch.")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        checks = {
+            "status": "success",
+            "return_code": 0,
+            "execution_id": execution_id,
+            "independent_run_id": entry.get("independent_run_id"),
+            "random_seed": entry.get("random_seed"),
+            "protocol_sha256": entry.get("protocol_sha256"),
+            "sequence_sha256": hashlib.sha256(
+                str(candidate.sequence).upper().encode("utf-8")
+            ).hexdigest(),
+        }
+        mismatches = [key for key, expected in checks.items() if manifest.get(key) != expected]
+        if mismatches:
+            raise ValueError("Execution-manifest provenance mismatch: " + ", ".join(mismatches))
+        registered_pose_hashes = manifest.get("verified_pose_sha256")
+        if not isinstance(registered_pose_hashes, dict) or _sha256(path) not in registered_pose_hashes.values():
+            raise ValueError("Complex file hash is absent from the execution manifest's verified poses.")
+        archive_value = manifest.get("archive_path")
+        archive_hash = manifest.get("archive_sha256")
+        if not archive_value or not archive_hash:
+            raise ValueError("Execution manifest lacks archived-output provenance.")
+        archive_path = Path(archive_value).expanduser().resolve()
+        if not archive_path.is_file() or _sha256(archive_path) != str(archive_hash).lower():
+            raise ValueError("HADDOCK output archive is missing or its hash changed.")
 
     target_id = str(entry.get("target_structure_id", "")).strip()
     receptor_chain = str(entry.get("receptor_chain", "A")).strip()
@@ -751,6 +895,8 @@ def _score_complex(
         "independent_run_id": entry.get("independent_run_id"),
         "random_seed": entry.get("random_seed"),
         "protocol_sha256": entry.get("protocol_sha256"),
+        "execution_id": execution_id,
+        "execution_manifest_sha256": execution_manifest_sha256,
         "_interface_fingerprint_5A": sorted(fingerprint),
         "fingerprint_error": fingerprint_error,
     }
@@ -937,15 +1083,49 @@ def apply_p4_target_objective(
     output_directory: str | Path,
     pareto_enabled: bool | None = None,
     require_reproducibility: bool = False,
+    selection_scope: str = "full_population",
+    external_validation_gate: dict[str, Any] | None = None,
+    allow_unvalidated_exploratory_selection: bool = False,
 ) -> tuple[list[Any], dict[str, Any]]:
     """Score registered complexes and optionally apply target-aware ordering.
 
     ``require_reproducibility`` is the strict live-optimization mode. Every
-    candidate must have valid target geometry plus a repeatability diagnostic
-    from at least two independent docking runs (>=2 scored poses per run,
-    unique seeds, and a shared protocol hash). The repeatability diagnostic
-    remains uncalibrated and is never used as a ranking weight.
+    candidate in the declared ``selection_scope`` must have valid target
+    geometry plus a repeatability diagnostic from at least two independent
+    docking runs (>=2 scored poses per run, unique seeds, and a shared protocol
+    hash). The repeatability diagnostic remains uncalibrated and is never used
+    as a ranking weight.
+
+    ``selection_scope="shortlist"`` is a budget-limited treatment: only the
+    predeclared ``p4_structure_shortlist`` is eligible for target-aware
+    reordering. Candidates outside that shortlist keep their original P3
+    positions. This avoids claiming complete-population optimization when only
+    a subset has structural evidence, while still permitting a genuine,
+    controlled target-aware selection effect within the evaluated subset.
     """
+    if selection_scope not in {"full_population", "shortlist"}:
+        raise ValueError("selection_scope must be 'full_population' or 'shortlist'.")
+
+    if external_validation_gate is None and require_reproducibility:
+        from src.p4_external_validation_gate import load_external_validation_gate
+        external_validation_gate = load_external_validation_gate()
+    external_validation_gate = external_validation_gate or {
+        "status": "not_required_for_diagnostic_mode",
+        "allow_target_selection": not require_reproducibility,
+        "reason": "External transfer gate applies to target-aware selection mode.",
+    }
+    external_validation_passed = bool(
+        external_validation_gate.get("allow_target_selection")
+    ) and external_validation_gate.get("status") != "not_required_for_diagnostic_mode"
+    exploratory_override_used = bool(
+        require_reproducibility
+        and allow_unvalidated_exploratory_selection
+        and not external_validation_passed
+    )
+    external_validation_allows_selection = (
+        external_validation_passed or exploratory_override_used
+        if require_reproducibility else True
+    )
 
     manifest_report = {
         "status": "not_configured",
@@ -1044,6 +1224,10 @@ def apply_p4_target_objective(
                     "independent_run_id": raw.get("independent_run_id"),
                     "random_seed": raw.get("random_seed"),
                     "protocol_sha256": raw.get("protocol_sha256"),
+                    "execution_id": raw.get("execution_id"),
+                    "execution_manifest_path": raw.get("execution_manifest_path"),
+                    "execution_manifest_sha256": raw.get("execution_manifest_sha256"),
+                    "_require_execution_manifest": bool(require_reproducibility),
                 }
 
                 entry_results.append(_score_complex(candidate, entry))
@@ -1130,8 +1314,11 @@ def apply_p4_target_objective(
             reliability_proxy = None
             try:
                 value = float(reliability.get("reliability_proxy"))
-                if math.isfinite(value) and 0.0 <= value <= 1.0:
-                    reliability_proxy = value
+                # Remove floating-point noise at the normalized [0, 1]
+                # boundary without changing the measured Jaccard statistic.
+                tolerance = 1e-12
+                if math.isfinite(value) and -tolerance <= value <= 1.0 + tolerance:
+                    reliability_proxy = min(1.0, max(0.0, value))
             except (TypeError, ValueError):
                 pass
 
@@ -1191,6 +1378,7 @@ def apply_p4_target_objective(
             "target_complex_source": complex_source,
             "registered_complex_count": registered_complex_count,
             "complex_generation": meta.get("p4_complex_generation"),
+            "structure_shortlist": meta.get("p4_structure_shortlist", {}),
             **meta["p4_target_evidence"],
             "reliability": meta["p4_reliability"],
             "target_selection_eligible": meta.get(
@@ -1211,28 +1399,40 @@ def apply_p4_target_objective(
 
     reordered = False
     reason = "Target evidence recorded; legacy ranking retained."
+    shortlist_candidates = [
+        candidate for candidate in candidates
+        if (candidate.metadata if isinstance(candidate.metadata, dict) else {})
+        .get("p4_structure_shortlist", {}).get("selected") is True
+    ]
+    scope_candidates = (
+        shortlist_candidates if selection_scope == "shortlist" else list(candidates)
+    )
+    scope_ids = {id(candidate) for candidate in scope_candidates}
+    eligible_scope = [candidate for candidate in eligible if id(candidate) in scope_ids]
+    selection_eligible_scope = [
+        candidate for candidate in selection_eligible if id(candidate) in scope_ids
+    ]
 
-    if pareto_enabled:
-        scores_valid = all(
+    if pareto_enabled and require_reproducibility and not external_validation_allows_selection:
+        reason = (
+            "Target-aware Pareto selection withheld by the independent external-validation gate: "
+            + str(external_validation_gate.get("reason", "no qualifying validation evidence"))
+        )
+    elif pareto_enabled:
+        scores_valid = bool(scope_candidates) and all(
             getattr(candidate, "c_score", None) is not None
             and math.isfinite(float(candidate.c_score))
-            for candidate in candidates
+            for candidate in scope_candidates
         )
 
         required_candidates = (
-            selection_eligible if require_reproducibility else eligible
+            selection_eligible_scope if require_reproducibility else eligible_scope
         )
-        if candidates and len(required_candidates) == len(candidates) and scores_valid:
+        if scope_candidates and len(required_candidates) == len(scope_candidates) and scores_valid:
             objectives = []
-
-            for candidate in candidates:
+            for candidate in scope_candidates:
                 target = candidate.metadata["p4_target_evidence"]
-
-                fitness = max(
-                    0.0,
-                    min(1.0, float(candidate.c_score)),
-                )
-
+                fitness = max(0.0, min(1.0, float(candidate.c_score)))
                 objectives.append((
                     fitness,
                     float(target["target_geometry_score_mean"]),
@@ -1240,88 +1440,105 @@ def apply_p4_target_objective(
                 ))
 
             fronts = _pareto_fronts(objectives)
-            original_order = {
-                id(candidate): index
-                for index, candidate in enumerate(candidates)
-            }
-
-            for candidate, front in zip(candidates, fronts):
+            scope_order = {id(candidate): i for i, candidate in enumerate(scope_candidates)}
+            for candidate, front in zip(scope_candidates, fronts):
                 candidate.metadata["p4_target_pareto_front"] = front
 
             if require_reproducibility:
-                # Target-first ordering within the non-dominated front makes
-                # the next-generation parent decision respond to the target
-                # objectives. Repeatability is an eligibility gate only; the
-                # uncalibrated proxy is deliberately not a ranking weight.
-                candidates = sorted(
-                    candidates,
+                ordered_scope = sorted(
+                    scope_candidates,
                     key=lambda candidate: (
                         candidate.metadata["p4_target_pareto_front"],
-                        -float(candidate.metadata["p4_target_evidence"][
-                            "target_geometry_score_mean"
-                        ]),
-                        -float(candidate.metadata["p4_target_evidence"][
-                            "hotspot_proximity_score"
-                        ]),
+                        -float(candidate.metadata["p4_target_evidence"]["target_geometry_score_mean"]),
+                        -float(candidate.metadata["p4_target_evidence"]["hotspot_proximity_score"]),
                         -max(0.0, min(1.0, float(candidate.c_score))),
                         -float(candidate.overall_score),
-                        original_order[id(candidate)],
+                        scope_order[id(candidate)],
                     ),
                 )
-                selection_method = (
-                    "pareto_front_then_target_geometry_then_hotspot_proximity"
-                )
+                selection_method = "pareto_front_then_target_geometry_then_hotspot_proximity"
             else:
-                candidates = sorted(
-                    candidates,
+                ordered_scope = sorted(
+                    scope_candidates,
                     key=lambda candidate: (
                         candidate.metadata["p4_target_pareto_front"],
                         -float(candidate.overall_score),
-                        original_order[id(candidate)],
+                        scope_order[id(candidate)],
                     ),
                 )
                 selection_method = "pareto_front_then_legacy_overall_score"
 
-            for rank, candidate in enumerate(candidates, start=1):
-                candidate.rank = rank
+            if selection_scope == "shortlist":
+                # Replace only the original shortlist slots. No candidate with
+                # missing structural evidence can be promoted or demoted.
+                positions = [i for i, c in enumerate(candidates) if id(c) in scope_ids]
+                reordered_candidates = list(candidates)
+                for position, selected_candidate in zip(positions, ordered_scope):
+                    reordered_candidates[position] = selected_candidate
+                candidates = reordered_candidates
+            else:
+                candidates = ordered_scope
+
+            for rank, candidate in enumerate(ordered_scope, start=1):
+                candidate.metadata["p4_target_scope_rank"] = rank
                 candidate.metadata["p4_target_selection_method"] = selection_method
                 candidate.metadata["p4_target_selection_applied"] = True
-
             reordered = True
             reason = (
-                "All candidates have valid target evidence and finite "
-                "sequence scores; Pareto ordering applied."
-                if not require_reproducibility
-                else "All candidates have valid target evidence and independent-run "
-                "repeatability diagnostics; target-first Pareto ordering applied."
+                f"All {len(scope_candidates)} candidates in the {selection_scope} scope have valid "
+                "target geometry and independent-run repeatability diagnostics; target-aware "
+                "Pareto ordering applied within the evaluated scope."
+                if require_reproducibility
+                else f"All {len(scope_candidates)} candidates in the {selection_scope} scope have valid "
+                "target geometry; Pareto ordering applied within the evaluated scope."
             )
-
-        elif require_reproducibility and len(selection_eligible) != len(candidates):
+        elif not scope_candidates:
             reason = (
-                "Target optimization withheld: every candidate requires valid "
-                "target geometry and repeatability diagnostics from at least "
-                "two independent runs with at least two poses per run."
+                "Target optimization withheld: the declared selection scope is empty."
             )
-        elif len(eligible) != len(candidates):
+        elif require_reproducibility and len(selection_eligible_scope) != len(scope_candidates):
             reason = (
-                "Pareto selection withheld: complete valid target "
-                "evidence is required for every candidate."
+                "Target optimization withheld: every candidate in the declared "
+                "selection scope requires valid target geometry and repeatability "
+                "diagnostics from at least two independent runs with at least two poses per run."
+            )
+        elif len(eligible_scope) != len(scope_candidates):
+            reason = (
+                "Pareto selection withheld: complete valid target evidence is required "
+                "for every candidate in the declared selection scope."
             )
         else:
             reason = (
-                "Pareto selection withheld: every candidate requires "
-                "a finite sequence-level c_score."
+                "Pareto selection withheld: every candidate in the declared scope "
+                "requires a finite sequence-level c_score."
             )
 
     report = {
         "generation": generation,
         "version": TARGET_VERSION,
         "candidate_count": len(candidates),
-        "target_evidence_count": len(eligible),
-        "target_evidence_coverage": coverage,
-        "target_selection_eligible_count": len(selection_eligible),
-        "target_selection_coverage": selection_coverage,
+        "selection_scope": selection_scope,
+        "selection_scope_candidate_count": len(scope_candidates),
+        "population_target_evidence_coverage": coverage,
+        "population_target_selection_coverage": selection_coverage,
+        "target_evidence_count": len(eligible_scope),
+        "target_evidence_coverage": (
+            len(eligible_scope) / len(scope_candidates) if scope_candidates else 0.0
+        ),
+        "target_selection_eligible_count": len(selection_eligible_scope),
+        "target_selection_coverage": (
+            len(selection_eligible_scope) / len(scope_candidates) if scope_candidates else 0.0
+        ),
         "require_reproducibility_for_selection": bool(require_reproducibility),
+        "external_validation_gate": external_validation_gate,
+        "external_validation_allows_selection": bool(external_validation_passed),
+        "exploratory_override_used": bool(exploratory_override_used),
+        "selection_validation_status": (
+            "EXPLORATORY_NOT_VALIDATED" if exploratory_override_used
+            else "EXTERNAL_TRANSFER_GATE_PASSED" if external_validation_passed
+            else "NOT_REQUIRED_DIAGNOSTIC_MODE" if not require_reproducibility
+            else "VALIDATION_NOT_PASSED"
+        ),
         "reliability_diagnostic_candidate_count": reliability_count,
         "reliability_used_for_ranking": False,
         "pareto_requested": bool(pareto_enabled),
